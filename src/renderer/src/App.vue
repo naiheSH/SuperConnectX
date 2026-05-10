@@ -10,7 +10,7 @@
     />
     <!-- 主内容区：左侧连接列表 + 右侧终端 -->
     <main class="app-main">
-      <div class="connection-list-wrapper" :class="{ collapsed: !showConnectionList }">
+      <div class="connection-list-wrapper" :class="{ collapsed: !showConnectionList }" :style="showConnectionList ? { width: sidebarWidth + 'px' } : {}">
         <div class="connection-list">
           <!-- 固定区域：新建连接 + 搜索 -->
           <div class="connection-list-fixed">
@@ -144,9 +144,11 @@
               无匹配连接
             </div>
           </div>
-          </div>
+        </div>
         </div>
       </div>
+      <!-- 侧边栏分隔条 -->
+      <div v-if="showConnectionList" class="sidebar-resizer" @mousedown="startResize" :class="{ resizing: isResizing }"></div>
       <div class="terminal-wrapper" :class="{ expanded: !showConnectionList }">
         <!-- 自定义选项卡栏 -->
         <div v-if="connectionTabs.length > 0" class="custom-tabs">
@@ -367,7 +369,10 @@ const isAboutDialogOpen = ref(false)
 const connFormRef = ref<InstanceType<typeof ElForm> | null>(null)
 const newConnForm = reactive(TelnetInfo.build())
 const showConnectionList = ref(true)
+const sidebarWidth = ref(320)
 const lastSentCommand = ref('')
+const MIN_SIDEBAR_WIDTH = 200 // 最小宽度阈值
+const AUTO_HIDE_WIDTH = 150   // 小于此宽度自动隐藏
 // 新增选项卡相关状态
 const connectionTabs = ref<any[]>([])
 const tabsHeaderRef = ref<HTMLElement | null>(null)
@@ -391,6 +396,47 @@ const handleTabsWheel = (e: WheelEvent) => {
   if (tabsHeaderRef.value) {
     e.preventDefault()
     tabsHeaderRef.value.scrollLeft += e.deltaY
+  }
+}
+
+// 侧边栏拖动分隔条
+const isResizing = ref(false)
+const resizeStartX = ref(0)
+const resizeStartWidth = ref(0)
+
+const startResize = (e: MouseEvent) => {
+  isResizing.value = true
+  resizeStartX.value = e.clientX
+  resizeStartWidth.value = sidebarWidth.value
+  document.addEventListener('mousemove', onResize)
+  document.addEventListener('mouseup', stopResize)
+}
+
+const onResize = (e: MouseEvent) => {
+  if (!isResizing.value) return
+  const delta = e.clientX - resizeStartX.value
+  const newWidth = resizeStartWidth.value + delta
+  
+  // 限制在最大宽度之间
+  if (newWidth <= 500) {
+    // 如果宽度小于最小宽度的2/3，隐藏侧边栏
+    const hideThreshold = MIN_SIDEBAR_WIDTH * 2 / 3 // 约133px
+    if (newWidth < hideThreshold) {
+      showConnectionList.value = false
+      sidebarWidth.value = MIN_SIDEBAR_WIDTH // 记录最后宽度
+    } else {
+      sidebarWidth.value = newWidth
+    }
+  }
+}
+
+const stopResize = () => {
+  if (isResizing.value) {
+    isResizing.value = false
+    document.removeEventListener('mousemove', onResize)
+    document.removeEventListener('mouseup', stopResize)
+    // 保存宽度设置
+    saveSidebarState()
   }
 }
 
@@ -793,6 +839,9 @@ const loadSidebarState = async () => {
     if (savedState?.sidebar) {
       showConnectionList.value = savedState.sidebar.showConnectionList ?? true
       serialPortExpanded.value = savedState.sidebar.serialPortExpanded ?? true
+      if (savedState.sidebar.sidebarWidth) {
+        sidebarWidth.value = savedState.sidebar.sidebarWidth
+      }
       connectionGroupExpanded.value = {
         ...connectionGroupExpanded.value,
         ...savedState.sidebar.connectionGroupExpanded
@@ -813,6 +862,7 @@ const saveSidebarState = async () => {
       sidebar: {
         showConnectionList: Boolean(showConnectionList.value),
         serialPortExpanded: Boolean(serialPortExpanded.value),
+        sidebarWidth: Number(sidebarWidth.value),
         connectionGroupExpanded: JSON.parse(JSON.stringify(connectionGroupExpanded.value))
       }
     }
@@ -824,7 +874,7 @@ const saveSidebarState = async () => {
 
 // 监听侧边栏状态变化，自动保存
 watch(
-  [showConnectionList, serialPortExpanded, connectionGroupExpanded],
+  [showConnectionList, serialPortExpanded, connectionGroupExpanded, sidebarWidth],
   () => {
     saveSidebarState()
   },
@@ -1289,12 +1339,13 @@ onMounted(() => {
 }
 
 .connection-list {
-  width: 320px;
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #333;
   background: #252526;
+  overflow-x: hidden;
 }
 
 .connection-list-fixed {
@@ -1307,6 +1358,7 @@ onMounted(() => {
 
 .connection-list-scroll {
   flex: 1;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 0 8px 8px 8px;
 }
@@ -1352,6 +1404,7 @@ onMounted(() => {
 
 .connection-card :deep(.el-card__body) {
   padding: 12px 12px 0 12px !important;
+  overflow-x: hidden;
 }
 
 .connection-card {
@@ -1365,6 +1418,7 @@ onMounted(() => {
 
 .connection-info {
   user-select: none;
+  overflow-x: hidden;
 }
 
 /* 串口卡片样式 */
@@ -1376,17 +1430,20 @@ onMounted(() => {
 
 .serial-port-card :deep(.el-card__body) {
   padding: 8px 12px !important;
+  overflow-x: hidden;
 }
 
 .serial-port-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  overflow-x: hidden;
 }
 
 .serial-port-left {
   flex: 1;
   min-width: 0;
+  overflow-x: hidden;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1397,6 +1454,7 @@ onMounted(() => {
   align-items: center;
   opacity: 0;
   transition: opacity 0.2s ease;
+  flex-shrink: 0;
 }
 
 .serial-port-card:hover .serial-port-right {
@@ -1438,6 +1496,7 @@ onMounted(() => {
   font-size: 13px;
   color: #aaa;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 .conn-detail span {
@@ -1451,6 +1510,7 @@ onMounted(() => {
   padding: 8px 0;
   margin-top: 8px;
   border-top: 1px solid #3a3a3a;
+  flex-shrink: 0;
 }
 
 .connection-actions button {
@@ -1508,6 +1568,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow-x: hidden;
 }
 
 .el-dialog {
@@ -1555,18 +1616,36 @@ onMounted(() => {
 
 .connection-list-wrapper {
   width: 320px;
-  min-width: 320px;
+  min-width: 200px;
+  max-width: 500px;
   height: 100%;
-  transition: all 0.3s ease-in-out;
   overflow: hidden;
   flex-shrink: 0;
   box-sizing: border-box;
 }
 
 .connection-list-wrapper.collapsed {
-  width: 0;
-  min-width: 0;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
   border-right: none;
+}
+
+/* 侧边栏分隔条 */
+.sidebar-resizer {
+  width: 4px;
+  height: 100%;
+  background: transparent;
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background-color 0.2s;
+}
+
+.sidebar-resizer:hover,
+.sidebar-resizer.resizing {
+  background-color: #409eff;
 }
 
 .terminal-panel {
