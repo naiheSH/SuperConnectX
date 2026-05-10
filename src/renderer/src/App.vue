@@ -170,7 +170,12 @@
                   {{ tab.name || `${tab.host || tab.comName}:${tab.port || ''}` }}
                   <span v-if="tab.connectionType === 'com' && tab.comName && serialRemarks[tab.comName]" class="tab-remark">{{ serialRemarks[tab.comName] }}</span>
                 </span>
-                <span class="tab-close" @click.stop="closeTab(tab.id.toString())">×</span>
+                <span
+                  class="tab-action-btn"
+                  :class="{ pinned: pinnedTabs.has(tab.id) }"
+                  @click.stop="togglePinTabByButton(tab.id)"
+                  :title="pinnedTabs.has(tab.id) ? '取消固定' : '固定'"
+                ></span>
               </div>
             </div>
           </div>
@@ -674,10 +679,49 @@ const moveTabToLast = () => {
 
 // 固定/取消固定
 const pinnedTabs = reactive<Set<string>>(new Set())
+
+// 通过按钮切换固定状态或关闭（不显示右键菜单）
+const togglePinTabByButton = (tabId: string | number) => {
+  // 确保转换为字符串进行比较
+  const id = tabId.toString()
+  
+  // 检查是否是固定状态（使用 JSON 序列化来比较，避免类型问题）
+  const isPinned = connectionTabs.value.some(t => t.id.toString() === id && pinnedTabs.has(t.id))
+
+  if (isPinned) {
+    // 已固定：取消固定（移到最后一个固定项后面）
+    const currentIndex = connectionTabs.value.findIndex(t => t.id.toString() === id)
+    if (currentIndex === -1) return
+    
+    const getLastPinnedIndex = () => {
+      let lastIndex = -1
+      connectionTabs.value.forEach((tab, index) => {
+        if (pinnedTabs.has(tab.id) && index > lastIndex) {
+          lastIndex = index
+        }
+      })
+      return lastIndex
+    }
+    
+    const lastPinnedIndex = getLastPinnedIndex()
+    pinnedTabs.delete(id)
+    
+    if (lastPinnedIndex >= 0 && currentIndex !== lastPinnedIndex) {
+      const tab = connectionTabs.value.splice(currentIndex, 1)[0]
+      connectionTabs.value.splice(lastPinnedIndex, 0, tab)
+    }
+  } else {
+    // 未固定：直接关闭选项卡
+    closeTabOnly(id)
+  }
+}
+
+// 通过右键菜单切换固定状态
 const togglePinTab = () => {
   if (!rightClickedTab.value) return
   const tabId = rightClickedTab.value.id
-  const currentIndex = connectionTabs.value.findIndex(t => t.id === tabId)
+  const id = tabId.toString()
+  const currentIndex = connectionTabs.value.findIndex(t => t.id === id)
   if (currentIndex === -1) return
 
   // 获取最后一个固定项的位置
@@ -691,10 +735,10 @@ const togglePinTab = () => {
     return lastIndex
   }
 
-  if (pinnedTabs.has(tabId)) {
+  if (pinnedTabs.has(id)) {
     // 取消固定：先获取最后一个固定项的位置，再删除固定状态
     const lastPinnedIndex = getLastPinnedIndex()
-    pinnedTabs.delete(tabId)
+    pinnedTabs.delete(id)
     
     // 移到最后一个固定项后面
     if (lastPinnedIndex >= 0 && currentIndex !== lastPinnedIndex) {
@@ -702,16 +746,14 @@ const togglePinTab = () => {
       connectionTabs.value.splice(lastPinnedIndex, 0, tab)
     }
   } else {
-    // 固定：移到所有固定项的最后（获取最后一个固定项位置后再添加）
+    // 固定：移到所有固定项的最后
     const lastPinnedIndex = getLastPinnedIndex()
-    pinnedTabs.add(tabId)
+    pinnedTabs.add(id)
     
     if (lastPinnedIndex >= 0 && currentIndex !== lastPinnedIndex) {
-      // 移到最后一个固定项后面
       const tab = connectionTabs.value.splice(currentIndex, 1)[0]
       connectionTabs.value.splice(lastPinnedIndex + 1, 0, tab)
     } else if (lastPinnedIndex === -1 && currentIndex !== 0) {
-      // 没有固定项，移到最前
       const tab = connectionTabs.value.splice(currentIndex, 1)[0]
       connectionTabs.value.unshift(tab)
     }
@@ -1720,28 +1762,61 @@ onMounted(() => {
   background-color: #888888;
 }
 
-.tab-close {
+.tab-action-btn {
   position: absolute;
   right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  line-height: 18px;
-  text-align: center;
-  font-size: 16px;
-  color: #888;
+  width: 16px;
+  height: 16px;
   border-radius: 3px;
   opacity: 0;
   transition: opacity 0.15s;
+  cursor: pointer;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
-.tab-item:hover .tab-close {
+/* 默认显示关闭图标 */
+.tab-action-btn::before {
+  content: '×';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  line-height: 1;
+  color: #888;
+}
+
+/* 固定状态显示图钉图标 */
+.tab-action-btn.pinned {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024' fill='%23888'%3E%3Cpath d='M963.925333 326.997333L697.002667 60.074667a25.6 25.6 0 0 0-43.52 21.845333l14.506666 99.498667-273.066666 151.381333c-91.477333-45.738667-170.666667-36.693333-234.496 27.306667a25.941333 25.941333 0 0 0 0 36.352L327.68 563.2 57.685333 930.645333a25.6 25.6 0 0 0 35.84 35.669334l366.250667-270.677334 167.765333 167.936a25.941333 25.941333 0 0 0 36.352 0c79.530667-79.701333 58.538667-165.546667 26.965334-233.813333l152.064-273.066667 99.157333 14.165334a25.6 25.6 0 0 0 26.624-13.824 25.941333 25.941333 0 0 0-4.778667-30.037334z'/%3E%3C/svg%3E");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.tab-action-btn.pinned::before,
+.tab-action-btn.pinned::after {
+  display: none;
+}
+
+.tab-item:hover .tab-action-btn {
   opacity: 1;
 }
 
-.tab-close:hover {
+.tab-item.active .tab-action-btn,
+.tab-item.pinned .tab-action-btn {
+  opacity: 1;
+}
+
+.tab-action-btn:hover {
   background-color: #3b3c3c;
+}
+
+.tab-action-btn:hover::before {
   color: #fff;
 }
 
@@ -1809,14 +1884,5 @@ onMounted(() => {
   z-index: 9998;
 }
 
-/* 固定选项卡样式 */
-.tab-item.pinned::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: #409eff;
-}
+/* 固定选项卡样式 - 已移除左侧竖条，改为通过按钮图标显示 */
 </style>
