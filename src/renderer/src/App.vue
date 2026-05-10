@@ -372,7 +372,6 @@ const showConnectionList = ref(true)
 const sidebarWidth = ref(320)
 const lastSentCommand = ref('')
 const MIN_SIDEBAR_WIDTH = 200 // 最小宽度阈值
-const AUTO_HIDE_WIDTH = 150   // 小于此宽度自动隐藏
 // 新增选项卡相关状态
 const connectionTabs = ref<any[]>([])
 const tabsHeaderRef = ref<HTMLElement | null>(null)

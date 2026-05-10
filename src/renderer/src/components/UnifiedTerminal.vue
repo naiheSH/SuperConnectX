@@ -300,7 +300,7 @@ const handleSendCommand = () => {
   }
 
   // 传递原始输入用于显示（在HEX模式下需要显示原始HEX字符串）
-  emit('onSend', sendData, cmd)
+  emit('onSend', sendData)
   currentCommand.value = ''
 }
 
