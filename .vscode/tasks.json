@@ -7,6 +7,11 @@
             "label": "start telnet server",
             "type": "shell",
             "command": "python scripts/python/telnet_server.py 127.0.0.1"
+        },
+        {
+            "label": "npm run dev",
+            "type": "shell",
+            "command": "npm run dev"
         }
     ]
 }
