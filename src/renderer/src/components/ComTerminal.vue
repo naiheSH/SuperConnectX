@@ -199,6 +199,7 @@ const isConnecting = ref(false)
 const preventAutoReconnect = ref(false) // 主动断开时禁止自动重连
 const showMoreDialog = ref(false)
 const showAddBaudRateDialog = ref(false)
+const fontSize = ref(14) // 字体大小
 const newBaudRate = ref(9600)
 const baudRateInputRef = ref<any>(null)
 
@@ -259,10 +260,11 @@ watch(baudRate, (newVal) => {
 })
 
 // 监听串口设置变化，自动保存
-watch([dataBits, stopBits, parity, encoding, readTimeout, writeTimeout, flowControl, dtr, rts], () => {
+watch([dataBits, stopBits, parity, encoding, readTimeout, writeTimeout, flowControl, dtr, rts, fontSize], (newVals, oldVals) => {
   saveComSettings()
-  // 如果已连接，立即应用新配置
-  if (isConnected.value) {
+  // 检查是否是字体大小变化，字体大小变化不需要热更新
+  const fontSizeChanged = newVals[newVals.length - 1] !== oldVals?.[oldVals.length - 1]
+  if (isConnected.value && !fontSizeChanged) {
     applyComConfig()
   }
 })
@@ -313,15 +315,22 @@ watch(() => unifiedTerminalRef.value?.getShowTimestamp?.(), (newVal) => {
   }
 }, { immediate: true })
 
+// 监听 UnifiedTerminal 的 fontSize 变化，更新 fontSizeRef
+watch(() => unifiedTerminalRef.value?.getFontSize?.(), (newVal) => {
+  if (newVal !== undefined && newVal !== fontSize.value) {
+    fontSize.value = newVal
+  }
+}, { immediate: true })
+
 // 应用串口配置（热更新）
 const applyComConfig = async () => {
   try {
-    const result = await window.connectApi.updateConnect(
-      {
-        connectionType: 'com',
-        comName: props.connection.comName,
-        sessionId: props.connection.sessionId
-      },
+    const conn = {
+      connectionType: 'com',
+      comName: props.connection.comName,
+      sessionId: props.connection.sessionId
+    }
+    const result = await window.connectApi.updateConnect(conn,
       {
         baudRate: baudRate.value,
         dataBits: dataBits.value,
@@ -365,7 +374,9 @@ const updateReceiveHexMode = async (isHex: boolean) => {
 // 加载保存的串口设置
 const loadComSettings = async () => {
   try {
-    if (!props.connection.comName) return
+    if (!props.connection.comName) {
+      return
+    }
     const settings = await window.storageApi.getComSettings(props.connection.comName)
     if (settings) {
       baudRate.value = settings.baudRate || 9600
@@ -383,11 +394,13 @@ const loadComSettings = async () => {
       showTimestamp.value = settings.showTimestamp !== undefined ? settings.showTimestamp : true
       autoNewline.value = settings.autoNewline !== undefined ? settings.autoNewline : true
       hexMode.value = settings.hexMode || false
+      fontSize.value = settings.fontSize !== undefined ? settings.fontSize : 14
       // 将设置同步到 UnifiedTerminal
       unifiedTerminalRef.value?.setHexDisplayMode?.(hexDisplayMode.value)
       unifiedTerminalRef.value?.setShowTimestamp?.(showTimestamp.value)
       unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
       unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
+      unifiedTerminalRef.value?.setFontSize?.(fontSize.value)
     }
   } catch (error) {
     console.error('加载串口设置失败:', error)
@@ -397,8 +410,10 @@ const loadComSettings = async () => {
 // 保存串口设置
 const saveComSettings = async () => {
   try {
-    if (!props.connection.comName) return
-    await window.storageApi.saveComSettings(props.connection.comName, {
+    if (!props.connection.comName) {
+      return
+    }
+    const settings = {
       baudRate: baudRate.value,
       dataBits: dataBits.value,
       stopBits: stopBits.value,
@@ -413,8 +428,10 @@ const saveComSettings = async () => {
       hexDisplayMode: hexDisplayMode.value,
       showTimestamp: showTimestamp.value,
       autoNewline: autoNewline.value,
-      hexMode: hexMode.value
-    })
+      hexMode: hexMode.value,
+      fontSize: fontSize.value
+    }
+    await window.storageApi.saveComSettings(props.connection.comName, settings)
   } catch (error) {
     console.error('保存串口设置失败:', error)
   }

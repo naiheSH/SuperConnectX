@@ -55,7 +55,9 @@ export default class IpcStorage {
 
     /* COM 串口设置持久化 */
     const comSettingsStorage = new ComSettingsStorage()
-    ipcMain.handle('get-com-settings', (_, comName: string) => comSettingsStorage.getSettings(comName))
+    ipcMain.handle('get-com-settings', (_, comName: string) => {
+      return comSettingsStorage.getSettings(comName)
+    })
     ipcMain.handle('save-com-settings', (_, comName: string, settings: any) => {
       comSettingsStorage.saveSettings(comName, settings)
       return true
@@ -63,12 +65,9 @@ export default class IpcStorage {
 
     /* 全局波特率列表持久化 */
     ipcMain.handle('get-baud-rates', () => {
-      const rates = comSettingsStorage.getBaudRates()
-      console.log('[IpcStorage] get-baud-rates:', rates)
-      return rates
+      return comSettingsStorage.getBaudRates()
     })
     ipcMain.handle('save-baud-rates', (_, baudRates: number[]) => {
-      console.log('[IpcStorage] save-baud-rates called with:', baudRates)
       comSettingsStorage.saveBaudRates(baudRates)
       return true
     })

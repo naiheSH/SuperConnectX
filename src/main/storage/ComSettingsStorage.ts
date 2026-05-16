@@ -17,6 +17,11 @@ interface ComPortSettings {
   dtr?: boolean
   flowControl?: 'none' | 'hardware' | 'software'
   remark?: string
+  fontSize?: number
+  hexDisplayMode?: boolean
+  showTimestamp?: boolean
+  autoNewline?: boolean
+  hexMode?: boolean
 }
 
 interface StoredData {
@@ -69,7 +74,6 @@ export default class ComSettingsStorage {
   }
 
   saveBaudRates(baudRates: number[]): void {
-    console.log('[ComSettingsStorage] saveBaudRates called with:', baudRates)
     this.storageData.set('baudRates', baudRates)
   }
 }

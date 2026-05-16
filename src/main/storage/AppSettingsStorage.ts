@@ -13,6 +13,7 @@ interface SidebarState {
 
 interface AppSettings {
   sidebar?: SidebarState
+  terminalFontSize?: number // 全局终端字体大小（用于 Telnet 等）
   // 可扩展其他全局设置
 }
 

@@ -60,32 +60,45 @@ export default class ConnectionStorage extends BaseStorage {
     const connections = this.getAll() as any[]
     let con = connections.filter((item) => item.id === conn.id)
     if (!con.length) {
-      console.log(`con not found`)
       return
     }
 
-    // 检查重复连接（排除自身）
-    if (this.isDuplicateConnection(conn, connections, conn.id)) {
-      const error = new DuplicateConnectionError(
-        `已存在相同的连接：${conn.connectionType} - ${conn.name} (${conn.host}:${conn.port})`
-      )
-      logger.warn(error.message)
-      throw error
+    // 检查重复连接（排除自身）- 只有在需要验证的字段都存在时才检查
+    if (conn.name !== undefined && conn.host !== undefined && conn.port !== undefined && conn.connectionType !== undefined) {
+      if (this.isDuplicateConnection(conn, connections, conn.id)) {
+        const error = new DuplicateConnectionError(
+          `已存在相同的连接：${conn.connectionType} - ${conn.name} (${conn.host}:${conn.port})`
+        )
+        logger.warn(error.message)
+        throw error
+      }
     }
 
-    con[0].name = conn.name
-    con[0].port = conn.port
-    con[0].connectionType = conn.connectionType
-    con[0].host = conn.host
-    con[0].username = conn.username
-    // 新增：添加FTP所需的密码字段
+    // 只更新传入的非 undefined 字段，保留原有的其他字段
+    if (conn.name !== undefined) {
+      con[0].name = conn.name
+    }
+    if (conn.port !== undefined) {
+      con[0].port = conn.port
+    }
+    if (conn.connectionType !== undefined) {
+      con[0].connectionType = conn.connectionType
+    }
+    if (conn.host !== undefined) {
+      con[0].host = conn.host
+    }
+    if (conn.username !== undefined) {
+      con[0].username = conn.username
+    }
     if (conn.connectionType === 'ftp') {
       con[0].password = conn.password
+    }
+    if (conn.fontSize !== undefined) {
+      con[0].fontSize = conn.fontSize
     }
 
     this.saveAll(connections as never[])
     logger.info(`update connection ${conn.host}:${conn.port}`)
-    logger.debug(JSON.stringify(con[0]))
     return con
   }
 

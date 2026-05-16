@@ -45,6 +45,7 @@ const props = defineProps<{
 const isConnected = ref(true)
 const isConnecting = ref(false)
 const showTimestamp = ref(true) // 是否显示时间戳
+const fontSize = ref(14) // 字体大小
 let currentConnId = 0
 let removeDataListener: (() => void) | null = null
 let removeCloseListener: (() => void) | null = null
@@ -62,13 +63,26 @@ const unifiedTerminalRef = ref<InstanceType<typeof UnifiedTerminal>>()
 // 暴露给父组件的连接状态
 const isConnectedValue = computed(() => isConnected.value)
 
-// 监听 UnifiedTerminal 的 showTimestamp 变化，反向同步
-watch(() => unifiedTerminalRef.value?.getShowTimestamp?.(), (newVal) => {
-  if (newVal !== undefined && newVal !== showTimestamp.value) {
-    showTimestamp.value = newVal
-    notifyLogTimestampToBackend(newVal)
+// 统一监听 UnifiedTerminal 的状态变化
+watch([
+  () => unifiedTerminalRef.value?.getShowTimestamp?.(),
+  () => unifiedTerminalRef.value?.getFontSize?.()
+], ([newTimestamp, newFontSize], [oldTimestamp, oldFontSize]) => {
+  // showTimestamp 变化
+  if (newTimestamp !== undefined && newTimestamp !== showTimestamp.value) {
+    showTimestamp.value = newTimestamp
+    notifyLogTimestampToBackend(newTimestamp)
+  }
+  // fontSize 变化
+  if (newFontSize !== undefined && newFontSize !== fontSize.value) {
+    fontSize.value = newFontSize
   }
 }, { immediate: true })
+
+// 监听 showTimestamp 和 fontSize 变化，保存设置
+watch([showTimestamp, fontSize], () => {
+  saveFontSize()
+})
 
 // 通知后端更新日志时间戳配置
 const notifyLogTimestampToBackend = async (showTs: boolean) => {
@@ -87,6 +101,47 @@ const notifyLogTimestampToBackend = async (showTs: boolean) => {
     )
   } catch (error) {
     console.error('更新日志时间戳配置失败:', error)
+  }
+}
+
+// 获取原始 connection id（connection.id 格式为 "原始id-sessionId"）
+const getOriginalConnectionId = (): number | undefined => {
+  const id = props.connection.id
+  if (!id) return undefined
+  // 格式: "原始id-sessionId"，如 "2-1778933529554"
+  const parts = id.toString().split('-')
+  return parts.length >= 1 ? parseInt(parts[0], 10) : undefined
+}
+
+// 加载连接字体大小设置
+const loadFontSize = async () => {
+  try {
+    const originalId = getOriginalConnectionId()
+    if (originalId) {
+      const connections = await window.storageApi.getConnections()
+      const conn = connections.find((c: any) => c.id === originalId)
+      if (conn?.fontSize !== undefined) {
+        fontSize.value = conn.fontSize
+        unifiedTerminalRef.value?.setFontSize?.(conn.fontSize)
+      }
+    }
+  } catch (error) {
+    console.error('加载字体大小设置失败:', error)
+  }
+}
+
+// 保存连接字体大小设置
+const saveFontSize = async () => {
+  try {
+    const originalId = getOriginalConnectionId()
+    if (originalId) {
+      await window.storageApi.updateConnection({
+        id: originalId,
+        fontSize: fontSize.value
+      })
+    }
+  } catch (error) {
+    console.error('保存字体大小设置失败:', error)
   }
 }
 
@@ -217,6 +272,9 @@ const connect = async () => {
         currentConnId = result.connId
         isConnected.value = true
         isConnecting.value = false
+
+        // 加载全局字体大小设置
+        loadFontSize()
 
         // 通知后端初始化日志时间戳配置
         notifyLogTimestampToBackend(showTimestamp.value)
