@@ -96,6 +96,9 @@ export default class ConnectionStorage extends BaseStorage {
     if (conn.fontSize !== undefined) {
       con[0].fontSize = conn.fontSize
     }
+    if (conn.fontFamily !== undefined) {
+      con[0].fontFamily = conn.fontFamily
+    }
 
     this.saveAll(connections as never[])
     logger.info(`update connection ${conn.host}:${conn.port}`)

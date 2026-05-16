@@ -200,6 +200,7 @@ const preventAutoReconnect = ref(false) // 主动断开时禁止自动重连
 const showMoreDialog = ref(false)
 const showAddBaudRateDialog = ref(false)
 const fontSize = ref(14) // 字体大小
+const fontFamily = ref('Fira Code') // 字体系列
 const newBaudRate = ref(9600)
 const baudRateInputRef = ref<any>(null)
 
@@ -242,9 +243,7 @@ const currentSessionId = ref<string>('')
 
 // 监听波特率变化
 watch(baudRate, (newVal) => {
-  console.log('baudRate watch triggered, newVal:', newVal)
   if (newVal === '__add__' as any) {
-    console.log('Showing add dialog')
     showAddBaudRateDialog.value = true
     nextTick(() => {
       if (baudRates.value.length > 0) {
@@ -322,6 +321,13 @@ watch(() => unifiedTerminalRef.value?.getFontSize?.(), (newVal) => {
   }
 }, { immediate: true })
 
+// 监听 UnifiedTerminal 的 fontFamily 变化
+watch(() => unifiedTerminalRef.value?.getFontFamily?.(), (newVal) => {
+  if (newVal !== undefined && newVal !== fontFamily.value) {
+    fontFamily.value = newVal
+  }
+}, { immediate: true })
+
 // 应用串口配置（热更新）
 const applyComConfig = async () => {
   try {
@@ -395,12 +401,14 @@ const loadComSettings = async () => {
       autoNewline.value = settings.autoNewline !== undefined ? settings.autoNewline : true
       hexMode.value = settings.hexMode || false
       fontSize.value = settings.fontSize !== undefined ? settings.fontSize : 14
+      fontFamily.value = settings.fontFamily || 'Fira Code'
       // 将设置同步到 UnifiedTerminal
       unifiedTerminalRef.value?.setHexDisplayMode?.(hexDisplayMode.value)
       unifiedTerminalRef.value?.setShowTimestamp?.(showTimestamp.value)
       unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
       unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
       unifiedTerminalRef.value?.setFontSize?.(fontSize.value)
+      unifiedTerminalRef.value?.setFontFamily?.(fontFamily.value)
     }
   } catch (error) {
     console.error('加载串口设置失败:', error)
@@ -429,7 +437,8 @@ const saveComSettings = async () => {
       showTimestamp: showTimestamp.value,
       autoNewline: autoNewline.value,
       hexMode: hexMode.value,
-      fontSize: fontSize.value
+      fontSize: fontSize.value,
+      fontFamily: fontFamily.value
     }
     await window.storageApi.saveComSettings(props.connection.comName, settings)
   } catch (error) {
@@ -477,16 +486,12 @@ const loadBaudRates = async () => {
 // 新增波特率
 const addBaudRate = async () => {
   const rate = newBaudRate.value
-  console.log('addBaudRate called, rate:', rate)
-  console.log('baudRates before:', [...baudRates.value])
   if (rate && !baudRates.value.includes(rate)) {
     baudRates.value.push(rate)
     baudRates.value.sort((a, b) => a - b)
     baudRate.value = rate
-    console.log('baudRates after push:', [...baudRates.value])
     try {
       await window.storageApi.saveBaudRates([...baudRates.value])
-      console.log('saveBaudRates called successfully')
     } catch (error) {
       console.error('saveBaudRates error:', error)
     }
@@ -687,6 +692,12 @@ const reconnect = () => {
   }
 }
 
+const handleFontChange = (font: string) => {
+  fontFamily.value = font
+  unifiedTerminalRef.value?.setFontFamily?.(font)
+  saveComSettings()
+}
+
 defineExpose({
   refreshGroupsCmds,
   reconnect,
@@ -694,7 +705,8 @@ defineExpose({
   isConnected: isConnectedValue,
   preventAutoReconnect: () => { preventAutoReconnect.value = true },
   getRemark: () => remark.value,
-  updateRemark
+  updateRemark,
+  handleFontChange
 })
 
 onMounted(async () => {

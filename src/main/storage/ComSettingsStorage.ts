@@ -18,6 +18,7 @@ interface ComPortSettings {
   flowControl?: 'none' | 'hardware' | 'software'
   remark?: string
   fontSize?: number
+  fontFamily?: string
   hexDisplayMode?: boolean
   showTimestamp?: boolean
   autoNewline?: boolean

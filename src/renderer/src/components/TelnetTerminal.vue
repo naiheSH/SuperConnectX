@@ -46,6 +46,7 @@ const isConnected = ref(true)
 const isConnecting = ref(false)
 const showTimestamp = ref(true) // 是否显示时间戳
 const fontSize = ref(14) // 字体大小
+const fontFamily = ref('Fira Code') // 字体系列
 let currentConnId = 0
 let removeDataListener: (() => void) | null = null
 let removeCloseListener: (() => void) | null = null
@@ -66,8 +67,9 @@ const isConnectedValue = computed(() => isConnected.value)
 // 统一监听 UnifiedTerminal 的状态变化
 watch([
   () => unifiedTerminalRef.value?.getShowTimestamp?.(),
-  () => unifiedTerminalRef.value?.getFontSize?.()
-], ([newTimestamp, newFontSize], [oldTimestamp, oldFontSize]) => {
+  () => unifiedTerminalRef.value?.getFontSize?.(),
+  () => unifiedTerminalRef.value?.getFontFamily?.()
+], ([newTimestamp, newFontSize, newFontFamily], [oldTimestamp, oldFontSize, oldFontFamily]) => {
   // showTimestamp 变化
   if (newTimestamp !== undefined && newTimestamp !== showTimestamp.value) {
     showTimestamp.value = newTimestamp
@@ -77,11 +79,15 @@ watch([
   if (newFontSize !== undefined && newFontSize !== fontSize.value) {
     fontSize.value = newFontSize
   }
+  // fontFamily 变化
+  if (newFontFamily !== undefined && newFontFamily !== fontFamily.value) {
+    fontFamily.value = newFontFamily
+  }
 }, { immediate: true })
 
-// 监听 showTimestamp 和 fontSize 变化，保存设置
-watch([showTimestamp, fontSize], () => {
-  saveFontSize()
+// 监听 showTimestamp、fontSize 和 fontFamily 变化，保存设置
+watch([showTimestamp, fontSize, fontFamily], () => {
+  saveFontSettings()
 })
 
 // 通知后端更新日志时间戳配置
@@ -113,35 +119,42 @@ const getOriginalConnectionId = (): number | undefined => {
   return parts.length >= 1 ? parseInt(parts[0], 10) : undefined
 }
 
-// 加载连接字体大小设置
-const loadFontSize = async () => {
+// 加载连接字体设置
+const loadFontSettings = async () => {
   try {
     const originalId = getOriginalConnectionId()
     if (originalId) {
       const connections = await window.storageApi.getConnections()
       const conn = connections.find((c: any) => c.id === originalId)
-      if (conn?.fontSize !== undefined) {
-        fontSize.value = conn.fontSize
-        unifiedTerminalRef.value?.setFontSize?.(conn.fontSize)
+      if (conn) {
+        if (conn.fontSize !== undefined) {
+          fontSize.value = conn.fontSize
+          unifiedTerminalRef.value?.setFontSize?.(conn.fontSize)
+        }
+        if (conn.fontFamily !== undefined) {
+          fontFamily.value = conn.fontFamily
+          unifiedTerminalRef.value?.setFontFamily?.(conn.fontFamily)
+        }
       }
     }
   } catch (error) {
-    console.error('加载字体大小设置失败:', error)
+    console.error('加载字体设置失败:', error)
   }
 }
 
-// 保存连接字体大小设置
-const saveFontSize = async () => {
+// 保存连接字体设置
+const saveFontSettings = async () => {
   try {
     const originalId = getOriginalConnectionId()
     if (originalId) {
       await window.storageApi.updateConnection({
         id: originalId,
-        fontSize: fontSize.value
+        fontSize: fontSize.value,
+        fontFamily: fontFamily.value
       })
     }
   } catch (error) {
-    console.error('保存字体大小设置失败:', error)
+    console.error('保存字体设置失败:', error)
   }
 }
 
@@ -273,8 +286,8 @@ const connect = async () => {
         isConnected.value = true
         isConnecting.value = false
 
-        // 加载全局字体大小设置
-        loadFontSize()
+        // 加载字体设置
+        loadFontSettings()
 
         // 通知后端初始化日志时间戳配置
         notifyLogTimestampToBackend(showTimestamp.value)
@@ -340,7 +353,8 @@ const handleCommandSent = (cmdName: string) => emit('commandSent', cmdName)
 const refreshGroupsCmds = () => unifiedTerminalRef.value?.refreshGroupsCmds?.()
 
 const handleFontChange = (font: string) => {
-  ;(unifiedTerminalRef.value?.editor as any)?.updateOptions?.({ fontFamily: font })
+  fontFamily.value = font
+  unifiedTerminalRef.value?.setFontFamily?.(font)
 }
 
 const handleFontSizeChange = (action: string) => {
