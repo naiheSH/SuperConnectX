@@ -124,7 +124,7 @@ const emit = defineEmits<{
   onReconnect: []
   onOpenLog: []
   onSaveLog: []
-  onSend: [command: string]
+  onSend: [command: string, originalInput?: string]
   onCommandSent: [cmdName: string]
   onDataReceived: [data: string]
   'update:isConnected': [value: boolean]
@@ -283,6 +283,7 @@ const handleSendCommand = () => {
   if (!cmd.trim()) return
 
   let sendData: string = cmd
+  const originalInput = cmd // 保存原始输入
 
   // 处理HEX模式
   if (hexMode.value) {
@@ -299,7 +300,7 @@ const handleSendCommand = () => {
   }
 
   // 传递原始输入用于显示（在HEX模式下需要显示原始HEX字符串）
-  emit('onSend', sendData)
+  emit('onSend', sendData, originalInput)
   currentCommand.value = ''
 }
 

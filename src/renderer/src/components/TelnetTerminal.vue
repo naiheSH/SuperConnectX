@@ -225,7 +225,7 @@ const connect = async () => {
   await attemptConnect()
 }
 
-const handleSend = async (command: string) => {
+const handleSend = async (command: string, _originalInput?: string) => {
   if (!command.trim() || !isConnected.value) return
 
   unifiedTerminalRef.value?.appendToTerminal(`\n[${new Date().toISOString()}] SEND >>>>>>>>>> ${command}\n`)
