@@ -37,11 +37,13 @@ export default class IpcMain {
         autoHideMenuBar: false, // 显示菜单栏（方便操作）
         backgroundColor: '#1e1e1e', // 防止最小化时白色闪烁（Windows 11）
         ...(process.platform === 'linux' ? { icon: join(__dirname, '../../build/icon.png') } : {}),
+        // 禁用后台节流，防止切回前台时卡顿
         webPreferences: {
           preload: join(__dirname, '../preload/index.js'),
           sandbox: false, // 关闭沙箱（需访问系统资源，如 SSH 连接）
           contextIsolation: true, // 保持隔离（安全最佳实践）
-          nodeIntegration: false // 禁用直接 Node 集成，通过 preload 暴露 API
+          nodeIntegration: false, // 禁用直接 Node 集成，通过 preload 暴露 API
+          backgroundThrottling: false // 禁用后台节流，防止切换窗口时卡顿
         },
         frame: false, // 无边框
         titleBarStyle: 'hidden' // 隐藏标题栏
