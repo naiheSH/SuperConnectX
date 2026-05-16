@@ -571,4 +571,28 @@ const handleClickOutside = (event: MouseEvent) => {
   font-size: 10px;
   transform: scaleX(0.7);
 }
+
+/* 美化字体列表滚动条 */
+.dropdown-submenu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-submenu::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.dropdown-submenu::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.dropdown-submenu::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
+
+.dropdown-submenu::-webkit-scrollbar-corner {
+  background: transparent;
+}
 </style>
