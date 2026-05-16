@@ -326,7 +326,9 @@ const parseHexString = (hex: string): string | null => {
 }
 
 const appendCommandToTerminal = (content: string) => {
-  appendToTerminal(`\n[TX] ${content}\n`)
+  const now = new Date()
+  const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
+  appendToTerminal(`\n[${timestamp}] SEND>>>>>>>>>>>>> ${content}\n`)
   totalTxSize += content.length
   txBytes.value = formatBytes(totalTxSize)
 }

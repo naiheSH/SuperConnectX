@@ -557,7 +557,9 @@ const handleSendCommand = async (command: string, originalInput?: string) => {
 
   // 根据 hexMode 决定显示内容：HEX模式下显示原始输入，否则显示解析后的数据
   const displayCommand = hexMode.value && originalInput ? originalInput : command
-  unifiedTerminalRef.value?.appendToTerminal(`\n[TX] ${displayCommand}\n`)
+  const now = new Date()
+  const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
+  unifiedTerminalRef.value?.appendToTerminal(`\n[${timestamp}] SEND>>>>>>>>>>>>> ${displayCommand}\n`)
   totalTxSize += command.length
   unifiedTerminalRef.value?.updateTxBytes(command.length)
 
