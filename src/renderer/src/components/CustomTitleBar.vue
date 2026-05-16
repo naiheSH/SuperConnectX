@@ -67,9 +67,6 @@
               >
                 {{ formatFontName(font) }}
               </div>
-              <div class="menu-separator"></div>
-              <div class="menu-item" @click="changeFontSize('increase')">增大字号</div>
-              <div class="menu-item" @click="changeFontSize('decrease')">减小字号</div>
             </div>
           </div>
         </div>
@@ -322,13 +319,6 @@ const changeFont = (fontFamily) => {
   showFontSubmenu.value = false
   showEditMenu.value = false
   emit('change-font', fontFamily)
-}
-
-// 调整字号
-const changeFontSize = (action) => {
-  showFontSubmenu.value = false
-  showEditMenu.value = false
-  emit('change-font-size', action)
 }
 
 onMounted(async () => {
