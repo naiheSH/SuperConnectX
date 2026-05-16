@@ -7,6 +7,7 @@
       @change-font-size="handleFontSizeChange"
       @open-about="isAboutDialogOpen = true"
       :show-connection-list="showConnectionList"
+      :current-font="currentFont"
     />
     <!-- 主内容区：左侧连接列表 + 右侧终端 -->
     <main class="app-main">
@@ -227,6 +228,7 @@
                 @onDisconnect="(_sessionId: any) => { if (tab.comName) delete connectedSerialPorts[tab.comName] }"
                 @openCommandEditor="openCommandEditorTab"
                 @remarkUpdated="(data: any) => { if (data.comName) serialRemarks[data.comName] = data.remark }"
+                @fontLoaded="(font: string) => { currentFont = font }"
                 class="telnet-terminal"
               />
               <TelnetTerminal
@@ -237,6 +239,7 @@
                 @onClose="handleTerminalClose(tab.id)"
                 @commandSent="handleCommandSent"
                 @openCommandEditor="openCommandEditorTab"
+                @fontLoaded="(font: string) => { currentFont = font }"
                 class="telnet-terminal"
               />
               <CommandEditor
@@ -382,6 +385,7 @@ const tabsHeaderRef = ref<HTMLElement | null>(null)
 const telnetTerminalRefs = reactive<Record<string, any>>({})
 const comTerminalRefs = reactive<Record<string, any>>({})
 const activeTabId = ref('')
+const currentFont = ref('Fira Code') // 当前活动的字体
 
 // 右键菜单相关状态
 const showTabMenu = ref(false)
@@ -447,15 +451,57 @@ const stopResize = () => {
 // 根据 ID 切换选项卡
 const switchTabById = (tabId: string | number) => {
   activeTabId.value = tabId.toString()
+  // 刷新布局（字体更新由 watch 处理）
   setTimeout(() => {
-    const id = tabId.toString()
-    if (comTerminalRefs[id]) {
-      comTerminalRefs[id]?.refreshLayout?.()
-    } else if (telnetTerminalRefs[id]) {
-      telnetTerminalRefs[id]?.refreshLayout()
+    if (comTerminalRefs[tabId.toString()]) {
+      comTerminalRefs[tabId.toString()]?.refreshLayout?.()
+    } else if (telnetTerminalRefs[tabId.toString()]) {
+      telnetTerminalRefs[tabId.toString()]?.refreshLayout?.()
     }
   }, 0)
 }
+
+// 更新当前活动的字体（带重试机制）
+const updateCurrentFont = (tabId: string, retries = 5) => {
+  const tryGetFont = () => {
+    const comRef = comTerminalRefs[tabId]
+    const telnetRef = telnetTerminalRefs[tabId]
+    if (comRef || telnetRef) {
+      const ref = comRef || telnetRef
+      const font = ref?.getFontFamily?.()
+      if (font) {
+        currentFont.value = font
+        return true
+      }
+    }
+    return false
+  }
+
+  if (tryGetFont()) return
+
+  // 如果没获取到，重试几次
+  let retryCount = 0
+  const retry = () => {
+    retryCount++
+    if (tryGetFont()) return
+    if (retryCount < retries) {
+      setTimeout(retry, 100)
+    } else {
+      // 如果所有重试都失败，设置默认字体
+      currentFont.value = 'Fira Code'
+    }
+  }
+  setTimeout(retry, 100)
+}
+
+// 监听 activeTabId 变化，更新当前字体
+watch(activeTabId, (newTabId, oldTabId) => {
+  if (newTabId && newTabId !== oldTabId) {
+    nextTick(() => {
+      updateCurrentFont(newTabId)
+    })
+  }
+})
 
 // 右键菜单处理
 const handleTabContextMenu = (e: MouseEvent, tab: any) => {
@@ -1137,6 +1183,7 @@ const handleFontChange = (fontFamily: string) => {
     } else {
       telnetTerminalRefs[tabId]?.handleFontChange(fontFamily)
     }
+    currentFont.value = fontFamily
   }
 }
 
@@ -1279,6 +1326,11 @@ onMounted(() => {
   loadSidebarState()
   loadConnections()
   loadSerialPorts()
+
+  // 首次打开时，如果已有选项卡，需要更新字体
+  if (activeTabId.value) {
+    updateCurrentFont(activeTabId.value)
+  }
 
   // 监听连接意外断开，更新串口连接状态
   window.connectApi.onConnectClose((sessionId: number | string) => {

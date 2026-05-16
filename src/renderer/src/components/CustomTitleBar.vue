@@ -65,6 +65,7 @@
                 @click="changeFont(font)"
                 :style="{ fontFamily: font }"
               >
+                <span v-if="font && currentFontFamily && font === currentFontFamily" class="font-check">✓</span>
                 {{ formatFontName(font) }}
               </div>
             </div>
@@ -157,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getSystemFonts, formatFontName } from '../utils/FontDetector'
 
@@ -169,6 +170,7 @@ const showHelpMenu = ref(false)
 const showFontSubmenu = ref(false)
 const fontsLoaded = ref(false)
 const systemFonts = ref<string[]>([])
+const currentFontFamily = ref('Fira Code') // 当前活动的字体
 const emit = defineEmits([
   'toggle-connection-list',
   'refreshCommands',
@@ -181,6 +183,10 @@ const props = defineProps({
   showConnectionList: {
     type: Boolean,
     default: true
+  },
+  currentFont: {
+    type: String,
+    default: 'Fira Code'
   }
 })
 
@@ -320,6 +326,13 @@ const changeFont = (fontFamily) => {
   showEditMenu.value = false
   emit('change-font', fontFamily)
 }
+
+// 监听外部传入的 currentFont 变化
+watch(() => props.currentFont, (newFont) => {
+  if (newFont) {
+    currentFontFamily.value = newFont
+  }
+}, { immediate: true })
 
 onMounted(async () => {
   window.windowApi.getWindowState().then((state) => (isMaximized.value = state))
@@ -506,10 +519,19 @@ const handleClickOutside = (event: MouseEvent) => {
   font-size: 12px;
   cursor: pointer;
   transition: background-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .menu-item:hover {
   background-color: #1f466e;
+}
+
+.font-check {
+  color: #409eff;
+  font-weight: bold;
+  width: 16px;
 }
 
 .menu-separator {

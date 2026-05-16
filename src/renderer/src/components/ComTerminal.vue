@@ -169,7 +169,7 @@ import { ref, onUnmounted, onMounted, computed, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import UnifiedTerminal from './UnifiedTerminal.vue'
 
-const emit = defineEmits(['onClose', 'commandSent', 'onConnect', 'onDisconnect', 'openCommandEditor', 'remarkUpdated'])
+const emit = defineEmits(['onClose', 'commandSent', 'onConnect', 'onDisconnect', 'openCommandEditor', 'remarkUpdated', 'fontLoaded'])
 const props = withDefaults(defineProps<{
   connection: {
     id: number
@@ -409,6 +409,8 @@ const loadComSettings = async () => {
       unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
       unifiedTerminalRef.value?.setFontSize?.(fontSize.value)
       unifiedTerminalRef.value?.setFontFamily?.(fontFamily.value)
+      // 字体设置完成后通知父组件
+      emit('fontLoaded', fontFamily.value)
     }
   } catch (error) {
     console.error('加载串口设置失败:', error)
@@ -706,7 +708,12 @@ defineExpose({
   preventAutoReconnect: () => { preventAutoReconnect.value = true },
   getRemark: () => remark.value,
   updateRemark,
-  handleFontChange
+  handleFontChange,
+  getFontFamily: () => {
+    // 优先从 UnifiedTerminal 获取实际使用的字体
+    const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()
+    return unifiedFont || fontFamily.value
+  }
 })
 
 onMounted(async () => {

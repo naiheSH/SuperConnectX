@@ -29,7 +29,7 @@ import * as monaco from 'monaco-editor'
 const MAX_RETRY_COUNT = 1000
 const RETRY_INTERVAL_MS = 3000
 
-const emit = defineEmits(['onClose', 'commandSent', 'openCommandEditor'])
+const emit = defineEmits(['onClose', 'commandSent', 'openCommandEditor', 'fontLoaded'])
 const props = defineProps<{
   connection: {
     id: number
@@ -134,6 +134,8 @@ const loadFontSettings = async () => {
         if (conn.fontFamily !== undefined) {
           fontFamily.value = conn.fontFamily
           unifiedTerminalRef.value?.setFontFamily?.(conn.fontFamily)
+          // 字体设置完成后通知父组件更新 currentFont
+          emit('fontLoaded', conn.fontFamily)
         }
       }
     }
@@ -383,7 +385,12 @@ defineExpose({
   isConnected: isConnectedValue,
   disconnect: handleClose,
   reconnect,
-  preventAutoReconnect: () => { preventAutoReconnect = true }
+  preventAutoReconnect: () => { preventAutoReconnect = true },
+  getFontFamily: () => {
+    // 优先从 UnifiedTerminal 获取实际使用的字体
+    const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()
+    return unifiedFont || fontFamily.value
+  }
 })
 
 onMounted(() => {

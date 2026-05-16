@@ -203,7 +203,8 @@ const initEditor = async () => {
     links: false,
     wordWrap: 'off',
     wrappingStrategy: 'simple',
-    fontSize: fontSize.value
+    fontSize: fontSize.value,
+    fontFamily: fontFamily.value
   })
 
   editor.layout()
