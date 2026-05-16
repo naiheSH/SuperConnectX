@@ -68,7 +68,7 @@ export default class TelnetClient extends BaseClient {
           data: line,
           timestamp: timestamp
         })
-        connData.onLog?.(line)
+        connData.onLog?.(line, timestamp)
       }
 
       // 清空缓冲区并保存剩余数据
@@ -133,7 +133,7 @@ export default class TelnetClient extends BaseClient {
             data: connData.buffer,
             timestamp: timestamp
           })
-          connData.onLog?.(connData.buffer)
+          connData.onLog?.(connData.buffer, timestamp)
           connData.buffer = ''
         }
         this.telnetConnections.delete(sessionId)

@@ -15,6 +15,7 @@
       :is-connecting="isConnecting"
       :is-auto-scroll="isAutoScroll"
       :is-show-log="isShowLog"
+      :is-show-timestamp="showTimestamp"
       :rx-bytes="rxBytes"
       :tx-bytes="txBytes"
       @on-close="emit('onClose')"
@@ -24,6 +25,7 @@
       @on-save-log="emit('onSaveLog')"
       @update:is-auto-scroll="isAutoScroll = $event"
       @update:is-show-log="isShowLog = $event"
+      @update:is-show-timestamp="showTimestamp = $event"
     />
 
     <!-- 插槽：用于放置额外内容（如 Com 的波特率设置） -->
@@ -143,6 +145,7 @@ const editorContainer = ref<HTMLElement | null>(null)
 const autoNewline = ref(true) // 是否自动添加回车换行
 const hexMode = ref(false) // 是否为HEX发送模式
 const hexDisplayMode = ref(false) // 是否为HEX显示模式（接收端）
+const showTimestamp = ref(true) // 是否显示时间戳
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 let editorModel: monaco.editor.ITextModel | null = null
 let totalRecvSize = 0
@@ -395,9 +398,11 @@ defineExpose({
   setAutoNewline: (val: boolean) => { autoNewline.value = val },
   setHexMode: (val: boolean) => { hexMode.value = val },
   setHexDisplayMode: (val: boolean) => { hexDisplayMode.value = val },
+  setShowTimestamp: (val: boolean) => { showTimestamp.value = val },
   getAutoNewline: () => autoNewline.value,
   getHexMode: () => hexMode.value,
-  getHexDisplayMode: () => hexDisplayMode.value
+  getHexDisplayMode: () => hexDisplayMode.value,
+  getShowTimestamp: () => showTimestamp.value
 })
 
 onMounted(() => {

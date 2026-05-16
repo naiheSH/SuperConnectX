@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted, onMounted, computed } from 'vue'
+import { ref, onUnmounted, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import UnifiedTerminal from './UnifiedTerminal.vue'
 import TelnetInfo from '../entity/protocol/TelnetInfo'
@@ -44,6 +44,7 @@ const props = defineProps<{
 
 const isConnected = ref(true)
 const isConnecting = ref(false)
+const showTimestamp = ref(true) // 是否显示时间戳
 let currentConnId = 0
 let removeDataListener: (() => void) | null = null
 let removeCloseListener: (() => void) | null = null
@@ -60,6 +61,34 @@ const unifiedTerminalRef = ref<InstanceType<typeof UnifiedTerminal>>()
 
 // 暴露给父组件的连接状态
 const isConnectedValue = computed(() => isConnected.value)
+
+// 监听 UnifiedTerminal 的 showTimestamp 变化，反向同步
+watch(() => unifiedTerminalRef.value?.getShowTimestamp?.(), (newVal) => {
+  if (newVal !== undefined && newVal !== showTimestamp.value) {
+    showTimestamp.value = newVal
+    notifyLogTimestampToBackend(newVal)
+  }
+}, { immediate: true })
+
+// 通知后端更新日志时间戳配置
+const notifyLogTimestampToBackend = async (showTs: boolean) => {
+  if (!isConnected.value) return
+  try {
+    await window.connectApi.updateConnect(
+      {
+        connectionType: 'telnet',
+        host: props.connection.host,
+        port: props.connection.port,
+        sessionId: props.connection.sessionId
+      },
+      {
+        logTimestamp: showTs
+      }
+    )
+  } catch (error) {
+    console.error('更新日志时间戳配置失败:', error)
+  }
+}
 
 const openLogFile = async () => {
   try {
@@ -189,16 +218,18 @@ const connect = async () => {
         isConnected.value = true
         isConnecting.value = false
 
+        // 通知后端初始化日志时间戳配置
+        notifyLogTimestampToBackend(showTimestamp.value)
+
         removeDataListener = window.connectApi.onRecvData((data) => {
           if (data.connId !== currentConnId) return
           allRecvSize += data.data.length
           unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-          // 显示时间戳和数据，并写入日志
-          const prefix = data.timestamp ? `[${data.timestamp}] ` : ''
+          // 根据 showTimestamp 决定是否显示时间戳
+          const prefix = showTimestamp.value && data.timestamp ? `[${data.timestamp}] ` : ''
           const displayText = `${prefix}${data.data}\n`
           unifiedTerminalRef.value?.appendToTerminal(displayText)
-          // 写入日志
-          window.connectApi.writeToLog(props.connection.sessionId, displayText.trim())
+          // 日志写入由后端根据 logTimestamp 配置统一处理
         })
 
         removeCloseListener = window.connectApi.onConnectClose(handleTelnetClose)

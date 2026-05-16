@@ -50,6 +50,11 @@
         size="small"
         active-text="显示日志"
       />
+      <el-switch
+        v-model="showTimestamp"
+        size="small"
+        active-text="时间戳"
+      />
     </div>
     <div class="rx-tx-info">
       <span class="rx">RX: {{ rxBytes }}</span>
@@ -66,6 +71,7 @@ const props = defineProps<{
   isConnecting: boolean
   isAutoScroll: boolean
   isShowLog: boolean
+  isShowTimestamp: boolean
   rxBytes: string
   txBytes: string
 }>()
@@ -78,6 +84,7 @@ const emit = defineEmits<{
   onSaveLog: []
   'update:isAutoScroll': [value: boolean]
   'update:isShowLog': [value: boolean]
+  'update:isShowTimestamp': [value: boolean]
 }>()
 
 const autoScroll = computed({
@@ -88,6 +95,11 @@ const autoScroll = computed({
 const showLog = computed({
   get: () => props.isShowLog,
   set: (val: boolean) => emit('update:isShowLog', val)
+})
+
+const showTimestamp = computed({
+  get: () => props.isShowTimestamp,
+  set: (val: boolean) => emit('update:isShowTimestamp', val)
 })
 </script>
 

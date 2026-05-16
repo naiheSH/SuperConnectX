@@ -16,6 +16,9 @@ export default class IpcConnector {
   // 用于动态存储每个会话的 receiveHex 状态
   private receiveHexMap = new Map<string, boolean>()
 
+  // 用于动态存储每个会话的日志时间戳配置
+  private logTimestampMap = new Map<string, boolean>()
+
   constructor() {}
 
   static getInstance(): IpcConnector {
@@ -61,6 +64,12 @@ export default class IpcConnector {
       const receiveHex = conn.receiveHex === true || conn.receiveHex === 'true'
       this.receiveHexMap.set(conn.sessionId, receiveHex)
 
+      // 存储初始的 logTimestamp 状态（默认为 true）
+      const logTimestamp = conn.logTimestamp !== undefined
+        ? (conn.logTimestamp === true || conn.logTimestamp === 'true')
+        : true
+      this.logTimestampMap.set(conn.sessionId, logTimestamp)
+
       const client = this.CONNECT_TYPE_DATA.get(conn.connectionType)
       const sessionId = conn.sessionId // 闭包中捕获 sessionId
       return await client?.start(
@@ -95,16 +104,20 @@ export default class IpcConnector {
           _logger.flushConnLog(sessionId)
           // 清理映射
           this.receiveHexMap.delete(sessionId)
+          this.logTimestampMap.delete(sessionId)
         },
-        (logStr) => {
-          // 仅用于日志记录，不发送到前端
-          _logger.writeToConnLog(logStr, sessionId)
+        (logStr, timestamp) => {
+          // 根据 showTimestamp 决定是否添加时间戳
+          const showTimestamp = this.logTimestampMap.get(sessionId) ?? true
+          const finalLog = showTimestamp && timestamp ? `[${timestamp}] ${logStr}` : logStr
+          // 使用 appendToConnLog（不添加额外时间戳，因为调用者已处理）
+          _logger.appendToConnLog(finalLog, sessionId)
         }
       )
     })
     ipcMain.handle('send-data', async (_, { conn, command }: { conn: any; command: string }) =>
       this.CONNECT_TYPE_DATA.get(conn.connectionType)?.send(conn.sessionId, command, (dataStr) =>
-        _logger.writeToConnLog(dataStr, conn.sessionId)
+        _logger.appendToConnLog(dataStr, conn.sessionId)
       )
     )
     ipcMain.handle(
@@ -124,6 +137,14 @@ export default class IpcConnector {
         // 通知 ComClient 更新 receiveHex 状态，以便 onLog 也使用正确的格式
         this.CONNECT_TYPE_DATA.get(conn.connectionType)?.setReceiveHex(conn.sessionId, isHex)
         logger.info(`update receiveHex: ${isHex} for sessionId: ${conn.sessionId}`)
+        return { success: true, message: '更新成功' }
+      }
+
+      // 如果是动态切换 logTimestamp，更新日志时间戳配置
+      if (config.logTimestamp !== undefined) {
+        const showTimestamp = config.logTimestamp === true || config.logTimestamp === 'true'
+        this.logTimestampMap.set(conn.sessionId, showTimestamp)
+        logger.info(`update logTimestamp: ${showTimestamp} for sessionId: ${conn.sessionId}`)
         return { success: true, message: '更新成功' }
       }
 

@@ -219,6 +219,7 @@ const flowControl = ref<'none' | 'hardware' | 'software'>('none')
 const dtr = ref(false)
 const rts = ref(false)
 const hexDisplayMode = ref(false) // HEX显示模式
+const showTimestamp = ref(true) // 是否显示时间戳
 const autoNewline = ref(true) // 是否自动添加回车换行
 const hexMode = ref(false) // 是否为HEX发送模式
 let removeDataListener: (() => void) | null = null
@@ -302,6 +303,16 @@ watch(() => unifiedTerminalRef.value?.getHexMode?.(), (newVal) => {
   }
 }, { immediate: true })
 
+// 监听 UnifiedTerminal 的 showTimestamp 变化，反向同步
+watch(() => unifiedTerminalRef.value?.getShowTimestamp?.(), (newVal) => {
+  if (newVal !== undefined && newVal !== showTimestamp.value) {
+    showTimestamp.value = newVal
+    saveComSettings()
+    // 通知后端更新日志时间戳配置
+    notifyLogTimestampToBackend(newVal)
+  }
+}, { immediate: true })
+
 // 应用串口配置（热更新）
 const applyComConfig = async () => {
   try {
@@ -369,10 +380,12 @@ const loadComSettings = async () => {
       rts.value = settings.rts !== undefined ? settings.rts : false
       remark.value = settings.remark || ''
       hexDisplayMode.value = settings.hexDisplayMode || false
+      showTimestamp.value = settings.showTimestamp !== undefined ? settings.showTimestamp : true
       autoNewline.value = settings.autoNewline !== undefined ? settings.autoNewline : true
       hexMode.value = settings.hexMode || false
       // 将设置同步到 UnifiedTerminal
       unifiedTerminalRef.value?.setHexDisplayMode?.(hexDisplayMode.value)
+      unifiedTerminalRef.value?.setShowTimestamp?.(showTimestamp.value)
       unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
       unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
     }
@@ -398,6 +411,7 @@ const saveComSettings = async () => {
       rts: rts.value,
       remark: remark.value,
       hexDisplayMode: hexDisplayMode.value,
+      showTimestamp: showTimestamp.value,
       autoNewline: autoNewline.value,
       hexMode: hexMode.value
     })
@@ -411,6 +425,25 @@ const updateRemark = async (newRemark: string) => {
   remark.value = newRemark
   await saveComSettings()
   emit('remarkUpdated', { comName: props.connection.comName, remark: newRemark })
+}
+
+// 通知后端更新日志时间戳配置
+const notifyLogTimestampToBackend = async (showTs: boolean) => {
+  if (!isConnected.value) return
+  try {
+    await window.connectApi.updateConnect(
+      {
+        connectionType: 'com',
+        comName: props.connection.comName,
+        sessionId: props.connection.sessionId
+      },
+      {
+        logTimestamp: showTs
+      }
+    )
+  } catch (error) {
+    console.error('更新日志时间戳配置失败:', error)
+  }
 }
 
 // 加载全局波特率列表
@@ -496,6 +529,9 @@ const handleConnect = async () => {
       unifiedTerminalRef.value?.appendToTerminal(`\n连接成功!\n`)
       emit('onConnect', props.connection.sessionId)
 
+      // 通知后端初始化日志时间戳配置
+      notifyLogTimestampToBackend(showTimestamp.value)
+
       // 注册数据监听
       if (removeDataListener) removeDataListener()
       removeDataListener = window.connectApi.onRecvData((data) => {
@@ -503,12 +539,11 @@ const handleConnect = async () => {
         totalRxSize += data.data.length
         unifiedTerminalRef.value?.updateRxBytes(data.data.length)
         // 后端已根据 hex/str 参数处理好数据格式，直接使用
-        // 显示时间戳和数据，并写入日志
-        const prefix = data.timestamp ? `[${data.timestamp}] ` : ''
+        // 根据 showTimestamp 决定是否显示时间戳
+        const prefix = showTimestamp.value && data.timestamp ? `[${data.timestamp}] ` : ''
         const displayText = `${prefix}${data.data}\n`
         unifiedTerminalRef.value?.appendToTerminal(displayText)
-        // 写入日志
-        window.connectApi.writeToLog(props.connection.sessionId, displayText.trim())
+        // 日志写入由后端根据 logTimestamp 配置统一处理
       })
 
       if (removeCloseListener) removeCloseListener()
@@ -655,6 +690,7 @@ onMounted(async () => {
   // 同步到 UnifiedTerminal
   nextTick(() => {
     unifiedTerminalRef.value?.setHexDisplayMode?.(hexDisplayMode.value)
+    unifiedTerminalRef.value?.setShowTimestamp?.(showTimestamp.value)
     unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
     unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
   })

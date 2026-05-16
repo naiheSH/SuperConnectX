@@ -68,7 +68,7 @@ export default class ComClient extends BaseClient {
           }
           logData = logData.trim()
         }
-        onLog?.(logData)
+        onLog?.(logData, timestamp)
       }
 
       // 清空缓冲区并保存剩余数据
