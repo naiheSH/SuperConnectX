@@ -149,6 +149,12 @@ export default class IpcConnector {
       return await _logger.copyLogFile(sessionId, destPath)
     })
 
+    // 直接写入日志（前端调用，已包含时间戳）
+    ipcMain.handle('write-to-log', async (_, { sessionId, content }: { sessionId: string; content: string }) => {
+      _logger.appendToConnLog(content, sessionId)
+      return { success: true }
+    })
+
     logger.info(`init IpcTelnet done`)
   }
 }

@@ -503,9 +503,12 @@ const handleConnect = async () => {
         totalRxSize += data.data.length
         unifiedTerminalRef.value?.updateRxBytes(data.data.length)
         // 后端已根据 hex/str 参数处理好数据格式，直接使用
-        // 显示时间戳和数据（格式与日志文件一致）
+        // 显示时间戳和数据，并写入日志
         const prefix = data.timestamp ? `[${data.timestamp}] ` : ''
-        unifiedTerminalRef.value?.appendToTerminal(`${prefix}${data.data}\n`)
+        const displayText = `${prefix}${data.data}\n`
+        unifiedTerminalRef.value?.appendToTerminal(displayText)
+        // 写入日志
+        window.connectApi.writeToLog(props.connection.sessionId, displayText.trim())
       })
 
       if (removeCloseListener) removeCloseListener()

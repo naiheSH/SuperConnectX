@@ -7,8 +7,8 @@ import path from 'path'
 
 export default class ProtocolLogger {
   private logDir: string
-  private connLogFiles = new Map<number, string>()
-  private logCache = new Map<number, string[]>()
+  private connLogFiles = new Map<string, string>()
+  private logCache = new Map<string, string[]>()
   private writeTimer: NodeJS.Timeout | null = null
   private readonly BATCH_WRITE_INTERVAL_MS = 10 * 1000
 
@@ -93,7 +93,7 @@ export default class ProtocolLogger {
     this.flushAllLogs(true)
   }
 
-  createConnLogFile(connId: number, connName: string): string {
+  createConnLogFile(connId: string, connName: string): string {
     const safeName = connName.replace(/[\\/*?:"<>|]/g, '-')
     const fileName = `${safeName}-${this.getFileTimeStamp()}.log`
     this.connLogFiles.set(connId, fileName)
@@ -101,7 +101,7 @@ export default class ProtocolLogger {
     return fileName
   }
 
-  writeToConnLog(data: string, connId: number): void {
+  writeToConnLog(data: string, connId: string): void {
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return
 
@@ -117,8 +117,22 @@ export default class ProtocolLogger {
     this.logCache.set(connId, currentLogs)
   }
 
+  // 直接追加日志文本（前端调用，已包含时间戳）
+  appendToConnLog(content: string, connId: string): void {
+    const fileName = this.connLogFiles.get(connId)
+    if (!fileName) return
+
+    const currentLogs = this.logCache.get(connId) || []
+    // 直接追加，不添加额外时间戳
+    const lines = content.split(/\r?\n/).filter((line) => line.trim() !== '')
+    for (const line of lines) {
+      currentLogs.push(line)
+    }
+    this.logCache.set(connId, currentLogs)
+  }
+
   // 连接关闭时刷入日志（保留记录以便后续打开日志）
-  flushConnLog(connId: number): void {
+  flushConnLog(connId: string): void {
     const remainingLogs = this.logCache.get(connId)
     if (remainingLogs && remainingLogs.length > 0) {
       const fileName = this.connLogFiles.get(connId)
@@ -136,12 +150,12 @@ export default class ProtocolLogger {
   }
 
   // 真正清理日志记录（选项卡关闭时调用）
-  clearConnLogFile(connId: number): void {
+  clearConnLogFile(connId: string): void {
     this.flushConnLog(connId)
     this.connLogFiles.delete(connId)
   }
 
-  async openConnLog(connId: number): Promise<{ success: boolean; message: string } | null> {
+  async openConnLog(connId: string): Promise<{ success: boolean; message: string } | null> {
     try {
       this.flushAllLogs(false)
 
@@ -189,7 +203,7 @@ export default class ProtocolLogger {
     }
   }
 
-  async getLogFilePath(connId: number): Promise<{ success: boolean; filePath?: string; message?: string }> {
+  async getLogFilePath(connId: string): Promise<{ success: boolean; filePath?: string; message?: string }> {
     try {
       this.flushAllLogs(false)
 
@@ -208,7 +222,7 @@ export default class ProtocolLogger {
     }
   }
 
-  async copyLogFile(connId: number, destPath: string): Promise<{ success: boolean; message?: string }> {
+  async copyLogFile(connId: string, destPath: string): Promise<{ success: boolean; message?: string }> {
     try {
       this.flushAllLogs(true) // 确保所有日志都已写入
 

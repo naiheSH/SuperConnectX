@@ -54,7 +54,8 @@ contextBridge.exposeInMainWorld('connectApi', {
   openConnectLog: (sessionId: string) => ipcRenderer.invoke('open-connect-log', sessionId),
   getLogFilePath: (sessionId: string) => ipcRenderer.invoke('get-log-file-path', sessionId),
   copyLogFile: (sessionId: string, destPath: string) => ipcRenderer.invoke('copy-log-file', { sessionId, destPath }),
-  listSerialPorts: () => ipcRenderer.invoke('list-serial-ports')
+  listSerialPorts: () => ipcRenderer.invoke('list-serial-ports'),
+  writeToLog: (sessionId: string, content: string) => ipcRenderer.invoke('write-to-log', { sessionId, content })
 })
 
 contextBridge.exposeInMainWorld('dialogApi', {
