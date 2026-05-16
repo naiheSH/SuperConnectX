@@ -193,7 +193,9 @@ const connect = async () => {
           if (data.connId !== currentConnId) return
           allRecvSize += data.data.length
           unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-          unifiedTerminalRef.value?.appendToTerminal(`\n${data.data}`)
+          // 显示时间戳和数据（格式与日志文件一致）
+          const prefix = data.timestamp ? `[${data.timestamp}] ` : ''
+          unifiedTerminalRef.value?.appendToTerminal(`${prefix}${data.data}\n`)
         })
 
         removeCloseListener = window.connectApi.onConnectClose(handleTelnetClose)

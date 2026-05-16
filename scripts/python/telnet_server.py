@@ -80,7 +80,7 @@ def handle_client(client_socket: socket.socket, client_addr: tuple):
             counter += 1
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
             data = (
-                f"[{current_time}] "
+                f"[server-{current_time}] "
                 f"counter: {counter:04d} | "
                 f"now is running | "
                 f"server: {current_host}:{PORT} | "
