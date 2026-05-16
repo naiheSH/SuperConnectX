@@ -270,6 +270,10 @@ watch([dataBits, stopBits, parity, encoding, readTimeout, writeTimeout, flowCont
 watch(hexDisplayMode, (newVal) => {
   saveComSettings()
   unifiedTerminalRef.value?.setHexDisplayMode?.(newVal)
+  // 动态更新后端的 receiveHex 状态
+  if (isConnected.value) {
+    updateReceiveHexMode(newVal)
+  }
 })
 
 // 监听 CRLF 模式变化 - 同步到 UnifiedTerminal 并保存
@@ -326,6 +330,24 @@ const applyComConfig = async () => {
   } catch (error) {
     console.error('applyComConfig error:', error)
     ElMessage.error('更新串口配置失败')
+  }
+}
+
+// 动态更新 hex/str 接收模式
+const updateReceiveHexMode = async (isHex: boolean) => {
+  try {
+    await window.connectApi.updateConnect(
+      {
+        connectionType: 'com',
+        comName: props.connection.comName,
+        sessionId: props.connection.sessionId
+      },
+      {
+        receiveHex: isHex
+      }
+    )
+  } catch (error) {
+    console.error('updateReceiveHexMode error:', error)
   }
 }
 
@@ -463,7 +485,8 @@ const handleConnect = async () => {
       sessionId: props.connection.sessionId,
       encoding: encoding.value,
       readTimeout: readTimeout.value,
-      writeTimeout: writeTimeout.value
+      writeTimeout: writeTimeout.value,
+      receiveHex: hexDisplayMode.value
     })
 
     if (result.success) {
@@ -479,9 +502,9 @@ const handleConnect = async () => {
         if (String(data.connId) !== String(currentSessionId.value)) return
         totalRxSize += data.data.length
         unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-        // 根据 HEX 显示模式处理数据
-        const displayData = hexDisplayMode.value ? bytesToHex(data.data) : data.data
-        unifiedTerminalRef.value?.appendToTerminal(`\n${displayData}`)
+        // 后端已根据 hex/str 参数处理好数据格式，直接使用
+        // 如果有独立的时间戳，可以传给终端显示
+        unifiedTerminalRef.value?.appendToTerminal(`\n${data.data}`)
       })
 
       if (removeCloseListener) removeCloseListener()

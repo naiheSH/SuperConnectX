@@ -40,8 +40,8 @@ contextBridge.exposeInMainWorld('connectApi', {
   stopConnect: (conn: any) => ipcRenderer.invoke('stop-connect', conn),
   updateConnect: (conn: any, config: any) => ipcRenderer.invoke('update-connect', { conn, config }),
 
-  onRecvData: (callback: (data: { connId: number; data: string }) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, data: { connId: number; data: string }) =>
+  onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) =>
       callback(data)
     ipcRenderer.on('on-recv-data', listener)
     return () => ipcRenderer.removeListener('on-recv-data', listener)

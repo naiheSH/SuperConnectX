@@ -19,6 +19,7 @@ interface SerialConnection {
   onData: any
   onClose: any
   onLog: any
+  receiveHex: boolean
 }
 
 export default class ComClient extends BaseClient {
@@ -50,9 +51,12 @@ export default class ComClient extends BaseClient {
       const line = buffer.substring(0, lineEnd)
       const remaining = buffer.substring(lineEnd + lineEnding.length)
 
-      // 原始数据用于显示和发送，时间戳只用于日志
+      // 原始数据用于显示和发送，时间戳单独作为独立参数，日志只用于记录
       if (line) {
-        onData?.(`${line}\n`)
+        onData?.({
+          data: line,
+          timestamp: timestamp
+        })
         onLog?.(`[${timestamp}] ${line}`)
       }
 
@@ -117,7 +121,8 @@ export default class ComClient extends BaseClient {
             encoding: encoding,
             onData: onData,
             onClose: onClose,
-            onLog: onLog
+            onLog: onLog,
+            receiveHex: info.receiveHex === true
           }
           this.serialConnections.set(sessionId, connection)
 
@@ -140,7 +145,10 @@ export default class ComClient extends BaseClient {
             // 关闭前输出缓冲区中剩余的数据
             if (connection.buffer) {
               const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false }) + '.' + String(Date.now() % 1000).padStart(3, '0')
-              connection.onData?.(`${connection.buffer}\n`)
+              connection.onData?.({
+                data: connection.buffer,
+                timestamp: timestamp
+              })
               connection.onLog?.(`[${timestamp}] ${connection.buffer}`)
               connection.buffer = ''
             }
@@ -237,7 +245,20 @@ export default class ComClient extends BaseClient {
     rts?: boolean
     dtr?: boolean
     flowControl?: 'none' | 'hardware' | 'software'
+    receiveHex?: boolean
   }): Promise<object> {
+
+    // 动态更新 receiveHex 参数
+    if (config.receiveHex !== undefined) {
+      const connection = this.serialConnections.get(connId)
+      if (connection) {
+        connection.receiveHex = config.receiveHex
+        logger.info(`update serial receiveHex: ${config.receiveHex}, sessionId: ${connId}`)
+        return { success: true, message: '更新成功' }
+      }
+      return { success: false, message: '连接不存在' }
+    }
+
     const connection = this.serialConnections.get(connId)
     if (!connection) {
       return { success: false, message: '连接不存在' }
@@ -308,7 +329,8 @@ export default class ComClient extends BaseClient {
             encoding: newEncoding,
             onData: savedOnData,
             onClose: savedOnClose,
-            onLog: connection.onLog
+            onLog: connection.onLog,
+            receiveHex: connection.receiveHex
           }
             this.serialConnections.set(connId, newConnection)
 
@@ -381,7 +403,8 @@ export default class ComClient extends BaseClient {
           encoding: encoding,
           onData: oldConnection.onData,
           onClose: oldConnection.onClose,
-          onLog: oldConnection.onLog
+          onLog: oldConnection.onLog,
+          receiveHex: oldConnection.receiveHex
         }
         this.serialConnections.set(connId, newConnection)
 

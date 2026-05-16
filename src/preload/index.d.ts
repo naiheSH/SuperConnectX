@@ -42,7 +42,7 @@ declare global {
       sendData: (data: { conn: any; command: string }) => Promise<any>
       stopConnect: (conn: any) => Promise<any>
       updateConnect: (conn: any, config: any) => Promise<{ success: boolean; message?: string }>
-      onRecvData: (callback: (data: { connId: number; data: string }) => void) => () => void
+      onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
       onConnectClose: (callback: (connId: number) => void) => () => void
       openConnectLog: (sessionId: string) => Promise<{ success: boolean; message?: string; filePath?: string }>
       getLogFilePath: (sessionId: string) => Promise<{ success: boolean; filePath?: string; message?: string }>

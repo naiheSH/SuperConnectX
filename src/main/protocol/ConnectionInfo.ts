@@ -18,4 +18,6 @@ export default interface ConnectionInfo {
   flowControl?: 'none' | 'hardware' | 'software'
   rts?: boolean
   dtr?: boolean
+  // 数据接收格式
+  receiveHex?: boolean
 }

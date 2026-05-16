@@ -13,6 +13,9 @@ export default class IpcConnector {
     ['com', new ComClient()]
   ])
 
+  // 用于动态存储每个会话的 receiveHex 状态
+  private receiveHexMap = new Map<string, boolean>()
+
   constructor() {}
 
   static getInstance(): IpcConnector {
@@ -52,22 +55,49 @@ export default class IpcConnector {
       logger.info(`start connect telnet: ${conn.name}`)
       logger.debug(JSON.stringify(conn))
       _logger.createConnLogFile(conn.sessionId, conn.name)
+
+      // 存储初始的 receiveHex 状态
+      const receiveHex = conn.receiveHex === true || conn.receiveHex === 'true'
+      this.receiveHexMap.set(conn.sessionId, receiveHex)
+
       const client = this.CONNECT_TYPE_DATA.get(conn.connectionType)
+      const sessionId = conn.sessionId // 闭包中捕获 sessionId
       return await client?.start(
         this.buildConnectInfo(conn),
-        (dataStr) => {
+        (dataObj: { data: string; timestamp: string }) => {
+          // 动态获取当前会话的 receiveHex 状态
+          const isHex = this.receiveHexMap.get(sessionId) ?? false
+          let displayData: string
+
+          if (isHex) {
+            // HEX 模式：将数据转为十六进制字符串
+            displayData = ''
+            for (let i = 0; i < dataObj.data.length; i++) {
+              const hex = dataObj.data.charCodeAt(i).toString(16)
+              displayData += hex.padStart(2, '0') + ' '
+            }
+            displayData = displayData.trim()
+          } else {
+            // STR 模式：直接返回解析后的字符串
+            displayData = dataObj.data
+          }
+
           windows.mainWindow?.webContents.send('on-recv-data', {
-            connId: conn.sessionId,
-            data: dataStr
+            connId: sessionId,
+            data: displayData,
+            timestamp: dataObj.timestamp,
+            isHex: isHex
           })
         },
         () => {
-          windows.mainWindow?.webContents.send('on-connect-close', conn.sessionId)
-          _logger.flushConnLog(conn.sessionId)
+          windows.mainWindow?.webContents.send('on-connect-close', sessionId)
+          _logger.flushConnLog(sessionId)
+          // 清理映射
+          this.receiveHexMap.delete(sessionId)
         },
         (logStr) => {
           // 仅用于日志记录，不发送到前端
-          _logger.writeToConnLog(logStr, conn.sessionId)
+          _logger.writeToConnLog(logStr, sessionId)
         }
       )
     })
@@ -82,9 +112,18 @@ export default class IpcConnector {
         await this.CONNECT_TYPE_DATA.get(conn.connectionType)?.disconnect(conn.sessionId)
     )
 
-    // 更新连接配置（主要用于串口参数热更新）
+    // 更新连接配置（主要用于串口参数热更新和动态切换 hex/str 模式）
     ipcMain.handle('update-connect', async (_, { conn, config }: { conn: any; config: any }) => {
       logger.info(`update connect config: ${conn.name}, sessionId: ${conn.sessionId}`)
+
+      // 如果是动态切换 receiveHex，单独处理并更新映射
+      if (config.receiveHex !== undefined) {
+        const isHex = config.receiveHex === true || config.receiveHex === 'true'
+        this.receiveHexMap.set(conn.sessionId, isHex)
+        logger.info(`update receiveHex: ${isHex} for sessionId: ${conn.sessionId}`)
+        return { success: true, message: '更新成功' }
+      }
+
       return await this.CONNECT_TYPE_DATA.get(conn.connectionType)?.updateConfig(conn.sessionId, config)
     })
     // 新增：IPC 监听「打开日志」请求
