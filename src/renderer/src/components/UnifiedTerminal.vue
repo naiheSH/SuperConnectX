@@ -274,7 +274,6 @@ const clearTerminal = () => {
   if (editorModel) {
     editorModel.setValue('')
   }
-  totalRecvSize = 0
 }
 
 const handleCommandSent = (cmdName: string) => emit('onCommandSent', cmdName)
