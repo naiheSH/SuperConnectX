@@ -106,23 +106,12 @@ export default class ProtocolLogger {
     if (!fileName) return
 
     const currentLogs = this.logCache.get(connId) || []
-    const hasNewline = /\r?\n/.test(data)
+    const timestamp = this.getTimeStamp()
 
-    if (hasNewline) {
-      // 处理包含换行符的情况，拆分后为每行添加时间戳
-      const lines = data.split(/\r?\n/)
-      const timestamp = this.getTimeStamp()
-      const logLines = lines.map((line) => `[${timestamp}] ${line}`)
-      currentLogs.push(...logLines)
-    } else {
-      // 不含换行符，接在上一次数据后面（如果缓存为空则先添加时间戳）
-      if (currentLogs.length === 0) {
-        currentLogs.push(`[${this.getTimeStamp()}] ${data}`)
-      } else {
-        // 拼接在最后一条日志的时间戳后面
-        const lastLine = currentLogs.pop() || ''
-        currentLogs.push(`${lastLine}${data}`)
-      }
+    // 先拆分数据，每行作为独立项，过滤空行
+    const lines = data.split(/\r?\n/).filter((line) => line.trim() !== '')
+    for (const line of lines) {
+      currentLogs.push(`[${timestamp}] ${line}`)
     }
 
     this.logCache.set(connId, currentLogs)

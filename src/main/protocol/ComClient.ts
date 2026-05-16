@@ -52,13 +52,14 @@ export default class ComClient extends BaseClient {
       const line = buffer.substring(0, lineEnd)
       const remaining = buffer.substring(lineEnd + lineEnding.length)
 
-      // 原始数据用于显示和发送，时间戳单独作为独立参数，日志只用于记录
+      // 原始数据用于显示和发送，时间戳单独作为独立参数，日志只用于记录原始数据
       if (line) {
         onData?.({
           data: line,
           timestamp: timestamp
         })
-        onLog?.(`[${timestamp}] ${line}`)
+        // 日志传递原始数据，不加额外换行，ProtocolLogger 会处理原始数据中的换行符
+        onLog?.(line)
       }
 
       // 清空缓冲区并保存剩余数据
@@ -151,7 +152,7 @@ export default class ComClient extends BaseClient {
                 data: connection.buffer,
                 timestamp: timestamp
               })
-              connection.onLog?.(`[${timestamp}] ${connection.buffer}`)
+              connection.onLog?.(connection.buffer)
               connection.buffer = ''
             }
             this.serialConnections.delete(sessionId)
