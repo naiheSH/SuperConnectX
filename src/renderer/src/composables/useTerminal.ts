@@ -1,0 +1,274 @@
+import { ref, watch, onUnmounted, type Ref } from 'vue'
+import { ElMessage } from 'element-plus'
+
+export interface TerminalConnection {
+  id: number
+  connectionType: string
+  sessionId: string
+  comName?: string
+  host?: string
+  port?: number
+  name?: string
+  [key: string]: any
+}
+
+export interface UseTerminalOptions {
+  /** UnifiedTerminal ref */
+  unifiedTerminalRef: Ref<any>
+  /** 是否已连接 */
+  isConnected: Ref<boolean>
+  /** 是否正在连接 */
+  isConnecting?: Ref<boolean>
+  /** 连接类型 */
+  connectionType: 'telnet' | 'com'
+  /** 连接对象 */
+  connection: TerminalConnection
+  /** 发送命令回调 */
+  onSend?: (command: string, originalInput?: string) => void
+  /** 字体设置保存器（可选） */
+  saveFontSettings?: () => Promise<void>
+  /** 发送命令时显示的内容（可选，默认显示时间戳+suffix） */
+  sendDisplaySuffix?: string
+}
+
+export interface UseTerminalReturn {
+  // 状态
+  fontSize: Ref<number>
+  fontFamily: Ref<string>
+  showTimestamp: Ref<boolean>
+  totalRxSize: number
+  totalTxSize: number
+
+  // 方法
+  openLogFile: () => Promise<void>
+  saveLogFile: () => Promise<void>
+  handleClose: () => Promise<void>
+  handleSend: (command: string, originalInput?: string) => Promise<void>
+  reconnect: () => void
+  handleFontChange: (font: string) => void
+  cleanup: () => void
+
+  // 暴露
+  defineExpose: () => {
+    handleFontChange: (font: string) => void
+    getFontFamily: () => string
+    getShowTimestamp: () => boolean
+  }
+}
+
+export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
+  const {
+    unifiedTerminalRef,
+    isConnected,
+    isConnecting,
+    onSend,
+    saveFontSettings,
+    sendDisplaySuffix = 'SEND >>>>>>>>>>>',
+    connectionType
+  } = options
+
+  const conn = options.connection
+
+  // 状态
+  const fontSize = ref(14)
+  const fontFamily = ref('Fira Code')
+  const showTimestamp = ref(true)
+  let totalRxSize = 0
+  let totalTxSize = 0
+
+  // 监听器清理
+  let removeDataListener: (() => void) | null = null
+  let removeCloseListener: (() => void) | null = null
+
+  // 监听 UnifiedTerminal 的状态变化（延迟初始化，等待 unifiedTerminalRef 就绪）
+  let watchInitialized = false
+  watch([
+    () => unifiedTerminalRef.value?.getShowTimestamp?.(),
+    () => unifiedTerminalRef.value?.getFontSize?.(),
+    () => unifiedTerminalRef.value?.getFontFamily?.()
+  ], ([newTimestamp, newFontSize, newFontFamily], _oldValues) => {
+    // 等待 unifiedTerminalRef 就绪
+    if (!unifiedTerminalRef.value) return
+
+    if (!watchInitialized) {
+      watchInitialized = true
+    }
+
+    // showTimestamp 变化
+    if (newTimestamp !== undefined && newTimestamp !== showTimestamp.value) {
+      showTimestamp.value = newTimestamp
+      notifyLogTimestampToBackend(newTimestamp)
+    }
+    // fontSize 变化
+    if (newFontSize !== undefined && newFontSize !== fontSize.value) {
+      fontSize.value = newFontSize
+    }
+    // fontFamily 变化
+    if (newFontFamily !== undefined && newFontFamily !== fontFamily.value) {
+      fontFamily.value = newFontFamily
+    }
+  })
+
+  // 监听 showTimestamp、fontSize 和 fontFamily 变化，保存设置
+  watch([showTimestamp, fontSize, fontFamily], () => {
+    if (watchInitialized) {
+      saveFontSettings?.()
+    }
+  })
+
+  // 通知后端更新日志时间戳配置
+  const notifyLogTimestampToBackend = async (showTs: boolean) => {
+    if (!isConnected.value) return
+    try {
+      const connObj = connectionType === 'telnet'
+        ? { connectionType: 'telnet', host: conn.host, port: conn.port, sessionId: conn.sessionId }
+        : { connectionType: 'com', comName: conn.comName, sessionId: conn.sessionId }
+      await window.connectApi.updateConnect(connObj, { logTimestamp: showTs })
+    } catch (error) {
+      console.error('更新日志时间戳配置失败:', error)
+    }
+  }
+
+  // 打开日志文件
+  const openLogFile = async () => {
+    try {
+      const result = await window.connectApi.openConnectLog(conn.sessionId)
+      if (!result.success) {
+        ElMessage.error(`打开日志失败：${result.message}`)
+      }
+    } catch (error) {
+      ElMessage.error('打开日志失败：' + (error instanceof Error ? error.message : '未知错误'))
+    }
+  }
+
+  // 保存日志文件
+  const saveLogFile = async () => {
+    try {
+      const namePart = connectionType === 'telnet' ? `${conn.host}_${conn.port}` : conn.comName
+      const result = await window.dialogApi.saveFileDialog({
+        title: '保存日志',
+        defaultPath: `${connectionType}_${namePart}_${Date.now()}.log`,
+        filters: [{ name: '日志文件', extensions: ['log', 'txt'] }]
+      })
+      if (result.filePath) {
+        const copyResult = await window.connectApi.copyLogFile(conn.sessionId, result.filePath)
+        if (copyResult.success) {
+          ElMessage.success('日志保存成功')
+          window.toolApi.showItemInFolder(result.filePath)
+        } else {
+          ElMessage.error('保存失败：' + (copyResult.message || '未知错误'))
+        }
+      }
+    } catch (error) {
+      ElMessage.error('保存失败：' + (error instanceof Error ? error.message : '未知错误'))
+    }
+  }
+
+  // 关闭连接
+  const handleClose = async () => {
+    cleanup()
+    try {
+      const connObj = connectionType === 'telnet'
+        ? { ...conn, sessionId: conn.sessionId }
+        : { connectionType: 'com', comName: conn.comName, sessionId: conn.sessionId }
+      await window.connectApi.stopConnect(connObj)
+      unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
+    } catch (error) {
+      console.error('关闭连接失败:', error)
+    }
+    isConnected.value = false
+  }
+
+  // 发送命令
+  const handleSend = async (command: string, originalInput?: string) => {
+    if (!command.trim() || !isConnected.value) return
+
+    const now = new Date()
+    const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
+    unifiedTerminalRef.value?.appendToTerminal(`\n[${timestamp}] ${sendDisplaySuffix} ${command}\n`)
+    totalTxSize += command.length
+    unifiedTerminalRef.value?.updateTxBytes(command.length)
+
+    if (onSend) {
+      onSend(command, originalInput)
+    } else {
+      try {
+        const connObj = connectionType === 'telnet'
+          ? { ...conn, sessionId: conn.sessionId }
+          : { connectionType: 'com', comName: conn.comName, sessionId: conn.sessionId }
+        await window.connectApi.sendData({
+          conn: connObj,
+          command: command.trim()
+        })
+      } catch (error) {
+        ElMessage.error('命令发送失败')
+        console.error('发送失败:', error)
+      }
+    }
+  }
+
+  // 重连
+  const reconnect = () => {
+    // 子类实现
+  }
+
+  // 字体变化
+  const handleFontChange = (font: string) => {
+    fontFamily.value = font
+    unifiedTerminalRef.value?.setFontFamily?.(font)
+    saveFontSettings?.()
+  }
+
+  // 清理
+  const cleanup = () => {
+    if (removeDataListener) {
+      removeDataListener()
+      removeDataListener = null
+    }
+    if (removeCloseListener) {
+      removeCloseListener()
+      removeCloseListener = null
+    }
+    totalRxSize = 0
+    totalTxSize = 0
+  }
+
+  // 暴露给父组件
+  const defineExpose = () => ({
+    handleFontChange,
+    getFontFamily: () => {
+      const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()
+      return unifiedFont || fontFamily.value
+    },
+    getShowTimestamp: () => showTimestamp.value
+  })
+
+  // 组件卸载时清理
+  onUnmounted(() => {
+    cleanup()
+    if (isConnected.value) {
+      const connObj = connectionType === 'telnet'
+        ? { ...conn, sessionId: conn.sessionId }
+        : { connectionType: 'com', comName: conn.comName, sessionId: conn.sessionId }
+      window.connectApi.stopConnect(connObj).catch((err: Error) => {
+        console.error('卸载时断开失败:', err)
+      })
+    }
+  })
+
+  return {
+    fontSize,
+    fontFamily,
+    showTimestamp,
+    totalRxSize,
+    totalTxSize,
+    openLogFile,
+    saveLogFile,
+    handleClose,
+    handleSend,
+    reconnect,
+    handleFontChange,
+    cleanup,
+    defineExpose
+  }
+}

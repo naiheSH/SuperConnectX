@@ -20,11 +20,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import UnifiedTerminal from './UnifiedTerminal.vue'
 import TelnetInfo from '../entity/protocol/TelnetInfo'
-import * as monaco from 'monaco-editor'
+import { useTerminal } from '../composables/useTerminal'
 
 const MAX_RETRY_COUNT = 1000
 const RETRY_INTERVAL_MS = 3000
@@ -42,84 +42,26 @@ const props = defineProps<{
   onClose?: () => void
 }>()
 
-const isConnected = ref(true)
+const isConnected = ref(false)
 const isConnecting = ref(false)
-const showTimestamp = ref(true) // 是否显示时间戳
-const fontSize = ref(14) // 字体大小
-const fontFamily = ref('Fira Code') // 字体系列
-let currentConnId = 0
-let removeDataListener: (() => void) | null = null
-let removeCloseListener: (() => void) | null = null
+const unifiedTerminalRef = ref<InstanceType<typeof UnifiedTerminal>>()
 
 let retryCount = 0
 let retryTimer: NodeJS.Timeout | null = null
 let stopRetry = ref(false)
-let preventAutoReconnect = false // 主动断开时禁止自动重连
-let allRecvSize = 0
-let totalTxSize = 0
-void retryCount // suppress unused warning
+let preventAutoReconnect = false
+let removeDataListener: (() => void) | null = null
+let removeCloseListener: (() => void) | null = null
 
-const unifiedTerminalRef = ref<InstanceType<typeof UnifiedTerminal>>()
-
-// 暴露给父组件的连接状态
-const isConnectedValue = computed(() => isConnected.value)
-
-// 统一监听 UnifiedTerminal 的状态变化
-watch([
-  () => unifiedTerminalRef.value?.getShowTimestamp?.(),
-  () => unifiedTerminalRef.value?.getFontSize?.(),
-  () => unifiedTerminalRef.value?.getFontFamily?.()
-], ([newTimestamp, newFontSize, newFontFamily], [oldTimestamp, oldFontSize, oldFontFamily]) => {
-  // showTimestamp 变化
-  if (newTimestamp !== undefined && newTimestamp !== showTimestamp.value) {
-    showTimestamp.value = newTimestamp
-    notifyLogTimestampToBackend(newTimestamp)
-  }
-  // fontSize 变化
-  if (newFontSize !== undefined && newFontSize !== fontSize.value) {
-    fontSize.value = newFontSize
-  }
-  // fontFamily 变化
-  if (newFontFamily !== undefined && newFontFamily !== fontFamily.value) {
-    fontFamily.value = newFontFamily
-  }
-}, { immediate: true })
-
-// 监听 showTimestamp、fontSize 和 fontFamily 变化，保存设置
-watch([showTimestamp, fontSize, fontFamily], () => {
-  saveFontSettings()
-})
-
-// 通知后端更新日志时间戳配置
-const notifyLogTimestampToBackend = async (showTs: boolean) => {
-  if (!isConnected.value) return
-  try {
-    await window.connectApi.updateConnect(
-      {
-        connectionType: 'telnet',
-        host: props.connection.host,
-        port: props.connection.port,
-        sessionId: props.connection.sessionId
-      },
-      {
-        logTimestamp: showTs
-      }
-    )
-  } catch (error) {
-    console.error('更新日志时间戳配置失败:', error)
-  }
-}
-
-// 获取原始 connection id（connection.id 格式为 "原始id-sessionId"）
+// 获取原始 connection id
 const getOriginalConnectionId = (): number | undefined => {
   const id = props.connection.id
   if (!id) return undefined
-  // 格式: "原始id-sessionId"，如 "2-1778933529554"
   const parts = id.toString().split('-')
   return parts.length >= 1 ? parseInt(parts[0], 10) : undefined
 }
 
-// 加载连接字体设置
+// 加载字体设置
 const loadFontSettings = async () => {
   try {
     const originalId = getOriginalConnectionId()
@@ -128,13 +70,12 @@ const loadFontSettings = async () => {
       const conn = connections.find((c: any) => c.id === originalId)
       if (conn) {
         if (conn.fontSize !== undefined) {
-          fontSize.value = conn.fontSize
+          terminal.fontSize.value = conn.fontSize
           unifiedTerminalRef.value?.setFontSize?.(conn.fontSize)
         }
         if (conn.fontFamily !== undefined) {
-          fontFamily.value = conn.fontFamily
+          terminal.fontFamily.value = conn.fontFamily
           unifiedTerminalRef.value?.setFontFamily?.(conn.fontFamily)
-          // 字体设置完成后通知父组件更新 currentFont
           emit('fontLoaded', conn.fontFamily)
         }
       }
@@ -144,15 +85,15 @@ const loadFontSettings = async () => {
   }
 }
 
-// 保存连接字体设置
+// 保存字体设置
 const saveFontSettings = async () => {
   try {
     const originalId = getOriginalConnectionId()
     if (originalId) {
       await window.storageApi.updateConnection({
         id: originalId,
-        fontSize: fontSize.value,
-        fontFamily: fontFamily.value
+        fontSize: terminal.fontSize.value,
+        fontFamily: terminal.fontFamily.value
       })
     }
   } catch (error) {
@@ -160,37 +101,18 @@ const saveFontSettings = async () => {
   }
 }
 
-const openLogFile = async () => {
-  try {
-    const result = await window.connectApi.openConnectLog(props.connection.sessionId)
-    if (!result.success) {
-      ElMessage.error(`打开日志失败：${result.message}`)
-    }
-  } catch (error) {
-    ElMessage.error('打开日志失败：' + (error instanceof Error ? error.message : '未知错误'))
-  }
-}
+// 使用 composable
+const terminal = useTerminal({
+  connection: props.connection,
+  unifiedTerminalRef,
+  isConnected,
+  isConnecting,
+  connectionType: 'telnet',
+  sendDisplaySuffix: 'SEND >>>>>>>>>>>',
+  saveFontSettings
+})
 
-const saveLogFile = async () => {
-  try {
-    const result = await window.dialogApi.saveFileDialog({
-      title: '保存日志',
-      defaultPath: `telnet_${props.connection.host}_${props.connection.port}_${Date.now()}.log`,
-      filters: [{ name: '日志文件', extensions: ['log', 'txt'] }]
-    })
-    if (result.filePath) {
-      const copyResult = await window.connectApi.copyLogFile(props.connection.sessionId, result.filePath)
-      if (copyResult.success) {
-        ElMessage.success('日志保存成功')
-        window.toolApi.showItemInFolder(result.filePath)
-      } else {
-        ElMessage.error('保存失败：' + (copyResult.message || '未知错误'))
-      }
-    }
-  } catch (error) {
-    ElMessage.error('保存失败：' + (error instanceof Error ? error.message : '未知错误'))
-  }
-}
+const { openLogFile, saveLogFile, cleanup: terminalCleanup } = terminal
 
 const handleClose = async () => {
   stopRetry.value = true
@@ -199,25 +121,24 @@ const handleClose = async () => {
     clearTimeout(retryTimer)
     retryTimer = null
   }
-
-  if (currentConnId) {
-    try {
-      await window.connectApi.stopConnect({
-        ...TelnetInfo.buildWithValue(props.connection),
-        sessionId: props.connection.sessionId
-      })
-      unifiedTerminalRef.value?.appendToTerminal(`\n连接已手动关闭\n`)
-    } catch (error) {
-      console.error('关闭连接失败:', error)
-      ElMessage.error('关闭连接失败')
-    } finally {
-      cleanup()
-    }
+  // 先清理监听器，防止 onConnectClose 回调触发重连提示
+  cleanup()
+  unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
+  try {
+    await window.connectApi.stopConnect({
+      connectionType: 'telnet',
+      host: props.connection.host,
+      port: props.connection.port,
+      sessionId: props.connection.sessionId
+    })
+  } catch (error) {
+    console.error('关闭连接失败:', error)
   }
   isConnected.value = false
 }
 
 const cleanup = () => {
+  terminalCleanup()
   if (removeDataListener) {
     removeDataListener()
     removeDataListener = null
@@ -227,39 +148,33 @@ const cleanup = () => {
     removeCloseListener = null
   }
   isConnected.value = false
-  currentConnId = 0
-  allRecvSize = 0
-  totalTxSize = 0
 }
 
 const handleReconnect = () => {
-  // 重连时清空 rx/tx 统计
-  totalTxSize = 0
-  allRecvSize = 0
+  stopRetry.value = false
+  terminal.totalTxSize = 0
+  terminal.totalRxSize = 0
   unifiedTerminalRef.value?.resetRxTx()
   unifiedTerminalRef.value?.appendToTerminal(`\n正在重新连接...\n`)
   connect()
 }
 
-const reconnect = () => {
-  handleReconnect()
-}
+const reconnect = () => handleReconnect()
 
 const handleTelnetClose = (connId: number) => {
-  if (connId === currentConnId) {
-    cleanup()
-    // 如果是主动禁止重连，则不自动重连
-    if (preventAutoReconnect) {
-      unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
-      return
-    }
-    ElMessage.info('连接已关闭，将尝试重新连接...')
-    unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭，将在${RETRY_INTERVAL_MS / 1000}秒后尝试重连...\n`)
-    if (!stopRetry.value) {
-      setTimeout(connect, 1000)
-    }
+  cleanup()
+  if (preventAutoReconnect) {
+    unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
+    return
+  }
+  ElMessage.info('连接已关闭，将尝试重新连接...')
+  unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭，将在${RETRY_INTERVAL_MS / 1000}秒后尝试重连...\n`)
+  if (!stopRetry.value) {
+    setTimeout(connect, 1000)
   }
 }
+
+let currentConnId = 0
 
 const connect = async () => {
   stopRetry.value = false
@@ -267,8 +182,8 @@ const connect = async () => {
   isConnected.value = false
   isConnecting.value = true
   currentConnId = 0
-  allRecvSize = 0
-  totalTxSize = 0
+  terminal.totalRxSize = 0
+  terminal.totalTxSize = 0
 
   const attemptConnect = async () => {
     if (stopRetry.value) {
@@ -282,27 +197,34 @@ const connect = async () => {
         sessionId: props.connection.sessionId
       })
       if (result.success) {
-        cleanup()
-
+        terminalCleanup()
         currentConnId = result.connId
         isConnected.value = true
         isConnecting.value = false
 
-        // 加载字体设置
         loadFontSettings()
+        window.connectApi.updateConnect(
+          { connectionType: 'telnet', host: props.connection.host, port: props.connection.port, sessionId: props.connection.sessionId },
+          { logTimestamp: terminal.showTimestamp.value }
+        )
 
-        // 通知后端初始化日志时间戳配置
-        notifyLogTimestampToBackend(showTimestamp.value)
+        // 清理旧监听器，防止重复注册
+        if (removeDataListener) {
+          removeDataListener()
+          removeDataListener = null
+        }
+        if (removeCloseListener) {
+          removeCloseListener()
+          removeCloseListener = null
+        }
 
         removeDataListener = window.connectApi.onRecvData((data) => {
           if (data.connId !== currentConnId) return
-          allRecvSize += data.data.length
+          terminal.totalRxSize += data.data.length
           unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-          // 根据 showTimestamp 决定是否显示时间戳
-          const prefix = showTimestamp.value && data.timestamp ? `[${data.timestamp}] ` : ''
+          const prefix = terminal.showTimestamp.value && data.timestamp ? `[${data.timestamp}] ` : ''
           const displayText = `${prefix}${data.data}\n`
           unifiedTerminalRef.value?.appendToTerminal(displayText)
-          // 日志写入由后端根据 logTimestamp 配置统一处理
         })
 
         removeCloseListener = window.connectApi.onConnectClose(handleTelnetClose)
@@ -315,7 +237,6 @@ const connect = async () => {
       retryCount++
       const errMsg = (error as Error).message
       unifiedTerminalRef.value?.appendToTerminal(`\nconnect failed: (${retryCount}/${MAX_RETRY_COUNT}): ${errMsg}\n`)
-
       if (retryCount < MAX_RETRY_COUNT && !stopRetry.value) {
         retryTimer = setTimeout(attemptConnect, RETRY_INTERVAL_MS)
       } else if (retryCount >= MAX_RETRY_COUNT) {
@@ -329,11 +250,10 @@ const connect = async () => {
   await attemptConnect()
 }
 
-const handleSend = async (command: string, _originalInput?: string) => {
+const handleSend = async (command: string, originalInput?: string) => {
   if (!command.trim() || !isConnected.value) return
 
-  unifiedTerminalRef.value?.appendToTerminal(`\n[${new Date().toISOString()}] SEND >>>>>>>>>> ${command}\n`)
-  totalTxSize += command.length
+  terminal.totalTxSize += command.length
   unifiedTerminalRef.value?.updateTxBytes(command.length)
 
   try {
@@ -354,24 +274,7 @@ const handleCommandSent = (cmdName: string) => emit('commandSent', cmdName)
 
 const refreshGroupsCmds = () => unifiedTerminalRef.value?.refreshGroupsCmds?.()
 
-const handleFontChange = (font: string) => {
-  fontFamily.value = font
-  unifiedTerminalRef.value?.setFontFamily?.(font)
-}
-
-const handleFontSizeChange = (action: string) => {
-  const editor = unifiedTerminalRef.value?.editor as any
-  if (editor) {
-    const currentSize = editor.getOption?.(monaco.editor.EditorOption.fontSize)
-    let newSize = currentSize
-    if (action === 'increase') {
-      newSize = Math.min(currentSize + 2, 30)
-    } else {
-      newSize = Math.max(currentSize - 2, 8)
-    }
-    editor.updateOptions?.({ fontSize: newSize })
-  }
-}
+const handleFontChange = (font: string) => terminal.handleFontChange(font)
 
 const refreshLayout = () => {
   ;(unifiedTerminalRef.value?.editor as any)?.layout?.()
@@ -380,41 +283,19 @@ const refreshLayout = () => {
 defineExpose({
   refreshGroupsCmds,
   handleFontChange,
-  handleFontSizeChange,
   refreshLayout,
-  isConnected: isConnectedValue,
+  isConnected: computed(() => isConnected.value),
   disconnect: handleClose,
   reconnect,
   preventAutoReconnect: () => { preventAutoReconnect = true },
   getFontFamily: () => {
-    // 优先从 UnifiedTerminal 获取实际使用的字体
     const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()
-    return unifiedFont || fontFamily.value
+    return unifiedFont || terminal.fontFamily.value
   }
 })
 
 onMounted(() => {
   connect()
-})
-
-onUnmounted(() => {
-  stopRetry.value = true
-  if (retryTimer) {
-    clearTimeout(retryTimer)
-  }
-
-  cleanup()
-
-  if (currentConnId && isConnected.value) {
-    window.connectApi
-      .stopConnect({
-        ...TelnetInfo.buildWithValue(props.connection),
-        sessionId: props.connection.sessionId
-      })
-      .catch((err) => {
-        console.error('卸载时断开失败:', err)
-      })
-  }
 })
 </script>
 

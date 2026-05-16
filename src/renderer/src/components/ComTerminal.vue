@@ -168,6 +168,7 @@
 import { ref, onUnmounted, onMounted, computed, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import UnifiedTerminal from './UnifiedTerminal.vue'
+import { useTerminal } from '../composables/useTerminal'
 
 const emit = defineEmits(['onClose', 'commandSent', 'onConnect', 'onDisconnect', 'openCommandEditor', 'remarkUpdated', 'fontLoaded'])
 const props = withDefaults(defineProps<{
@@ -196,16 +197,13 @@ const props = withDefaults(defineProps<{
 const unifiedTerminalRef = ref<InstanceType<typeof UnifiedTerminal>>()
 const isConnected = ref(false)
 const isConnecting = ref(false)
-const preventAutoReconnect = ref(false) // 主动断开时禁止自动重连
+const preventAutoReconnect = ref(false)
 const showMoreDialog = ref(false)
 const showAddBaudRateDialog = ref(false)
-const fontSize = ref(14) // 字体大小
-const fontFamily = ref('Fira Code') // 字体系列
 const newBaudRate = ref(9600)
 const baudRateInputRef = ref<any>(null)
 
 const onBaudRateDialogOpened = () => {
-  // 弹窗打开时，选中输入框内容
   nextTick(() => {
     const input = baudRateInputRef.value?.$el?.querySelector('input')
     if (input) {
@@ -214,21 +212,19 @@ const onBaudRateDialogOpened = () => {
     }
   })
 }
+
 const encoding = ref('utf8')
 const readTimeout = ref(0)
 const writeTimeout = ref(0)
 const flowControl = ref<'none' | 'hardware' | 'software'>('none')
 const dtr = ref(false)
 const rts = ref(false)
-const hexDisplayMode = ref(false) // HEX显示模式
-const showTimestamp = ref(true) // 是否显示时间戳
-const autoNewline = ref(true) // 是否自动添加回车换行
-const hexMode = ref(false) // 是否为HEX发送模式
-let removeDataListener: (() => void) | null = null
-let removeCloseListener: (() => void) | null = null
+const hexDisplayMode = ref(false)
+const autoNewline = ref(true)
+const hexMode = ref(false)
+
 let removeMountedCloseListener: (() => void) | null = null
-let totalRxSize = 0
-let totalTxSize = 0
+let removeDataListener: (() => void) | null = null
 
 // 串口参数
 const baudRates = ref<number[]>([])
@@ -240,6 +236,18 @@ const remark = ref(props.connection.remark || '')
 
 const isConnectedValue = computed(() => isConnected.value)
 const currentSessionId = ref<string>('')
+
+// 使用通用 composable
+const terminal = useTerminal({
+  connection: props.connection,
+  unifiedTerminalRef,
+  isConnected,
+  isConnecting,
+  connectionType: 'com',
+  sendDisplaySuffix: 'SEND>>>>>>>>>>>>>'
+})
+
+const { openLogFile, saveLogFile, cleanup: terminalCleanup } = terminal
 
 // 监听波特率变化
 watch(baudRate, (newVal) => {
@@ -259,11 +267,9 @@ watch(baudRate, (newVal) => {
 })
 
 // 监听串口设置变化，自动保存
-watch([dataBits, stopBits, parity, encoding, readTimeout, writeTimeout, flowControl, dtr, rts, fontSize], (newVals, oldVals) => {
+watch([dataBits, stopBits, parity, encoding, readTimeout, writeTimeout, flowControl, dtr, rts, terminal.fontSize], () => {
   saveComSettings()
-  // 检查是否是字体大小变化，字体大小变化不需要热更新
-  const fontSizeChanged = newVals[newVals.length - 1] !== oldVals?.[oldVals.length - 1]
-  if (isConnected.value && !fontSizeChanged) {
+  if (isConnected.value) {
     applyComConfig()
   }
 })
@@ -272,71 +278,45 @@ watch([dataBits, stopBits, parity, encoding, readTimeout, writeTimeout, flowCont
 watch(hexDisplayMode, (newVal) => {
   saveComSettings()
   unifiedTerminalRef.value?.setHexDisplayMode?.(newVal)
-  // 动态更新后端的 receiveHex 状态
   if (isConnected.value) {
     updateReceiveHexMode(newVal)
   }
 })
 
-// 监听 CRLF 模式变化 - 同步到 UnifiedTerminal 并保存
+// 监听 CRLF 模式变化
 watch(autoNewline, (newVal) => {
   saveComSettings()
   unifiedTerminalRef.value?.setAutoNewline?.(newVal)
-}, { immediate: false })
+})
 
-// 监听 HEX 发送模式变化 - 同步到 UnifiedTerminal 并保存
+// 监听 HEX 发送模式变化
 watch(hexMode, (newVal) => {
   saveComSettings()
   unifiedTerminalRef.value?.setHexMode?.(newVal)
-}, { immediate: false })
+})
 
-// 监听 UnifiedTerminal 的 autoNewline 变化，反向同步
+// 监听 UnifiedTerminal 的状态变化
 watch(() => unifiedTerminalRef.value?.getAutoNewline?.(), (newVal) => {
   if (newVal !== undefined && newVal !== autoNewline.value) {
     autoNewline.value = newVal
   }
 }, { immediate: true })
 
-// 监听 UnifiedTerminal 的 hexMode 变化，反向同步
 watch(() => unifiedTerminalRef.value?.getHexMode?.(), (newVal) => {
   if (newVal !== undefined && newVal !== hexMode.value) {
     hexMode.value = newVal
   }
 }, { immediate: true })
 
-// 监听 UnifiedTerminal 的 showTimestamp 变化，反向同步
-watch(() => unifiedTerminalRef.value?.getShowTimestamp?.(), (newVal) => {
-  if (newVal !== undefined && newVal !== showTimestamp.value) {
-    showTimestamp.value = newVal
-    saveComSettings()
-    // 通知后端更新日志时间戳配置
-    notifyLogTimestampToBackend(newVal)
-  }
-}, { immediate: true })
-
-// 监听 UnifiedTerminal 的 fontSize 变化，更新 fontSizeRef
-watch(() => unifiedTerminalRef.value?.getFontSize?.(), (newVal) => {
-  if (newVal !== undefined && newVal !== fontSize.value) {
-    fontSize.value = newVal
-  }
-}, { immediate: true })
-
-// 监听 UnifiedTerminal 的 fontFamily 变化
-watch(() => unifiedTerminalRef.value?.getFontFamily?.(), (newVal) => {
-  if (newVal !== undefined && newVal !== fontFamily.value) {
-    fontFamily.value = newVal
-  }
-}, { immediate: true })
-
 // 应用串口配置（热更新）
 const applyComConfig = async () => {
   try {
-    const conn = {
-      connectionType: 'com',
-      comName: props.connection.comName,
-      sessionId: props.connection.sessionId
-    }
-    const result = await window.connectApi.updateConnect(conn,
+    const result = await window.connectApi.updateConnect(
+      {
+        connectionType: 'com',
+        comName: props.connection.comName,
+        sessionId: props.connection.sessionId
+      },
       {
         baudRate: baudRate.value,
         dataBits: dataBits.value,
@@ -368,9 +348,7 @@ const updateReceiveHexMode = async (isHex: boolean) => {
         comName: props.connection.comName,
         sessionId: props.connection.sessionId
       },
-      {
-        receiveHex: isHex
-      }
+      { receiveHex: isHex }
     )
   } catch (error) {
     console.error('updateReceiveHexMode error:', error)
@@ -380,9 +358,7 @@ const updateReceiveHexMode = async (isHex: boolean) => {
 // 加载保存的串口设置
 const loadComSettings = async () => {
   try {
-    if (!props.connection.comName) {
-      return
-    }
+    if (!props.connection.comName) return
     const settings = await window.storageApi.getComSettings(props.connection.comName)
     if (settings) {
       baudRate.value = settings.baudRate || 9600
@@ -397,20 +373,19 @@ const loadComSettings = async () => {
       rts.value = settings.rts !== undefined ? settings.rts : false
       remark.value = settings.remark || ''
       hexDisplayMode.value = settings.hexDisplayMode || false
-      showTimestamp.value = settings.showTimestamp !== undefined ? settings.showTimestamp : true
+      terminal.showTimestamp.value = settings.showTimestamp !== undefined ? settings.showTimestamp : true
       autoNewline.value = settings.autoNewline !== undefined ? settings.autoNewline : true
       hexMode.value = settings.hexMode || false
-      fontSize.value = settings.fontSize !== undefined ? settings.fontSize : 14
-      fontFamily.value = settings.fontFamily || 'Fira Code'
-      // 将设置同步到 UnifiedTerminal
+      terminal.fontSize.value = settings.fontSize !== undefined ? settings.fontSize : 14
+      terminal.fontFamily.value = settings.fontFamily || 'Fira Code'
+
       unifiedTerminalRef.value?.setHexDisplayMode?.(hexDisplayMode.value)
-      unifiedTerminalRef.value?.setShowTimestamp?.(showTimestamp.value)
+      unifiedTerminalRef.value?.setShowTimestamp?.(terminal.showTimestamp.value)
       unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
       unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
-      unifiedTerminalRef.value?.setFontSize?.(fontSize.value)
-      unifiedTerminalRef.value?.setFontFamily?.(fontFamily.value)
-      // 字体设置完成后通知父组件
-      emit('fontLoaded', fontFamily.value)
+      unifiedTerminalRef.value?.setFontSize?.(terminal.fontSize.value)
+      unifiedTerminalRef.value?.setFontFamily?.(terminal.fontFamily.value)
+      emit('fontLoaded', terminal.fontFamily.value)
     }
   } catch (error) {
     console.error('加载串口设置失败:', error)
@@ -420,9 +395,7 @@ const loadComSettings = async () => {
 // 保存串口设置
 const saveComSettings = async () => {
   try {
-    if (!props.connection.comName) {
-      return
-    }
+    if (!props.connection.comName) return
     const settings = {
       baudRate: baudRate.value,
       dataBits: dataBits.value,
@@ -436,11 +409,11 @@ const saveComSettings = async () => {
       rts: rts.value,
       remark: remark.value,
       hexDisplayMode: hexDisplayMode.value,
-      showTimestamp: showTimestamp.value,
+      showTimestamp: terminal.showTimestamp.value,
       autoNewline: autoNewline.value,
       hexMode: hexMode.value,
-      fontSize: fontSize.value,
-      fontFamily: fontFamily.value
+      fontSize: terminal.fontSize.value,
+      fontFamily: terminal.fontFamily.value
     }
     await window.storageApi.saveComSettings(props.connection.comName, settings)
   } catch (error) {
@@ -460,14 +433,8 @@ const notifyLogTimestampToBackend = async (showTs: boolean) => {
   if (!isConnected.value) return
   try {
     await window.connectApi.updateConnect(
-      {
-        connectionType: 'com',
-        comName: props.connection.comName,
-        sessionId: props.connection.sessionId
-      },
-      {
-        logTimestamp: showTs
-      }
+      { connectionType: 'com', comName: props.connection.comName, sessionId: props.connection.sessionId },
+      { logTimestamp: showTs }
     )
   } catch (error) {
     console.error('更新日志时间戳配置失败:', error)
@@ -553,29 +520,20 @@ const handleConnect = async () => {
       unifiedTerminalRef.value?.appendToTerminal(`\n连接成功!\n`)
       emit('onConnect', props.connection.sessionId)
 
-      // 通知后端初始化日志时间戳配置
-      notifyLogTimestampToBackend(showTimestamp.value)
+      notifyLogTimestampToBackend(terminal.showTimestamp.value)
 
-      // 注册数据监听
-      if (removeDataListener) removeDataListener()
+      // 清理旧的数据监听器，防止重复注册
+      if (removeDataListener) {
+        removeDataListener()
+        removeDataListener = null
+      }
       removeDataListener = window.connectApi.onRecvData((data) => {
         if (String(data.connId) !== String(currentSessionId.value)) return
-        totalRxSize += data.data.length
+        terminal.totalRxSize += data.data.length
         unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-        // 后端已根据 hex/str 参数处理好数据格式，直接使用
-        // 根据 showTimestamp 决定是否显示时间戳
-        const prefix = showTimestamp.value && data.timestamp ? `[${data.timestamp}] ` : ''
+        const prefix = terminal.showTimestamp.value && data.timestamp ? `[${data.timestamp}] ` : ''
         const displayText = `${prefix}${data.data}\n`
         unifiedTerminalRef.value?.appendToTerminal(displayText)
-        // 日志写入由后端根据 logTimestamp 配置统一处理
-      })
-
-      if (removeCloseListener) removeCloseListener()
-      removeCloseListener = window.connectApi.onConnectClose((sessionId: number | string) => {
-        if (String(sessionId) !== String(props.connection.sessionId)) return
-        // 如果是主动禁止重连，则不自动重连
-        if (preventAutoReconnect.value) return
-        handleClose()
       })
 
       unifiedTerminalRef.value?.focusInput()
@@ -590,15 +548,19 @@ const handleConnect = async () => {
 }
 
 const handleClose = async () => {
+  preventAutoReconnect.value = true
+  terminalCleanup()
+  // 清理数据监听器
   if (removeDataListener) {
     removeDataListener()
     removeDataListener = null
   }
-  if (removeCloseListener) {
-    removeCloseListener()
-    removeCloseListener = null
+  // 移除断开监听器，防止主动断开时触发 onConnectClose 回调
+  if (removeMountedCloseListener) {
+    removeMountedCloseListener()
+    removeMountedCloseListener = null
   }
-
+  unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
   try {
     await window.connectApi.stopConnect({
       connectionType: 'com',
@@ -608,31 +570,29 @@ const handleClose = async () => {
   } catch (error) {
     console.error('关闭连接失败:', error)
   }
-
   isConnected.value = false
-  unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
   emit('onDisconnect', props.connection.sessionId)
 }
 
 const handleSendCommand = async (command: string, originalInput?: string) => {
   if (!command.trim() || !isConnected.value) return
 
-  // 根据 hexMode 决定显示内容：HEX模式下显示原始输入，否则显示解析后的数据
   const displayCommand = hexMode.value && originalInput ? originalInput : command
+  terminal.totalTxSize += command.length
+  unifiedTerminalRef.value?.updateTxBytes(command.length)
+
+  // 显示发送内容
   const now = new Date()
   const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
   unifiedTerminalRef.value?.appendToTerminal(`\n[${timestamp}] SEND>>>>>>>>>>>>> ${displayCommand}\n`)
-  totalTxSize += command.length
-  unifiedTerminalRef.value?.updateTxBytes(command.length)
 
   try {
-    const connObj = {
-      connectionType: 'com',
-      comName: props.connection.comName,
-      sessionId: props.connection.sessionId
-    }
     await window.connectApi.sendData({
-      conn: connObj,
+      conn: {
+        connectionType: 'com',
+        comName: props.connection.comName,
+        sessionId: props.connection.sessionId
+      },
       command: command
     })
   } catch (error) {
@@ -642,52 +602,20 @@ const handleSendCommand = async (command: string, originalInput?: string) => {
 }
 
 const openLogFolder = async () => {
-  try {
-    await window.connectApi.openConnectLog(props.connection.sessionId)
-  } catch (error) {
-    ElMessage.error('打开日志文件夹失败')
-  }
+  await openLogFile()
 }
 
 const saveLog = async () => {
-  try {
-    const result = await window.dialogApi.saveFileDialog({
-      title: '保存日志',
-      defaultPath: `com_${props.connection.comName}_${Date.now()}.log`,
-      filters: [{ name: '日志文件', extensions: ['log', 'txt'] }]
-    })
-    if (result.filePath) {
-      const copyResult = await window.connectApi.copyLogFile(props.connection.sessionId, result.filePath)
-      if (copyResult.success) {
-        ElMessage.success('日志保存成功')
-        window.toolApi.showItemInFolder(result.filePath)
-      } else {
-        ElMessage.error('保存失败：' + (copyResult.message || '未知错误'))
-      }
-    }
-  } catch (error) {
-    ElMessage.error('保存失败')
-  }
+  await saveLogFile()
 }
 
 const handleCommandSent = (cmdName: string) => emit('commandSent', cmdName)
 
 const refreshGroupsCmds = () => unifiedTerminalRef.value?.refreshGroupsCmds?.()
 
-// 将字节数据转换为16进制字符串
-const bytesToHex = (str: string): string => {
-  let result = ''
-  for (let i = 0; i < str.length; i++) {
-    const hex = str.charCodeAt(i).toString(16)
-    result += hex.padStart(2, '0') + ' '
-  }
-  return result.trim()
-}
-
 const reconnect = () => {
-  // 重连时清空 rx/tx 统计
-  totalRxSize = 0
-  totalTxSize = 0
+  terminal.totalRxSize = 0
+  terminal.totalTxSize = 0
   unifiedTerminalRef.value?.resetRxTx()
   if (!isConnected.value && !isConnecting.value) {
     handleConnect()
@@ -695,8 +623,7 @@ const reconnect = () => {
 }
 
 const handleFontChange = (font: string) => {
-  fontFamily.value = font
-  unifiedTerminalRef.value?.setFontFamily?.(font)
+  terminal.handleFontChange(font)
   saveComSettings()
 }
 
@@ -710,31 +637,27 @@ defineExpose({
   updateRemark,
   handleFontChange,
   getFontFamily: () => {
-    // 优先从 UnifiedTerminal 获取实际使用的字体
     const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()
-    return unifiedFont || fontFamily.value
+    return unifiedFont || terminal.fontFamily.value
   }
 })
 
 onMounted(async () => {
-  // 加载全局波特率列表
+  preventAutoReconnect.value = false
   await loadBaudRates()
-
-  // 加载保存的串口设置
   await loadComSettings()
 
-  // 同步到 UnifiedTerminal
   nextTick(() => {
     unifiedTerminalRef.value?.setHexDisplayMode?.(hexDisplayMode.value)
-    unifiedTerminalRef.value?.setShowTimestamp?.(showTimestamp.value)
+    unifiedTerminalRef.value?.setShowTimestamp?.(terminal.showTimestamp.value)
     unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
     unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
   })
 
-  // 监听连接关闭事件，更新连接状态（无论从哪里断开）
   if (removeMountedCloseListener) removeMountedCloseListener()
   removeMountedCloseListener = window.connectApi.onConnectClose((sessionId: number | string) => {
     if (String(sessionId) === String(props.connection.sessionId)) {
+      if (preventAutoReconnect.value) return
       isConnected.value = false
       unifiedTerminalRef.value?.appendToTerminal(`\n连接已断开\n`)
       emit('onDisconnect', sessionId)
@@ -747,13 +670,10 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  terminalCleanup()
   if (removeDataListener) {
     removeDataListener()
     removeDataListener = null
-  }
-  if (removeCloseListener) {
-    removeCloseListener()
-    removeCloseListener = null
   }
   if (removeMountedCloseListener) {
     removeMountedCloseListener()
