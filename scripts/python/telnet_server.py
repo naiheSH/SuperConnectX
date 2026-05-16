@@ -6,7 +6,7 @@ import json
 import sys
 
 # 服务端配置
-PORT = 2323  # 自定义端口（默认 Telnet 端口 23，需管理员权限，此处用 2323 避免冲突）
+PORT = 6666  # 自定义端口（默认 Telnet 端口 23，需管理员权限，此处用 2323 避免冲突）
 DEFAULT_SEND_INTERVAL = 1  # 数据推送间隔（秒）
 
 send_interval = DEFAULT_SEND_INTERVAL
