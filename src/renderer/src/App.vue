@@ -629,6 +629,11 @@ const disconnectAllTabs = async () => {
 
 // 关闭指定选项卡
 const closeSingleTab = async (tab: any) => {
+  // 如果选项卡被固定，则跳过
+  if (pinnedTabs.has(tab.id)) {
+    hideTabMenu()
+    return
+  }
   await closeTab(tab.id.toString(), true) // 强制关闭
   hideTabMenu()
 }
@@ -1056,6 +1061,9 @@ const connectToServer = async (conn) => {
 
 // 关闭单个选项卡（批量关闭模式）
 const closeTabOnly = async (tabId: string) => {
+  // 如果选项卡被固定，则跳过
+  if (pinnedTabs.has(tabId)) return
+
   const tab = connectionTabs.value.find((t) => t.id === tabId)
   if (!tab) return
 
