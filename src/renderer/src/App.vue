@@ -1365,10 +1365,11 @@ const loadShortcutActions = async () => {
           }
         },
         'CommandEditor:open': () => {
-          const connectionType = activeTabId.value
-            ? connectionTabs.value.find(t => t.id.toString() === activeTabId.value)?.connectionType || 'telnet'
-            : 'telnet'
-          openCommandEditorTab(connectionType === 'com' ? 'telnet' : connectionType)
+          if (!activeTabId.value) return
+          const activeTab = connectionTabs.value.find(t => t.id.toString() === activeTabId.value)
+          if (!activeTab || !['com', 'telnet'].includes(activeTab.connectionType)) return
+          const connectionType = activeTab.connectionType === 'com' ? 'telnet' : activeTab.connectionType
+          openCommandEditorTab(connectionType)
         },
         'ConnectionList:toggle': () => toggleConnectionList(),
         'SerialPort:refresh': () => loadSerialPorts(),
