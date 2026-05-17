@@ -618,6 +618,15 @@ onMounted(async () => {
   --el-switch-off-color: #444;
 }
 
+/* Slider 样式与 Switch 一致 */
+:deep(.el-slider__runway) {
+  background-color: #444;
+}
+
+:deep(.el-slider__bar) {
+  background-color: #165dff;
+}
+
 .baudrate-tags {
   display: flex;
   flex-wrap: wrap;
