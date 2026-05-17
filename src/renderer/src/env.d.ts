@@ -16,6 +16,7 @@ interface SerialPortInfo {
   friendlyName?: string
   vendorId?: string
   productId?: string
+  type?: 'virtual' | 'usb' | 'bluetooth' | 'none'
 }
 
 interface ToolApi {

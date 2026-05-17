@@ -54,6 +54,12 @@
                         {{ port.path }}
                         <span v-if="serialRemarks[port.path]" class="serial-remark"> {{ serialRemarks[port.path] }}</span>
                       </div>
+                      <div class="serial-port-type">
+                        <el-tag v-if="port.type === 'virtual'" type="info" size="small" effect="dark">虚拟串口</el-tag>
+                        <el-tag v-else-if="port.type === 'usb'" type="success" size="small" effect="dark">USB</el-tag>
+                        <el-tag v-else-if="port.type === 'bluetooth'" class="bluetooth-tag" size="small" effect="dark">蓝牙</el-tag>
+                        <el-tag v-else type="info" size="small" effect="dark">无类型</el-tag>
+                      </div>
                     </div>
                     <div class="serial-port-right">
                       <el-button
@@ -1490,9 +1496,29 @@ watch(serialPorts, async (newPorts) => {
 }, { immediate: true })
 
 // 串口相关函数
+
+// 解析串口类型
+const parseSerialPortType = (port: SerialPortInfo): 'virtual' | 'usb' | 'bluetooth' | 'none' => {
+  const text = [port.path, port.friendlyName, port.manufacturer, port.pnpId]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+
+  if (text.includes('virtual')) return 'virtual'
+  if (text.includes('usb')) return 'usb'
+  if (text.includes('蓝牙') || text.includes('ble') ||
+      text.includes('bluetooth low energy') || text.includes('bluetooth smart') ||
+      text.includes('bluetooth le')) return 'bluetooth'
+  return 'none'
+}
+
 const loadSerialPorts = async () => {
   try {
     const ports = await window.connectApi.listSerialPorts()
+    // 解析每个串口的类型
+    ports.forEach(port => {
+      port.type = parseSerialPortType(port)
+    })
     serialPorts.value = ports
     console.log('已扫描串口:', ports)
     // 预加载所有串口备注（异步执行，不阻塞串口列表显示）
@@ -1852,6 +1878,25 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: normal;
   margin-left: 4px;
+}
+
+.serial-port-type {
+  margin-top: 2px;
+  margin-left: 22px;
+  font-size: 11px;
+}
+
+.serial-port-type .el-tag {
+  font-size: 10px;
+  padding: 0 4px;
+  height: 16px;
+  line-height: 14px;
+}
+
+.bluetooth-tag {
+  background-color: #1f6feb !important;
+  border-color: #1f6feb !important;
+  color: #fff !important;
 }
 
 .tab-remark {
