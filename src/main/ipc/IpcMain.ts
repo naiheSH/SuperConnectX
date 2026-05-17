@@ -3,6 +3,8 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import logger from './IpcAppLogger'
 import { printAppInfo } from '../utils/PrintAppInfo'
+import IpcTray from './IpcTray'
+import SettingsStorage from '../storage/SettingsStorage'
 import fs from 'fs'
 import path from 'path'
 
@@ -14,8 +16,11 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
 
 export default class IpcMain {
   private static sInstance: IpcMain
+  private settingsStorage: SettingsStorage
 
-  constructor() {}
+  constructor() {
+    this.settingsStorage = new SettingsStorage()
+  }
 
   static getInstance(): IpcMain {
     if (IpcMain.sInstance == null) {
@@ -75,7 +80,20 @@ export default class IpcMain {
         )
       })
 
+      // 监听窗口关闭事件
+      mainWindow.on('close', (event) => {
+        const settings = this.settingsStorage.getSettings()
+        // 如果设置了关闭后最小化到托盘，并且不是真正退出，则阻止关闭并隐藏
+        if (settings.minimizeToTray && !isQuitting) {
+          event.preventDefault()
+          mainWindow.hide()
+        }
+      })
+
       windows.mainWindow = mainWindow
+
+      // 创建托盘
+      IpcTray.getInstance().createTray(mainWindow)
 
       mainWindow.webContents.on('did-finish-load', () => {
         printAppInfo(mainWindow)
@@ -119,6 +137,8 @@ export default class IpcMain {
       isQuitting = true
       ;(app as any).isQuitting = true
       _logger.flush()
+      // 真正退出时销毁托盘
+      IpcTray.getInstance().destroyTray()
     })
 
     // 进程信号监听
