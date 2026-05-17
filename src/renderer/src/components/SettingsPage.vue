@@ -37,7 +37,7 @@
         <div v-if="activeCategory === 'basic'" class="settings-group">
           <!-- 语言 -->
           <div class="group-section">
-            <div class="group-title">语言</div>
+            <div class="group-title">语言（未实现）</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">界面语言</span>
@@ -81,7 +81,7 @@
 
           <!-- 显示 -->
           <div class="group-section">
-            <div class="group-title">显示</div>
+            <div class="group-title">显示（未实现）</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">固定滚屏</span>
@@ -121,7 +121,7 @@
 
           <!-- 备份 -->
           <div class="group-section">
-            <div class="group-title">备份</div>
+            <div class="group-title">备份（未实现）</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">自动备份</span>
@@ -151,13 +151,6 @@
             <div class="group-title">系统</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">开机自启</span>
-                <span class="label-desc">系统启动时自动运行程序</span>
-              </div>
-              <el-switch v-model="settings.autoStart" />
-            </div>
-            <div class="setting-item">
-              <div class="setting-label">
                 <span class="label-text">防止屏幕息屏及系统休眠</span>
                 <span class="label-desc">阻止系统进入休眠或屏幕关闭</span>
               </div>
@@ -169,7 +162,7 @@
         <!-- 串口设置 -->
         <div v-else-if="activeCategory === 'serial'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">串口设置</div>
+            <div class="group-title">串口设置（未实现）</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">支持的波特率列表</span>
@@ -212,7 +205,7 @@
         <!-- 日志 -->
         <div v-else-if="activeCategory === 'log'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">日志存储</div>
+            <div class="group-title">日志存储（未实现）</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">启用日志存储</span>
@@ -237,7 +230,7 @@
           </div>
 
           <div class="group-section">
-            <div class="group-title">日志格式</div>
+            <div class="group-title">日志格式（未实现）</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">时间戳</span>
@@ -258,7 +251,7 @@
         <!-- 语法高亮 -->
         <div v-else-if="activeCategory === 'syntax'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">语法高亮</div>
+            <div class="group-title">语法高亮（未实现）</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">启用语法高亮</span>
@@ -282,7 +275,7 @@
         <!-- 搜索 -->
         <div v-else-if="activeCategory === 'search'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">搜索设置</div>
+            <div class="group-title">搜索设置（未实现）</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">区分大小写</span>
@@ -360,6 +353,8 @@ const saveSettings = async () => {
     const plainSettings = JSON.parse(JSON.stringify(settings.value))
     await window.storageApi.saveSettings(plainSettings)
     window.dispatchEvent(new CustomEvent('settings-updated', { detail: plainSettings }))
+    // 通知主进程设置更新（用于防止屏幕息屏功能）
+    window.toolApi?.notifySettingsUpdate(plainSettings)
   } catch (error) {
     console.error('保存设置失败:', error)
   }

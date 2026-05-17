@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog, powerSaveBlocker } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import logger from './IpcAppLogger'
@@ -10,6 +10,7 @@ import path from 'path'
 
 (app as any).isQuitting = false
 let isQuitting = false
+let powerBlockerId: number | null = null
 
 const packageJsonPath = path.join(app.getAppPath(), 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
@@ -110,6 +111,12 @@ export default class IpcMain {
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
       })
+      // 初始化防止休眠功能
+      this.initPreventSleep()
+      // 监听设置变化
+      ipcMain.on('settings-updated', (_, settings) => {
+        this.setPreventSleep(settings.preventSleep === true)
+      })
     })
 
     app.on('window-all-closed', () => {
@@ -179,6 +186,30 @@ export default class IpcMain {
     })
 
     logger.info(`init IpcMain done`)
+  }
+
+  // 防止屏幕息屏及系统休眠
+  private setPreventSleep(enabled: boolean): void {
+    if (enabled) {
+      if (powerBlockerId === null || !powerSaveBlocker.isStarted(powerBlockerId)) {
+        powerBlockerId = powerSaveBlocker.start('prevent-display-sleep')
+        logger.info(`Prevent sleep enabled, blocker id: ${powerBlockerId}`)
+      }
+    } else {
+      if (powerBlockerId !== null && powerSaveBlocker.isStarted(powerBlockerId)) {
+        powerSaveBlocker.stop(powerBlockerId)
+        logger.info(`Prevent sleep disabled, blocker id: ${powerBlockerId}`)
+      }
+      powerBlockerId = null
+    }
+  }
+
+  // 初始化防止休眠功能（检查设置）
+  private initPreventSleep(): void {
+    const settings = this.settingsStorage.getSettings()
+    if (settings.preventSleep) {
+      this.setPreventSleep(true)
+    }
   }
 
   getVersionInfo = () => {

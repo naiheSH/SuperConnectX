@@ -97,5 +97,7 @@ contextBridge.exposeInMainWorld('toolApi', {
     ipcRenderer.invoke('write-file', { path: filePath, content }),
   readFile: ({ path: filePath }: { path: string }) =>
     ipcRenderer.invoke('read-file', { path: filePath }),
-  showItemInFolder: (filePath: string) => ipcRenderer.invoke('show-item-in-folder', filePath)
+  showItemInFolder: (filePath: string) => ipcRenderer.invoke('show-item-in-folder', filePath),
+  // 防止屏幕息屏及系统休眠
+  notifySettingsUpdate: (settings: any) => ipcRenderer.send('settings-updated', settings)
 })

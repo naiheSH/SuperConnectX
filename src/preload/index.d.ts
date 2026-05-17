@@ -64,6 +64,7 @@ declare global {
       writeFile: (options: { path: string; content: string }) => Promise<{ success: boolean }>
       readFile: (options: { path: string }) => Promise<{ success: boolean; content?: string; message?: string }>
       showItemInFolder: (filePath: string) => Promise<void>
+      notifySettingsUpdate: (settings: any) => void
     }
     dialogApi: {
       openFileDialog: (options: any) => Promise<any>
