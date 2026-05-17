@@ -9,6 +9,8 @@
       :show-connection-list="showConnectionList"
       :current-font="currentFont"
     />
+    <!-- 通用通知组件 -->
+    <NotifyContainer ref="notifyContainerRef" />
     <!-- 主内容区：左侧连接列表 + 右侧终端 -->
     <main class="app-main">
       <div class="connection-list-wrapper" :class="{ collapsed: !showConnectionList }" :style="showConnectionList ? { width: sidebarWidth + 'px' } : {}">
@@ -388,25 +390,6 @@
         <el-button type="primary" @click="saveSerialRemark">保存</el-button>
       </template>
     </el-dialog>
-
-    <!-- 日志分片通知 -->
-    <Teleport to="body">
-      <div class="log-split-notify-container" ref="notifyContainer">
-        <div
-          v-for="notify in logSplitNotifies"
-          :key="notify.id"
-          class="log-split-notify"
-          :class="{ focused: notify.focused }"
-          @focusin="notify.focused = true"
-          @focusout="notify.focused = false"
-          tabindex="0"
-        >
-          <div class="notify-close" @click="closeLogSplitNotify(notify.id)">✕</div>
-          <div class="notify-title">日志分片</div>
-          <div class="notify-message">{{ notify.message }}</div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -415,6 +398,7 @@ import { ref, onMounted, onUnmounted, watch, reactive, computed, nextTick } from
 import { ElMessage, ElForm, ElMessageBox } from 'element-plus'
 import TelnetTerminal from './components/TelnetTerminal.vue'
 import ComTerminal from './components/ComTerminal.vue'
+import NotifyContainer from './components/NotifyContainer.vue'
 import CustomTitleBar from './components/CustomTitleBar.vue'
 import SearchInput from './components/SearchInput.vue'
 import ResourceMonitor from './components/ResourceMonitor.vue'
@@ -425,40 +409,13 @@ import CommandEditor from './components/CommandEditor.vue'
 import TelnetInfo from './entity/protocol/TelnetInfo'
 import logoImage from './assets/icon.png'
 
-// 日志分片通知
-interface LogSplitNotify {
-  id: number
-  message: string
-  focused: boolean
-}
-
-let notifyIdCounter = 0
-const logSplitNotifies = ref<LogSplitNotify[]>([])
-const notifyContainer = ref<HTMLElement | null>(null)
+const notifyContainerRef = ref<InstanceType<typeof NotifyContainer> | null>(null)
 
 const handleLogSplit = (data: { connId: string; oldFileName: string; newFileName: string }) => {
-  // 找到对应的连接标签
   const tab = connectionTabs.value.find((t) => String(t.sessionId) === String(data.connId))
   const tabName = tab?.name || tab?.comName || data.connId
   const message = `"${tabName}" 日志已超过分片大小，新日志文件：${data.newFileName}`
-  logSplitNotifies.value.push({
-    id: ++notifyIdCounter,
-    message,
-    focused: false
-  })
-  // 滚动到顶部（column-reverse 时顶部是最新的）
-  nextTick(() => {
-    if (notifyContainer.value) {
-      notifyContainer.value.scrollTop = 0
-    }
-  })
-}
-
-const closeLogSplitNotify = (id: number) => {
-  const index = logSplitNotifies.value.findIndex((n) => n.id === id)
-  if (index > -1) {
-    logSplitNotifies.value.splice(index, 1)
-  }
+  notifyContainerRef.value?.add('日志分片', message)
 }
 
 const searchKeyword = ref('')
@@ -2594,115 +2551,5 @@ onUnmounted(() => {
   font-size: 12px;
   color: #888;
   margin-top: 8px;
-}
-
-/* 日志分片通知容器样式 */
-.log-split-notify-container {
-  position: fixed;
-  right: 10px;
-  top: 30px;
-  bottom: 25px;
-  width: 420px;
-  z-index: 10000;
-  display: flex;
-  flex-direction: column-reverse;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  pointer-events: none;
-}
-
-.log-split-notify-container::-webkit-scrollbar {
-  display: none;
-}
-
-/* 日志分片通知样式 */
-.log-split-notify {
-  position: relative;
-  background: #252526;
-  border: 1px solid #3a3a3a;
-  border-radius: 8px;
-  padding: 10px 14px;
-  padding-right: 30px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  margin: 10px 0;
-  min-width: 280px;
-  max-width: 380px;
-  outline: none;
-  pointer-events: auto;
-}
-
-.log-split-notify.focused {
-  border-color: #165dff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(22, 93, 255, 0.3);
-}
-
-.notify-close {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  font-size: 14px;
-  color: #888;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.notify-close:hover {
-  color: #fff;
-}
-
-.notify-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.notify-message {
-  font-size: 12px;
-  color: #aaa;
-  word-break: break-all;
-  line-height: 1.4;
-}
-
-.notify-close {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  font-size: 14px;
-  color: #888;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.notify-close:hover {
-  color: #fff;
-}
-
-.notify-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.notify-message {
-  font-size: 12px;
-  color: #aaa;
-  word-break: break-all;
-  line-height: 1.4;
-}
-
-/* 通知动画 */
-.notify-fade-enter-active,
-.notify-fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.notify-fade-enter-from,
-.notify-fade-leave-to {
-  opacity: 0;
-  transform: translateX(20px);
 }
 </style>

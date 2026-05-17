@@ -94,7 +94,7 @@ export default class ProtocolLogger {
     }
 
     // 如果超过阈值，创建新文件
-    const maxSizeBytes = this.logSplitSizeMB * 1024
+    const maxSizeBytes = this.logSplitSizeMB * 1024 * 1024
     if (currentSize >= maxSizeBytes) {
       const oldFileName = fileName
       const index = (this.connLogIndexes.get(connId) || 0) + 1
