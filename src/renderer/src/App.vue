@@ -56,7 +56,7 @@
                         {{ port.path }}
                         <span v-if="serialRemarks[port.path]" class="serial-remark"> {{ serialRemarks[port.path] }}</span>
                       </div>
-                      <div class="serial-port-type">
+                      <div v-if="showPortType" class="serial-port-type">
                         <el-tag v-if="port.type === 'virtual'" type="info" size="small" effect="dark">虚拟串口</el-tag>
                         <el-tag v-else-if="port.type === 'usb'" type="success" size="small" effect="dark">USB</el-tag>
                         <el-tag v-else-if="port.type === 'bluetooth'" class="bluetooth-tag" size="small" effect="dark">蓝牙</el-tag>
@@ -980,6 +980,7 @@ const togglePinTab = () => {
 const serialPorts = ref<SerialPortInfo[]>([])
 const connectedSerialPorts = reactive<Record<string, boolean>>({})
 const serialPortExpanded = ref(true)
+const showPortType = ref(true) // 是否显示串口类型标签
 const filteredSerialPorts = computed(() => {
   if (!searchKeyword.value) return serialPorts.value
   const keyword = searchKeyword.value.toLowerCase()
@@ -1007,6 +1008,9 @@ const loadSidebarState = async () => {
         ...savedState.sidebar.connectionGroupExpanded
       }
     }
+    // 加载设置中的 showPortType
+    const settings = await window.storageApi.getSettings()
+    showPortType.value = settings.showPortType ?? true
   } catch (error) {
     console.error('加载侧边栏状态失败:', error)
   }
@@ -1732,6 +1736,9 @@ onMounted(() => {
 
   // 监听快捷键更新事件
   window.addEventListener('shortcuts-updated', handleShortcutsUpdated)
+
+  // 监听设置更新事件
+  window.addEventListener('settings-updated', handleSettingsUpdated)
 })
 
 // 快捷键更新处理
@@ -1739,9 +1746,18 @@ const handleShortcutsUpdated = async () => {
   await loadShortcuts()
 }
 
+// 设置更新处理
+const handleSettingsUpdated = (event: Event) => {
+  const settings = (event as CustomEvent).detail
+  if (settings && 'showPortType' in settings) {
+    showPortType.value = settings.showPortType
+  }
+}
+
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutsideSidebarMenu)
   window.removeEventListener('shortcuts-updated', handleShortcutsUpdated)
+  window.removeEventListener('settings-updated', handleSettingsUpdated)
 })
 </script>
 
