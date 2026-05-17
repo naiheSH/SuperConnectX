@@ -1333,18 +1333,18 @@ const loadShortcutActions = async () => {
           }
         },
         'Tab:prev': () => {
+          if (connectionTabs.value.length === 0) return
           const currentIndex = connectionTabs.value.findIndex(t => t.id.toString() === activeTabId.value)
-          if (currentIndex > 0) {
-            const prevTab = connectionTabs.value[currentIndex - 1]
-            switchTabById(prevTab.id)
-          }
+          const prevIndex = currentIndex <= 0 ? connectionTabs.value.length - 1 : currentIndex - 1
+          const prevTab = connectionTabs.value[prevIndex]
+          switchTabById(prevTab.id)
         },
         'Tab:next': () => {
+          if (connectionTabs.value.length === 0) return
           const currentIndex = connectionTabs.value.findIndex(t => t.id.toString() === activeTabId.value)
-          if (currentIndex < connectionTabs.value.length - 1) {
-            const nextTab = connectionTabs.value[currentIndex + 1]
-            switchTabById(nextTab.id)
-          }
+          const nextIndex = currentIndex >= connectionTabs.value.length - 1 ? 0 : currentIndex + 1
+          const nextTab = connectionTabs.value[nextIndex]
+          switchTabById(nextTab.id)
         },
         'Tab:moveFirst': () => {
           if (activeTabId.value) {
