@@ -147,6 +147,25 @@
           </div>
         </div>
         </div>
+        <!-- 侧边栏底部工具栏 -->
+        <div class="sidebar-footer">
+          <span class="sidebar-brand">SuperStudio</span>
+          <div class="sidebar-menu-wrapper">
+            <div class="sidebar-menu-btn" @click="toggleSidebarMenu" :class="{ active: showSidebarMenu }">
+              <svg viewBox="0 0 1024 1024" fill="currentColor" width="16" height="16">
+                <path d="M919.6 405.6l-57.2-8c-12.7-1.8-23-10.4-28-22.1-11.3-26.7-25.7-51.7-42.9-74.5-7.7-10.2-10-23.5-5.2-35.3l21.7-53.5c6.7-16.4 0.2-35.3-15.2-44.1L669.1 96.6c-15.4-8.9-34.9-5.1-45.8 8.9l-35.4 45.3c-7.9 10.2-20.7 14.9-33.5 13.3-14-1.8-28.3-2.8-42.8-2.8-14.5 0-28.8 1-42.8 2.8-12.8 1.6-25.6-3.1-33.5-13.3l-35.4-45.3c-10.9-14-30.4-17.8-45.8-8.9L230.4 168c-15.4 8.9-21.8 27.7-15.2 44.1l21.7 53.5c4.8 11.9 2.5 25.1-5.2 35.3-17.2 22.8-31.7 47.8-42.9 74.5-5 11.8-15.3 20.4-28 22.1l-57.2 8C86 408 72.9 423 72.9 440.8v142.9c0 17.7 13.1 32.7 30.6 35.2l57.2 8c12.7 1.8 23 10.4 28 22.1 11.3 26.7 25.7 51.7 42.9 74.5 7.7 10.2 10 23.5 5.2 35.3l-21.7 53.5c-6.7 16.4-0.2 35.3 15.2 44.1L354 927.8c15.4 8.9 34.9 5.1 45.8-8.9l35.4-45.3c7.9-10.2 20.7-14.9 33.5-13.3 14 1.8 28.3 2.8 42.8 2.8 14.5 0 28.8-1 42.8-2.8 12.8-1.6 25.6 3.1 33.5 13.3l35.4 45.3c10.9 14 30.4 17.8 45.8 8.9l123.7-71.4c15.4-8.9 21.8-27.7 15.2-44.1l-21.7-53.5c-4.8-11.8-2.5-25.1 5.2-35.3 17.2-22.8 31.7-47.8 42.9-74.5 5-11.8 15.3-20.4 28-22.1l57.2-8c17.6-2.5 30.6-17.5 30.6-35.2V440.8c0.2-17.8-12.9-32.8-30.5-35.2z m-408 245.5c-76.7 0-138.9-62.2-138.9-138.9s62.2-138.9 138.9-138.9 138.9 62.2 138.9 138.9-62.2 138.9-138.9 138.9z"/>
+              </svg>
+            </div>
+            <div class="sidebar-dropdown-menu" v-if="showSidebarMenu">
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('options')">选项</div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('plugins')">插件</div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('checkUpdate')">检查更新</div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('shortcuts')">快捷键</div>
+              <div class="sidebar-menu-separator"></div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('about')">关于</div>
+            </div>
+          </div>
+        </div>
       </div>
       <!-- 侧边栏分隔条 -->
       <div v-if="showConnectionList" class="sidebar-resizer" @mousedown="startResize" :class="{ resizing: isResizing }"></div>
@@ -356,7 +375,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, reactive, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, reactive, computed, nextTick } from 'vue'
 import { ElMessage, ElForm, ElMessageBox } from 'element-plus'
 import TelnetTerminal from './components/TelnetTerminal.vue'
 import ComTerminal from './components/ComTerminal.vue'
@@ -373,6 +392,44 @@ const filterConnection = ref<any[]>([])
 const connections = ref<any[]>([])
 const isCreateDialogOpen = ref(false)
 const isAboutDialogOpen = ref(false)
+
+// 侧边栏底部菜单状态
+const showSidebarMenu = ref(false)
+
+const toggleSidebarMenu = () => {
+  showSidebarMenu.value = !showSidebarMenu.value
+}
+
+// 点击外部关闭侧边栏菜单
+const handleClickOutsideSidebarMenu = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest('.sidebar-menu-wrapper')) {
+    showSidebarMenu.value = false
+  }
+}
+
+// 侧边栏底部菜单处理
+const handleSidebarMenuCommand = async (command: string) => {
+  showSidebarMenu.value = false
+  switch (command) {
+    case 'options':
+      ElMessage.info('选项功能开发中...')
+      break
+    case 'plugins':
+      ElMessage.info('插件功能开发中...')
+      break
+    case 'checkUpdate':
+      ElMessage.info('已是最新版本')
+      break
+    case 'shortcuts':
+      ElMessage.info('快捷键功能开发中...')
+      break
+    case 'about':
+      isAboutDialogOpen.value = true
+      break
+  }
+}
+
 const connFormRef = ref<InstanceType<typeof ElForm> | null>(null)
 const newConnForm = reactive(TelnetInfo.build())
 const showConnectionList = ref(true)
@@ -1358,17 +1415,26 @@ onMounted(() => {
   // 点击其他区域关闭菜单
   document.addEventListener('click', (e: MouseEvent) => {
     const tabEl = (e.target as HTMLElement).closest('.tab-item')
-    
+
     // 如果点击在选项卡上，让组件处理
     if (tabEl) {
       return
     }
-    
+
     // 关闭菜单
     if (showTabMenu.value) {
       hideTabMenu()
     }
+
+    // 关闭侧边栏底部菜单
+    if (showSidebarMenu.value) {
+      handleClickOutsideSidebarMenu(e)
+    }
   })
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutsideSidebarMenu)
 })
 </script>
 
@@ -1415,12 +1481,13 @@ onMounted(() => {
 
 .connection-list {
   width: 100%;
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #333;
   background: #252526;
   overflow-x: hidden;
+  min-height: 0;
 }
 
 .connection-list-fixed {
@@ -1697,6 +1764,79 @@ onMounted(() => {
   overflow: hidden;
   flex-shrink: 0;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 侧边栏底部工具栏 */
+.sidebar-footer {
+  flex-shrink: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-top: 1px solid #333;
+  background: #252526;
+}
+
+.sidebar-brand {
+  color: #ffc107;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.sidebar-menu-wrapper {
+  position: relative;
+}
+
+.sidebar-menu-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sidebar-menu-btn:hover,
+.sidebar-menu-btn.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+}
+
+.sidebar-dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  width: 140px;
+  background-color: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+
+.sidebar-menu-item {
+  padding: 6px 16px;
+  color: #e0e0e0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.sidebar-menu-item:hover {
+  background-color: #1f466e;
+}
+
+.sidebar-menu-separator {
+  height: 1px;
+  background-color: #444;
+  margin: 4px 0;
 }
 
 .connection-list-wrapper.collapsed {
