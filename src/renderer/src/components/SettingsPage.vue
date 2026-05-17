@@ -35,9 +35,9 @@
       <div class="settings-panel">
         <!-- 基本设置 -->
         <div v-if="activeCategory === 'basic'" class="settings-group">
-          <!-- 语言 -->
+          <!-- 基本配置 -->
           <div class="group-section">
-            <div class="group-title">语言（未实现）</div>
+            <div class="group-title">基本配置</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">界面语言</span>
@@ -48,34 +48,12 @@
                 <el-option label="English" value="en-US" />
               </el-select>
             </div>
-          </div>
-
-          <!-- 基本配置 -->
-          <div class="group-section">
-            <div class="group-title">基本配置</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">关闭后最小化到托盘</span>
                 <span class="label-desc">关闭窗口时最小化到系统托盘而不是退出程序</span>
               </div>
               <el-switch v-model="settings.minimizeToTray" />
-            </div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">日志分片大小</span>
-                <span class="label-desc">单个日志文件最大大小（MB）</span>
-              </div>
-              <div class="slider-control">
-                <el-slider
-                  v-model="settings.logSplitSize"
-                  :min="1"
-                  :max="100"
-                  :step="1"
-                  :show-tooltip="false"
-                  style="width: 120px"
-                />
-                <span class="slider-value">{{ settings.logSplitSize }} MB</span>
-              </div>
             </div>
           </div>
 
@@ -222,28 +200,20 @@
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">最大日志大小</span>
-                <span class="label-desc">单个日志文件最大大小（MB）</span>
+                <span class="label-text">日志分片大小</span>
+                <span class="label-desc">单个日志文件超过此大小时分片（MB）</span>
               </div>
-              <el-input-number v-model="settings.maxLogSize" size="small" :min="1" :max="100" style="width: 100px" />
-            </div>
-          </div>
-
-          <div class="group-section">
-            <div class="group-title">日志格式（未实现）</div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">时间戳</span>
-                <span class="label-desc">每行日志前添加时间戳</span>
+              <div class="slider-control">
+                <el-slider
+                  v-model="settings.logSplitSize"
+                  :min="1"
+                  :max="100"
+                  :step="1"
+                  :show-tooltip="false"
+                  style="width: 120px"
+                />
+                <span class="slider-value">{{ settings.logSplitSize }} MB</span>
               </div>
-              <el-switch v-model="settings.logTimestamp" />
-            </div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">十六进制显示</span>
-                <span class="label-desc">以十六进制格式显示日志</span>
-              </div>
-              <el-switch v-model="settings.logHex" />
             </div>
           </div>
         </div>
