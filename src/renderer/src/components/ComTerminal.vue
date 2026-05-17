@@ -138,7 +138,7 @@
 
         <!-- 新增波特率对话框 -->
         <el-dialog v-model="showAddBaudRateDialog" title="新增波特率" width="300px" @opened="onBaudRateDialogOpened">
-          <el-form label-width="80px">
+          <el-form label-width="80px" @submit.prevent>
             <el-form-item label="波特率">
               <el-input-number
                 ref="baudRateInputRef"
@@ -151,6 +151,7 @@
                 controls-position="right"
                 :controls="false"
                 placeholder="输入波特率"
+                @keyup.enter="addBaudRate"
               />
             </el-form-item>
           </el-form>
