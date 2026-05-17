@@ -295,7 +295,8 @@ defineExpose({
   getFontFamily: () => {
     const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()
     return unifiedFont || terminal.fontFamily.value
-  }
+  },
+  clearTerminal: () => unifiedTerminalRef.value?.clearTerminal?.()
 })
 
 onMounted(() => {

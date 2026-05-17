@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('storageApi', {
 
   /* 快捷键设置 */
   getShortcuts: () => ipcRenderer.invoke('get-shortcuts'),
+  getDefaultShortcuts: () => ipcRenderer.invoke('get-default-shortcuts'),
   saveShortcuts: (shortcuts: any[]) => ipcRenderer.invoke('save-shortcuts', shortcuts)
 })
 

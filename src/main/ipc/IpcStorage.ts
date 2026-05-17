@@ -84,6 +84,7 @@ export default class IpcStorage {
     /* 快捷键持久化 */
     const shortcutsStorage = new ShortcutsStorage()
     ipcMain.handle('get-shortcuts', () => shortcutsStorage.getAll())
+    ipcMain.handle('get-default-shortcuts', () => shortcutsStorage.getDefaults())
     ipcMain.handle('save-shortcuts', (_, shortcuts: any[]) => {
       shortcutsStorage.saveAll(shortcuts)
       return true

@@ -399,6 +399,9 @@ const connections = ref<any[]>([])
 const isCreateDialogOpen = ref(false)
 const isAboutDialogOpen = ref(false)
 
+// 快捷键配置
+const shortcuts = ref<Array<{ action: string; keys: string[] }>>([])
+
 // 侧边栏底部菜单状态
 const showSidebarMenu = ref(false)
 
@@ -1258,6 +1261,171 @@ const handleFontSizeChange = (action: string) => {
   }
 }
 
+// 加载快捷键配置
+const loadShortcuts = async () => {
+  try {
+    const data = await window.storageApi.getShortcuts()
+    if (Array.isArray(data) && data.length > 0) {
+      shortcuts.value = data
+    }
+  } catch (error) {
+    console.error('加载快捷键失败:', error)
+  }
+}
+
+// 快捷键操作映射
+const shortcutActions: Record<string, () => void> = {
+  '新建连接': () => openCreateDialog(),
+  '关闭当前标签': () => {
+    if (activeTabId.value) {
+      closeSingleTab(connectionTabs.value.find(t => t.id.toString() === activeTabId.value) || { id: activeTabId.value })
+    }
+  },
+  '打开/断开当前连接': () => {
+    if (activeTabId.value) {
+      const tab = connectionTabs.value.find(t => t.id.toString() === activeTabId.value)
+      if (tab) {
+        const isConnected = tab.connectionType === 'com'
+          ? comTerminalRefs[tab.id]?.isConnected
+          : telnetTerminalRefs[tab.id]?.isConnected
+        if (isConnected) {
+          closeSingleTab(tab)
+        }
+      }
+    }
+  },
+  '打开/断开全部连接': () => {
+    if (hasAnyConnected.value) {
+      disconnectAllTabs()
+    } else {
+      connectAllTabs()
+    }
+  },
+  '清空终端': () => {
+    if (activeTabId.value) {
+      const tabId = activeTabId.value
+      if (comTerminalRefs[tabId]) {
+        comTerminalRefs[tabId]?.clearTerminal?.()
+      } else if (telnetTerminalRefs[tabId]) {
+        telnetTerminalRefs[tabId]?.clearTerminal?.()
+      }
+    }
+  },
+  '固定/取消固定标签': () => {
+    if (activeTabId.value) {
+      const tab = connectionTabs.value.find(t => t.id.toString() === activeTabId.value)
+      if (tab) {
+        rightClickedTab.value = tab
+        togglePinTab()
+      }
+    }
+  },
+  '切换到上一个标签': () => {
+    const currentIndex = connectionTabs.value.findIndex(t => t.id.toString() === activeTabId.value)
+    if (currentIndex > 0) {
+      const prevTab = connectionTabs.value[currentIndex - 1]
+      switchTabById(prevTab.id)
+    }
+  },
+  '切换到下一个标签': () => {
+    const currentIndex = connectionTabs.value.findIndex(t => t.id.toString() === activeTabId.value)
+    if (currentIndex < connectionTabs.value.length - 1) {
+      const nextTab = connectionTabs.value[currentIndex + 1]
+      switchTabById(nextTab.id)
+    }
+  },
+  '标签移到最前': () => {
+    if (activeTabId.value) {
+      const tab = connectionTabs.value.find(t => t.id.toString() === activeTabId.value)
+      if (tab) {
+        rightClickedTab.value = tab
+        moveTabToFirst()
+      }
+    }
+  },
+  '标签移到后': () => {
+    if (activeTabId.value) {
+      const tab = connectionTabs.value.find(t => t.id.toString() === activeTabId.value)
+      if (tab) {
+        rightClickedTab.value = tab
+        moveTabToLast()
+      }
+    }
+  },
+  '打开命令编辑器': () => {
+    const connectionType = activeTabId.value
+      ? connectionTabs.value.find(t => t.id.toString() === activeTabId.value)?.connectionType || 'telnet'
+      : 'telnet'
+    openCommandEditorTab(connectionType === 'com' ? 'telnet' : connectionType)
+  },
+  '打开设置': () => {
+    ElMessage.info('设置功能开发中...')
+  },
+  '切换连接列表': () => toggleConnectionList(),
+  '刷新串口列表': () => loadSerialPorts(),
+}
+
+// 标准化快捷键修饰键
+const normalizeShortcutKey = (key: string): string => {
+  const upperKey = key.toUpperCase()
+  if (['CONTROL', 'CMD', 'COMMAND', 'COMMANDORCONTROL', 'SUPER', 'HYPER'].includes(upperKey)) {
+    return 'Ctrl'
+  }
+  return key
+}
+
+// 标准化按键值用于比较
+const normalizeEventKey = (e: KeyboardEvent): string[] => {
+  const keys: string[] = []
+  if (e.ctrlKey) keys.push('Ctrl')
+  if ( e.altKey) keys.push('Alt')
+  if (e.shiftKey) keys.push('Shift')
+  if (e.metaKey) keys.push('Meta')
+  // 添加主要按键（排除修饰键）
+  const key = e.key
+  if (!['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
+    // 标准化一些特殊键名
+    let normalizedKey = key
+    if (key === ' ') normalizedKey = 'Space'
+    else if (key === '`') normalizedKey = '`'
+    else if (key.length === 1) normalizedKey = key.toUpperCase()
+    keys.push(normalizedKey)
+  }
+  return keys
+}
+
+// 快捷键处理
+const handleShortcutKeydown = (e: KeyboardEvent) => {
+  // 检查是否在输入框中（不处理快捷键）
+  const target = e.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+    return
+  }
+
+  // 检查是否在对话框中（不处理快捷键）
+  if (document.querySelector('.el-dialog__wrapper')) {
+    return
+  }
+
+  const pressedKeys = normalizeEventKey(e)
+
+  for (const shortcut of shortcuts.value) {
+    if (!shortcut.keys || shortcut.keys.length === 0) continue
+
+    const shortcutKeys = shortcut.keys.map(k => normalizeShortcutKey(k))
+
+    if (pressedKeys.length === shortcutKeys.length &&
+        pressedKeys.every(k => shortcutKeys.includes(k))) {
+      const action = shortcutActions[shortcut.action]
+      if (action) {
+        e.preventDefault()
+        action()
+        return
+      }
+    }
+  }
+}
+
 const getConnectionStatus = (tab: any) => {
   if (tab.connectionType === 'com') {
     return comTerminalRefs[tab.id]?.isConnected ? 'connected' : 'disconnected'
@@ -1275,6 +1443,8 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
     e.preventDefault()
     window.toolApi.openDevtools()
   }
+  // 处理快捷键
+  handleShortcutKeydown(e)
 })
 
 watch([() => connections.value, () => searchKeyword.value], () => filtereList(), {
@@ -1407,6 +1577,7 @@ onMounted(() => {
   loadSidebarState()
   loadConnections()
   loadSerialPorts()
+  loadShortcuts()
 
   // 首次打开时，如果已有选项卡，需要更新字体
   if (activeTabId.value) {

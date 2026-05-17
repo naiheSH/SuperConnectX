@@ -11,6 +11,11 @@
         />
         <button class="clear-btn" @click="clearSearch" v-if="searchKeyword">×</button>
       </div>
+      <div class="search-actions">
+        <el-button type="text" class="restore-btn" @click="restoreDefaults">
+          恢复默认设置
+        </el-button>
+      </div>
     </div>
 
     <!-- 快捷键表格 -->
@@ -92,6 +97,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch, toRaw } from 'vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
 
 interface ShortcutItem {
   action: string
@@ -100,29 +106,8 @@ interface ShortcutItem {
 
 const searchKeyword = ref('')
 
-// 快捷键列表数据
-const shortcuts = ref<ShortcutItem[]>([
-  { action: '新建连接', keys: ['Ctrl', 'N'] },
-  { action: '打开连接', keys: ['Ctrl', 'O'] },
-  { action: '保存连接', keys: ['Ctrl', 'S'] },
-  { action: '关闭当前标签', keys: ['Ctrl', 'W'] },
-  { action: '刷新串口列表', keys: ['F5'] },
-  { action: '连接串口', keys: ['Enter'] },
-  { action: '断开连接', keys: ['Ctrl', 'D'] },
-  { action: '发送命令', keys: ['Enter'] },
-  { action: '清空终端', keys: ['Ctrl', 'L'] },
-  { action: '搜索终端输出', keys: ['Ctrl', 'F'] },
-  { action: '打开设置', keys: ['Ctrl', ','] },
-  { action: '切换到上一个标签', keys: ['Ctrl', 'Tab'] },
-  { action: '切换到下一个标签', keys: ['Ctrl', 'Shift', 'Tab'] },
-  { action: '固定/取消固定标签', keys: ['Ctrl', 'P'] },
-  { action: '全局焦点切换', keys: ['Ctrl', '`'] },
-  { action: '复制选中内容', keys: ['Ctrl', 'C'] },
-  { action: '粘贴到终端', keys: ['Ctrl', 'Shift', 'V'] },
-  { action: '全选终端内容', keys: ['Ctrl', 'A'] },
-  { action: '打开命令编辑器', keys: ['Ctrl', 'E'] },
-  { action: '切换连接列表', keys: ['Ctrl', 'B'] },
-])
+// 快捷键列表数据（从后端加载）
+const shortcuts = ref<ShortcutItem[]>([])
 
 // 对话框相关
 const dialogVisible = ref(false)
@@ -435,6 +420,34 @@ const loadShortcuts = async () => {
   }
 }
 
+// 恢复默认设置
+const restoreDefaults = async () => {
+  try {
+    await ElMessageBox.confirm('确定要恢复默认快捷键配置吗？', '恢复默认设置', {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'warning',
+      center: true,
+      confirmButtonClass: 'el-button--primary',
+      cancelButtonClass: 'el-button--danger'
+    })
+    
+    // 获取默认快捷键并保存
+    const defaultShortcuts = await window.storageApi.getDefaultShortcuts()
+    if (Array.isArray(defaultShortcuts) && defaultShortcuts.length > 0) {
+      await window.storageApi.saveShortcuts(defaultShortcuts)
+      await loadShortcuts()
+      ElMessage.success('已恢复默认快捷键配置')
+    }
+  } catch (error: any) {
+    // 用户取消操作时不显示错误
+    if (error !== 'cancel') {
+      console.error('恢复默认设置失败:', error)
+      ElMessage.error('恢复默认设置失败')
+    }
+  }
+}
+
 onMounted(() => {
   loadShortcuts()
 })
@@ -479,12 +492,29 @@ const clearSearch = () => {
 .shortcuts-search {
   flex-shrink: 0;
   padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .search-inner {
   position: relative;
-  width: 100%;
+  flex: 1;
   height: 32px;
+}
+
+.search-actions {
+  flex-shrink: 0;
+}
+
+.restore-btn {
+  color: #888 !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+
+.restore-btn:hover {
+  color: #409eff !important;
 }
 
 .search-input {

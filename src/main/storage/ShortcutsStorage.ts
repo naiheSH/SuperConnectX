@@ -35,6 +35,11 @@ export default class ShortcutsStorage extends BaseStorage<ShortcutItem> {
     this.storageData.set(STORAGE_NAME, data)
   }
 
+  // 获取默认快捷键（公开方法，用于恢复默认设置）
+  getDefaults(): ShortcutItem[] {
+    return this.getDefaultShortcuts()
+  }
+
   // 获取默认快捷键
   private getDefaultShortcuts(): ShortcutItem[] {
     return [
@@ -48,6 +53,7 @@ export default class ShortcutsStorage extends BaseStorage<ShortcutItem> {
       { action: '切换到下一个标签', keys: ['Ctrl', 'Shift', 'Tab'] },
       { action: '标签移到最前', keys: ['Ctrl', 'Shift', 'Q'] },
       { action: '标签移到后', keys: ['Ctrl', 'Shift', 'W'] },
+      { action: '打开命令编辑器', keys: ['Ctrl', 'Shift', 'E'] },
     ]
   }
 }
