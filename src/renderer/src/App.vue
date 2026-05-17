@@ -1287,7 +1287,21 @@ const loadShortcutActions = async () => {
                 ? comTerminalRefs[tab.id]?.isConnected
                 : telnetTerminalRefs[tab.id]?.isConnected
               if (isConnected) {
-                closeSingleTab(tab)
+                // 已连接，断开连接（不关闭标签）
+                if (tab.connectionType === 'com') {
+                  comTerminalRefs[tab.id]?.preventAutoReconnect?.()
+                  comTerminalRefs[tab.id]?.disconnect?.()
+                } else {
+                  telnetTerminalRefs[tab.id]?.preventAutoReconnect?.()
+                  telnetTerminalRefs[tab.id]?.disconnect?.()
+                }
+              } else {
+                // 未连接，执行连接
+                if (tab.connectionType === 'com') {
+                  comTerminalRefs[tab.id]?.reconnect?.()
+                } else {
+                  telnetTerminalRefs[tab.id]?.reconnect?.()
+                }
               }
             }
           }
