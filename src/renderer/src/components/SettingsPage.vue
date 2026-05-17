@@ -162,7 +162,7 @@
         <!-- 串口设置 -->
         <div v-else-if="activeCategory === 'serial'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">串口设置（未实现）</div>
+            <div class="group-title">串口COM设置</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">支持的波特率列表</span>
@@ -305,7 +305,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const searchKeyword = ref('')
@@ -313,7 +313,7 @@ const activeCategory = ref('basic')
 
 const categories = [
   { key: 'basic', label: '基本设置' },
-  { key: 'serial', label: '串口设置' },
+  { key: 'serial', label: '串口COM设置' },
   { key: 'log', label: '日志' },
   { key: 'syntax', label: '语法高亮' },
   { key: 'search', label: '搜索' }
@@ -424,7 +424,23 @@ const confirmAddBaudRate = () => {
 onMounted(async () => {
   await loadDefaultSettings()
   await loadSettings()
+
+  // 监听设置更新事件（ComTerminal 修改波特率列表时刷新显示）
+  window.addEventListener('settings-updated', handleSettingsUpdated)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('settings-updated', handleSettingsUpdated)
+})
+
+// 设置更新处理
+const handleSettingsUpdated = (event: Event) => {
+  const updatedSettings = (event as CustomEvent).detail
+  if (updatedSettings && 'supportedBaudRates' in updatedSettings) {
+    // 刷新波特率列表显示（使用 splice 保持响应性）
+    settings.value.supportedBaudRates.splice(0, settings.value.supportedBaudRates.length, ...updatedSettings.supportedBaudRates)
+  }
+}
 </script>
 
 <style scoped>

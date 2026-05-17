@@ -227,7 +227,7 @@ let removeMountedCloseListener: (() => void) | null = null
 let removeDataListener: (() => void) | null = null
 
 // 串口参数
-const baudRates = ref<number[]>([])
+const baudRates = ref<number[]>([]) // 从全局设置加载
 const baudRate = ref(props.connection.baudRate || 9600)
 const dataBits = ref(props.connection.dataBits || 8)
 const stopBits = ref(props.connection.stopBits || 1)
@@ -441,26 +441,51 @@ const notifyLogTimestampToBackend = async (showTs: boolean) => {
   }
 }
 
-// 加载全局波特率列表
+// 加载全局波特率列表（从设置中获取 supportedBaudRates）
 const loadBaudRates = async () => {
   try {
-    const rates = await window.storageApi.getBaudRates()
-    baudRates.value = rates || [9600, 19200, 115200, 1500000]
+    const allSettings = await window.storageApi.getSettings()
+    baudRates.value = allSettings?.supportedBaudRates || [9600, 19200, 115200, 1500000]
   } catch (error) {
     console.error('加载波特率列表失败:', error)
     baudRates.value = [9600, 19200, 115200, 1500000]
   }
 }
 
-// 新增波特率
+// 刷新波特率列表（当设置页面修改后调用）
+const refreshBaudRates = async () => {
+  await loadBaudRates()
+  // 如果当前选中的波特率不在列表中，切换到第一个
+  if (!baudRates.value.includes(baudRate.value)) {
+    baudRate.value = baudRates.value[0]
+  }
+}
+
+// 监听设置更新事件（波特率列表变化）
+const handleSettingsUpdated = (event: Event) => {
+  const settings = (event as CustomEvent).detail
+  if (settings && 'supportedBaudRates' in settings) {
+    baudRates.value = settings.supportedBaudRates || baudRates.value
+    // 如果当前选中的波特率不在列表中，切换到第一个
+    if (!baudRates.value.includes(baudRate.value)) {
+      baudRate.value = baudRates.value[0]
+    }
+  }
+}
+
+// 新增波特率（更新全局设置）
 const addBaudRate = async () => {
   const rate = newBaudRate.value
   if (rate && !baudRates.value.includes(rate)) {
     baudRates.value.push(rate)
     baudRates.value.sort((a, b) => a - b)
     baudRate.value = rate
+    // 更新全局设置（统一使用 supportedBaudRates）
     try {
-      await window.storageApi.saveBaudRates([...baudRates.value])
+      const allSettings = await window.storageApi.getSettings()
+      allSettings.supportedBaudRates = [...baudRates.value]
+      await window.storageApi.saveSettings(allSettings)
+      window.dispatchEvent(new CustomEvent('settings-updated', { detail: allSettings }))
     } catch (error) {
       console.error('saveBaudRates error:', error)
     }
@@ -472,7 +497,7 @@ const addBaudRate = async () => {
   showAddBaudRateDialog.value = false
 }
 
-// 删除波特率
+// 删除波特率（更新全局设置）
 const deleteBaudRate = async (rate: number) => {
   if (baudRates.value.length <= 1) {
     ElMessage.warning('至少保留一个波特率')
@@ -484,8 +509,12 @@ const deleteBaudRate = async (rate: number) => {
     if (baudRate.value === rate) {
       baudRate.value = baudRates.value[0]
     }
+    // 更新全局设置（统一使用 supportedBaudRates）
     try {
-      await window.storageApi.saveBaudRates([...baudRates.value])
+      const allSettings = await window.storageApi.getSettings()
+      allSettings.supportedBaudRates = [...baudRates.value]
+      await window.storageApi.saveSettings(allSettings)
+      window.dispatchEvent(new CustomEvent('settings-updated', { detail: allSettings }))
     } catch (error) {
       console.error('saveBaudRates error:', error)
     }
@@ -665,6 +694,9 @@ onMounted(async () => {
     }
   })
 
+  // 监听设置更新事件（波特率列表变化时刷新）
+  window.addEventListener('settings-updated', handleSettingsUpdated)
+
   if (props.autoConnect) {
     handleConnect()
   }
@@ -672,6 +704,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   terminalCleanup()
+  window.removeEventListener('settings-updated', handleSettingsUpdated)
   if (removeDataListener) {
     removeDataListener()
     removeDataListener = null
