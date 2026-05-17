@@ -62,6 +62,12 @@ contextBridge.exposeInMainWorld('connectApi', {
     ipcRenderer.on('on-connect-close', listener)
     return () => ipcRenderer.removeListener('on-connect-close', listener)
   },
+  onLogSplit: (callback: (data: { connId: string; oldFileName: string; newFileName: string }) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: { connId: string; oldFileName: string; newFileName: string }) =>
+      callback(data)
+    ipcRenderer.on('on-log-split', listener)
+    return () => ipcRenderer.removeListener('on-log-split', listener)
+  },
   openConnectLog: (sessionId: string) => ipcRenderer.invoke('open-connect-log', sessionId),
   getLogFilePath: (sessionId: string) => ipcRenderer.invoke('get-log-file-path', sessionId),
   copyLogFile: (sessionId: string, destPath: string) => ipcRenderer.invoke('copy-log-file', { sessionId, destPath }),

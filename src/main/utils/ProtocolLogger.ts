@@ -1,16 +1,25 @@
-import { appendFile, appendFileSync, existsSync, mkdirSync } from 'fs'
+import { appendFile, appendFileSync, existsSync, mkdirSync, statSync } from 'fs'
 import { shell } from 'electron'
 import fs from 'fs/promises'
 import { join } from 'path'
 import { app } from 'electron'
 import path from 'path'
 
+export interface LogSplitCallback {
+  (connId: string, oldFileName: string, newFileName: string): void
+}
+
 export default class ProtocolLogger {
   private logDir: string
   private connLogFiles = new Map<string, string>()
+  private connLogIndexes = new Map<string, number>()
+  private connLogNames = new Map<string, string>() // 保存原始连接名
   private logCache = new Map<string, string[]>()
+  private currentFileSizes = new Map<string, number>()
+  private logSplitCallback: LogSplitCallback | null = null
   private writeTimer: NodeJS.Timeout | null = null
   private readonly BATCH_WRITE_INTERVAL_MS = 10 * 1000
+  private logSplitSizeMB: number = 10 // 默认 10MB
 
   constructor() {
     const exePath = app.isPackaged ? app.getPath('exe') : process.cwd()
@@ -22,6 +31,16 @@ export default class ProtocolLogger {
     }
 
     this.startWriteTimer()
+  }
+
+  // 设置日志分片回调
+  setLogSplitCallback(callback: LogSplitCallback | null): void {
+    this.logSplitCallback = callback
+  }
+
+  // 设置日志分片大小（MB）
+  setLogSplitSize(sizeMB: number): void {
+    this.logSplitSizeMB = sizeMB
   }
 
   // 生成高精度时间戳
@@ -55,12 +74,58 @@ export default class ProtocolLogger {
     if (this.writeTimer.unref) this.writeTimer.unref()
   }
 
+  // 检查并处理日志分片
+  private checkAndSplitLog(connId: string): string {
+    const fileName = this.connLogFiles.get(connId)
+    if (!fileName) return fileName || ''
+
+    const logFile = join(this.logDir, fileName)
+    
+    // 获取当前文件大小
+    let currentSize = this.currentFileSizes.get(connId) || 0
+    
+    if (existsSync(logFile)) {
+      try {
+        const stats = statSync(logFile)
+        currentSize = stats.size
+      } catch (err) {
+        console.error(`获取日志文件大小失败:`, err)
+      }
+    }
+
+    // 如果超过阈值，创建新文件
+    const maxSizeBytes = this.logSplitSizeMB * 1024
+    if (currentSize >= maxSizeBytes) {
+      const oldFileName = fileName
+      const index = (this.connLogIndexes.get(connId) || 0) + 1
+      this.connLogIndexes.set(connId, index)
+
+      // 使用保存的原始连接名
+      const connName = this.connLogNames.get(connId) || 'unknown'
+      const newFileName = `${connName}-${this.getFileTimeStamp()}-${index}.log`
+      this.connLogFiles.set(connId, newFileName)
+      this.currentFileSizes.set(connId, 0)
+
+      // 触发分片回调
+      if (this.logSplitCallback) {
+        this.logSplitCallback(connId, oldFileName, newFileName)
+      }
+
+      return newFileName
+    }
+
+    return fileName
+  }
+
   // 批量写入日志（区分同步/异步）
   private flushAllLogs(isSync: boolean = true): void {
     this.logCache.forEach((logEntries, connId) => {
       if (logEntries.length <= 0) {
         return
       }
+
+      // 检查是否需要分片
+      this.checkAndSplitLog(connId)
 
       const fileName = this.connLogFiles.get(connId)
       if (!fileName) return
@@ -72,10 +137,20 @@ export default class ProtocolLogger {
         if (isSync) {
           // 退出时同步写入（纯Node.js API，无Electron依赖）
           appendFileSync(logFile, logData, 'utf-8')
+          // 更新文件大小
+          const stats = statSync(logFile)
+          this.currentFileSizes.set(connId, stats.size)
         } else {
           // 正常运行时异步写入
           appendFile(logFile, logData, 'utf-8', (err) => {
             if (err) console.error(`异步写入日志失败[connId:${connId}]:`, err)
+            else {
+              // 异步写入成功后更新文件大小
+              try {
+                const stats = statSync(logFile)
+                this.currentFileSizes.set(connId, stats.size)
+              } catch {}
+            }
           })
         }
         this.logCache.set(connId, []) // 清空缓存
@@ -97,7 +172,10 @@ export default class ProtocolLogger {
     const safeName = connName.replace(/[\\/*?:"<>|]/g, '-')
     const fileName = `${safeName}-${this.getFileTimeStamp()}.log`
     this.connLogFiles.set(connId, fileName)
+    this.connLogIndexes.set(connId, 0)
+    this.connLogNames.set(connId, safeName) // 保存原始连接名
     this.logCache.set(connId, [])
+    this.currentFileSizes.set(connId, 0)
     return fileName
   }
 
@@ -153,6 +231,9 @@ export default class ProtocolLogger {
   clearConnLogFile(connId: string): void {
     this.flushConnLog(connId)
     this.connLogFiles.delete(connId)
+    this.connLogIndexes.delete(connId)
+    this.connLogNames.delete(connId)
+    this.currentFileSizes.delete(connId)
   }
 
   async openConnLog(connId: string): Promise<{ success: boolean; message: string } | null> {

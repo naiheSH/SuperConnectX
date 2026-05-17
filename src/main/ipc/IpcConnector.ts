@@ -4,6 +4,8 @@ import BaseClient from '../protocol/BaseClient'
 import { ipcMain } from 'electron'
 import logger from './IpcAppLogger'
 import ComClient from '../protocol/ComClient'
+import ProtocolLogger from '../utils/ProtocolLogger'
+import SettingsStorage from '../storage/SettingsStorage'
 
 export default class IpcConnector {
   private static sInstance: IpcConnector
@@ -19,7 +21,12 @@ export default class IpcConnector {
   // 用于动态存储每个会话的日志时间戳配置
   private logTimestampMap = new Map<string, boolean>()
 
-  constructor() {}
+  private settingsStorage: SettingsStorage
+  private windows: any
+
+  constructor() {
+    this.settingsStorage = new SettingsStorage()
+  }
 
   static getInstance(): IpcConnector {
     if (IpcConnector.sInstance == null) {
@@ -54,7 +61,25 @@ export default class IpcConnector {
     return connInfo
   }
 
-  init(_logger, windows): void {
+  init(_logger: ProtocolLogger, windows): void {
+    this.windows = windows
+
+    // 设置日志分片回调
+    _logger.setLogSplitCallback((connId, oldFileName, newFileName) => {
+      // 通知前端日志文件已切换
+      windows.mainWindow?.webContents.send('on-log-split', {
+        connId,
+        oldFileName,
+        newFileName
+      })
+    })
+
+    // 根据设置更新日志分片大小
+    const settings = this.settingsStorage.getSettings()
+    if (settings.logSplitSize) {
+      _logger.setLogSplitSize(settings.logSplitSize)
+    }
+
     ipcMain.handle('start-connect', async (_, conn: any) => {
       logger.info(`start connect telnet: ${conn.name}`)
       logger.debug(JSON.stringify(conn))
