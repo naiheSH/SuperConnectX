@@ -398,6 +398,8 @@ const confirmShortcut = async () => {
       keys: [...item.keys]
     }))
     await window.storageApi.saveShortcuts(dataToSave)
+    // 通知其他组件快捷键已更新
+    window.dispatchEvent(new CustomEvent('shortcuts-updated'))
   } catch (error) {
     console.error('保存快捷键失败:', error)
   }
@@ -460,6 +462,8 @@ const restoreDefaults = async () => {
     if (Array.isArray(defaultShortcuts) && defaultShortcuts.length > 0) {
       await window.storageApi.saveShortcuts(defaultShortcuts)
       await loadShortcuts()
+      // 通知其他组件快捷键已更新
+      window.dispatchEvent(new CustomEvent('shortcuts-updated'))
       ElMessage.success('已恢复默认快捷键配置')
     }
   } catch (error: any) {

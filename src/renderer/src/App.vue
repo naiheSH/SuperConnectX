@@ -1642,10 +1642,19 @@ onMounted(() => {
       handleClickOutsideSidebarMenu(e)
     }
   })
+
+  // 监听快捷键更新事件
+  window.addEventListener('shortcuts-updated', handleShortcutsUpdated)
 })
+
+// 快捷键更新处理
+const handleShortcutsUpdated = async () => {
+  await loadShortcuts()
+}
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutsideSidebarMenu)
+  window.removeEventListener('shortcuts-updated', handleShortcutsUpdated)
 })
 </script>
 
