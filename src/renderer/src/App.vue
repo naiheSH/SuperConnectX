@@ -1301,8 +1301,6 @@ const loadShortcutActions = async () => {
   try {
     const actions = await window.storageApi.getShortcutActions()
     if (actions && typeof actions === 'object') {
-      // action名称到中文名称的映射
-      const actionNames = actions as Record<string, string>
       // 构建action到执行函数的映射
       shortcutActions.value = {
         'Tab:newConnection': () => openCreateDialog(),

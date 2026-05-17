@@ -6,6 +6,18 @@ export interface ConnectionFormData {
   port: number
   username: string
   password: string
+  // 串口相关字段
+  comName?: string
+  baudRate?: number
+  dataBits?: number
+  stopBits?: number
+  parity?: string
+  encoding?: string
+  readTimeout?: number
+  writeTimeout?: number
+  flowControl?: string
+  rts?: boolean
+  dtr?: boolean
 }
 
 export default class TelnetInfo {

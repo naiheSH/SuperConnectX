@@ -1,15 +1,12 @@
 import { Tray, Menu, nativeImage, app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import logger from './IpcAppLogger'
-import SettingsStorage from '../storage/SettingsStorage'
 
 export default class IpcTray {
   private static sInstance: IpcTray
   private tray: Tray | null = null
-  private settingsStorage: SettingsStorage
 
   constructor() {
-    this.settingsStorage = new SettingsStorage()
   }
 
   static getInstance(): IpcTray {

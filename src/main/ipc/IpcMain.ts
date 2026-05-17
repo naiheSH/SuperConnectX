@@ -83,7 +83,7 @@ export default class IpcMain {
 
       // 监听窗口关闭事件
       mainWindow.on('close', (event) => {
-        const settings = this.settingsStorage.getSettings()
+        const settings = IpcMain.getInstance().settingsStorage.getSettings()
         // 如果设置了关闭后最小化到托盘，并且不是真正退出，则阻止关闭并隐藏
         if (settings.minimizeToTray && !isQuitting) {
           event.preventDefault()

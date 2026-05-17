@@ -48,13 +48,49 @@ interface StorageApi {
   saveBaudRates: (baudRates: number[]) => Promise<boolean>
   getAppSettings: () => Promise<any>
   saveAppSettings: (settings: any) => Promise<boolean>
+  getSettings: () => Promise<any>
+  getDefaultSettings: () => Promise<any>
+  saveSettings: (settings: any) => Promise<boolean>
   getShortcuts: () => Promise<any[]>
+  getDefaultShortcuts: () => Promise<any[]>
   saveShortcuts: (shortcuts: any[]) => Promise<boolean>
+  getShortcutActions: () => Promise<any[]>
+}
+
+interface ConnectApi {
+  startConnect: (conn: any) => Promise<any>
+  sendData: (data: { conn: any; command: string }) => Promise<any>
+  stopConnect: (conn: any) => Promise<any>
+  updateConnect: (conn: any, config: any) => Promise<any>
+  onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
+  onConnectClose: (callback: (connId: number) => void) => () => void
+  onLogSplit: (callback: (data: { connId: string; oldFileName: string; newFileName: string }) => void) => () => void
+  openConnectLog: (sessionId: string) => Promise<any>
+  getLogFilePath: (sessionId: string) => Promise<string>
+  copyLogFile: (sessionId: string, destPath: string) => Promise<any>
+  listSerialPorts: () => Promise<any[]>
+  writeToLog: (sessionId: string, content: string) => Promise<any>
+}
+
+interface DialogApi {
+  openFileDialog: (options: any) => Promise<any>
+  saveFileDialog: (options: any) => Promise<any>
+}
+
+interface WindowApi {
+  minimizeWindow: () => Promise<void>
+  maximizeWindow: () => Promise<void>
+  closeWindow: () => Promise<void>
+  getWindowState: () => Promise<any>
+  getAppVersion: () => Promise<string>
 }
 
 declare global {
   interface Window {
     toolApi: ToolApi
     storageApi: StorageApi
+    connectApi: ConnectApi
+    dialogApi: DialogApi
+    windowApi: WindowApi
   }
 }

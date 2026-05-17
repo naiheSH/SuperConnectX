@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch, toRaw } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
 interface ShortcutItem {
@@ -120,7 +120,7 @@ const loadShortcutActions = async () => {
   try {
     const actions = await window.storageApi.getShortcutActions()
     if (actions && typeof actions === 'object') {
-      shortcutActions.value = actions
+      shortcutActions.value = actions as unknown as Record<string, string>
     }
   } catch (error) {
     console.error('加载快捷键命令映射失败:', error)
@@ -150,33 +150,9 @@ const dialogTitle = computed(() => {
 // 有效的修饰键
 const modifierKeys = ['Ctrl', 'Alt', 'Shift', 'Meta', 'Control', 'Cmd', 'Command', 'CommandOrControl', 'Super', 'Hyper', 'Meta']
 
-// 有效的单键（排除纯修饰键和无意义键）
-const validSingleKeys = [
-  // 字母键
-  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-  // 数字键
-  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-  // 功能键
-  'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
-  // 符号键
-  '-', '=', '[', ']', '\\', ';', "'", ',', '.', '/', '`',
-  // 特殊键
-  'Space', 'Tab', 'Enter', 'Backspace', 'Delete', 'Insert', 'Home', 'End',
-  'PageUp', 'PageDown', 'Up', 'Down', 'Left', 'Right',
-  // 小键盘
-  'Num0', 'Num1', 'Num2', 'Num3', 'Num4', 'Num5', 'Num6', 'Num7', 'Num8', 'Num9',
-  'NumAdd', 'NumSubtract', 'NumMultiply', 'NumDivide', 'NumDecimal', 'NumEnter',
-  // 多媒体键
-  'VolumeUp', 'VolumeDown', 'VolumeMute', 'MediaPlayPause', 'MediaStop', 'MediaNext', 'MediaPrevious',
-  // 其他
-  'CapsLock', 'NumLock', 'ScrollLock', 'PrintScreen', 'Pause', 'Escape', 'Esc',
-]
-
 // 标准化键名
 const normalizeKey = (key: string): string => {
   const upperKey = key.toUpperCase()
-  const lowerKey = key.toLowerCase()
   
   // 修饰键标准化
   if (['CONTROL', 'CMD', 'COMMAND', 'COMMANDORCONTROL', 'SUPER', 'HYPER'].includes(upperKey)) {
@@ -260,10 +236,6 @@ const validateShortcut = (keys: string[]): { valid: boolean; message: string; st
   
   // 系统保留快捷键检查
   const normalizedKeys = keys.map(k => normalizeKey(k))
-  const hasCtrl = normalizedKeys.some(k => k === 'Ctrl')
-  const hasShift = normalizedKeys.some(k => k === 'Shift')
-  const hasAlt = normalizedKeys.some(k => k === 'Alt')
-  const nonModifierKey = normalizedKeys.find(k => !['Ctrl', 'Alt', 'Shift', 'Meta'].includes(k))
   
   // 系统保留的 Ctrl/Ctrl+Shift/Ctrl+Alt 组合
   const systemReservedCombos = [
@@ -357,7 +329,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 }
 
 // 双击表格行
-const handleRowDblClick = (row: ShortcutItem, index: number) => {
+const handleRowDblClick = (row: ShortcutItem, _index: number) => {
   currentEditIndex.value = shortcuts.value.findIndex(s => s.action === row.action)
   currentAction.value = row.action
   previewKeys.value = [...row.keys]
@@ -430,7 +402,7 @@ const isSystemReserved = computed(() => {
 
 // 是否可以确认
 const canConfirm = computed(() => {
-  return previewKeys.value.length > 0 && !isSystemReserved.value
+  return isValidShortcut.value && !isSystemReserved.value
 })
 
 // 加载快捷键数据

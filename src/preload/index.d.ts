@@ -7,6 +7,7 @@ interface SerialPortInfo {
   friendlyName?: string
   vendorId?: string
   productId?: string
+  type?: 'virtual' | 'usb' | 'bluetooth' | 'none'
 }
 
 declare global {
@@ -36,6 +37,13 @@ declare global {
       saveBaudRates: (baudRates: number[]) => Promise<boolean>
       getAppSettings: () => Promise<any>
       saveAppSettings: (settings: any) => Promise<boolean>
+      getSettings: () => Promise<any>
+      getDefaultSettings: () => Promise<any>
+      saveSettings: (settings: any) => Promise<boolean>
+      getShortcuts: () => Promise<any[]>
+      getDefaultShortcuts: () => Promise<any[]>
+      saveShortcuts: (shortcuts: any[]) => Promise<boolean>
+      getShortcutActions: () => Promise<any[]>
     }
     connectApi: {
       startConnect: (conn: any) => Promise<any>
@@ -44,10 +52,12 @@ declare global {
       updateConnect: (conn: any, config: any) => Promise<{ success: boolean; message?: string }>
       onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
       onConnectClose: (callback: (connId: number) => void) => () => void
+      onLogSplit: (callback: (data: { connId: string; oldFileName: string; newFileName: string }) => void) => () => void
       openConnectLog: (sessionId: string) => Promise<{ success: boolean; message?: string; filePath?: string }>
       getLogFilePath: (sessionId: string) => Promise<{ success: boolean; filePath?: string; message?: string }>
       copyLogFile: (sessionId: string, destPath: string) => Promise<{ success: boolean; message?: string }>
       listSerialPorts: () => Promise<SerialPortInfo[]>
+      writeToLog: (sessionId: string, content: string) => Promise<any>
     }
     windowApi: {
       minimizeWindow: () => Promise<void>

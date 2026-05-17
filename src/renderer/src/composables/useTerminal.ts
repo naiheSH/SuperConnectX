@@ -60,7 +60,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
   const {
     unifiedTerminalRef,
     isConnected,
-    isConnecting,
+    isConnecting: _isConnecting,
     onSend,
     saveFontSettings,
     sendDisplaySuffix = 'SEND >>>>>>>>>>>',

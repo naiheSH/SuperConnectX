@@ -452,15 +452,6 @@ const loadBaudRates = async () => {
   }
 }
 
-// 刷新波特率列表（当设置页面修改后调用）
-const refreshBaudRates = async () => {
-  await loadBaudRates()
-  // 如果当前选中的波特率不在列表中，切换到第一个
-  if (!baudRates.value.includes(baudRate.value)) {
-    baudRate.value = baudRates.value[0]
-  }
-}
-
 // 监听设置更新事件（波特率列表变化）
 const handleSettingsUpdated = (event: Event) => {
   const settings = (event as CustomEvent).detail

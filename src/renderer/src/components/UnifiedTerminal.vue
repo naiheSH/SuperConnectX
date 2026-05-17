@@ -215,18 +215,20 @@ const initEditor = async () => {
   })
 
   // 在 editor 上监听滚轮事件（用于 Ctrl+滚轮缩放）
-  editor.onMouseWheel((e: monaco.editor.IEditorMouseWheelEvent) => {
-    if (e.ctrlKey) {
-      e.preventDefault()
-      e.stopPropagation()
-      const delta = e.deltaY > 0 ? -1 : 1
-      const newSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, fontSize.value + delta))
-      if (newSize !== fontSize.value) {
-        fontSize.value = newSize
-        editor?.updateOptions({ fontSize: newSize })
+  const domNode = editor.getDomNode()
+  if (domNode) {
+    domNode.addEventListener('wheel', (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault()
+        const delta = e.deltaY > 0 ? -1 : 1
+        const newSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, fontSize.value + delta))
+        if (newSize !== fontSize.value) {
+          fontSize.value = newSize
+          editor?.updateOptions({ fontSize: newSize })
+        }
       }
-    }
-  })
+    }, { passive: false })
+  }
 }
 
 const appendToTerminal = (content: string) => {

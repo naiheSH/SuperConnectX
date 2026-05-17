@@ -161,7 +161,7 @@ const handleReconnect = () => {
 
 const reconnect = () => handleReconnect()
 
-const handleTelnetClose = (connId: number) => {
+const handleTelnetClose = (_connId: number) => {
   cleanup()
   if (preventAutoReconnect) {
     unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
@@ -254,7 +254,7 @@ const connect = async () => {
   await attemptConnect()
 }
 
-const handleSend = async (command: string, originalInput?: string) => {
+const handleSend = async (command: string, _originalInput?: string) => {
   if (!command.trim() || !isConnected.value) return
 
   terminal.totalTxSize += command.length

@@ -1,4 +1,5 @@
 import TelnetClient from '../protocol/TelnetClient'
+import { BrowserWindow } from 'electron'
 import ConnectionInfo from '../protocol/ConnectionInfo'
 import BaseClient from '../protocol/BaseClient'
 import { ipcMain } from 'electron'
@@ -22,7 +23,7 @@ export default class IpcConnector {
   private logTimestampMap = new Map<string, boolean>()
 
   private settingsStorage: SettingsStorage
-  private windows: any
+  private windows!: { mainWindow?: BrowserWindow | null }
 
   constructor() {
     this.settingsStorage = new SettingsStorage()
@@ -61,13 +62,13 @@ export default class IpcConnector {
     return connInfo
   }
 
-  init(_logger: ProtocolLogger, windows): void {
-    this.windows = windows
+  init(_logger: ProtocolLogger, winRef: { mainWindow?: BrowserWindow | null }): void {
+    this.windows = winRef
 
     // 设置日志分片回调
     _logger.setLogSplitCallback((connId, oldFileName, newFileName) => {
       // 通知前端日志文件已切换
-      windows.mainWindow?.webContents.send('on-log-split', {
+      this.windows.mainWindow?.webContents.send('on-log-split', {
         connId,
         oldFileName,
         newFileName
@@ -117,7 +118,7 @@ export default class IpcConnector {
             displayData = dataObj.data
           }
 
-          windows.mainWindow?.webContents.send('on-recv-data', {
+          this.windows.mainWindow?.webContents.send('on-recv-data', {
             connId: sessionId,
             data: displayData,
             timestamp: dataObj.timestamp,
@@ -125,7 +126,7 @@ export default class IpcConnector {
           })
         },
         () => {
-          windows.mainWindow?.webContents.send('on-connect-close', sessionId)
+          this.windows.mainWindow?.webContents.send('on-connect-close', sessionId)
           _logger.flushConnLog(sessionId)
           // 清理映射
           this.receiveHexMap.delete(sessionId)
