@@ -1464,6 +1464,7 @@ const toggleConnectionList = () => {
 }
 const handleCommandSent = (command: string) => (lastSentCommand.value = command)
 
+// 使用 capture 模式确保在 Monaco 编辑器之前处理快捷键
 window.addEventListener('keydown', (e: KeyboardEvent) => {
   if (e.key === 'F12' || e.keyCode === 123) {
     e.preventDefault()
@@ -1471,7 +1472,7 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
   }
   // 处理快捷键
   handleShortcutKeydown(e)
-})
+}, true)
 
 watch([() => connections.value, () => searchKeyword.value], () => filtereList(), {
   immediate: true,
