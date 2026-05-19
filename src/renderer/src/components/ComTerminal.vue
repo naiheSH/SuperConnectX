@@ -5,8 +5,8 @@
       :connection="connection"
       :is-connected="isConnected"
       :is-connecting="isConnecting"
-      :init-message="`等待连接 ${connection.comName}...`"
-      placeholder="输入命令并按回车发送..."
+      :init-message="t('comTerminal.waiting', { port: connection.comName })"
+      :placeholder="t('comTerminal.placeholder')"
       session-id-prefix="com"
       @on-close="handleClose"
       @on-reconnect="reconnect"
@@ -29,9 +29,9 @@
             class="terminal-switch"
           />
           <div class="param-item">
-            <span class="param-label">波特率</span>
+            <span class="param-label">{{ t('comTerminal.baudRate') }}</span>
             <el-select v-model="baudRate" size="small" class="param-select" :popper-append-to-body="false">
-              <el-option label="新增..." value="__add__" />
+              <el-option :label="t('serialSettings.addNew') + '...'" value="__add__" />
               <el-option
                 v-for="br in baudRates"
                 :key="br"
@@ -47,7 +47,7 @@
           </div>
 
           <div class="param-item">
-            <span class="param-label">数据位</span>
+            <span class="param-label">{{ t('comTerminal.dataBits') }}</span>
             <el-select v-model="dataBits" size="small" class="param-select">
               <el-option label="5" :value="5" />
               <el-option label="6" :value="6" />
@@ -57,18 +57,18 @@
           </div>
 
           <div class="param-item">
-            <span class="param-label">校验位</span>
+            <span class="param-label">{{ t('comTerminal.parity') }}</span>
             <el-select v-model="parity" size="small" class="param-select">
-              <el-option label="无" value="none" />
-              <el-option label="偶校验" value="even" />
-              <el-option label="奇校验" value="odd" />
+              <el-option :label="t('comTerminal.none')" value="none" />
+              <el-option :label="t('comTerminal.even')" value="even" />
+              <el-option :label="t('comTerminal.odd')" value="odd" />
               <el-option label="Mark" value="mark" />
               <el-option label="Space" value="space" />
             </el-select>
           </div>
 
           <div class="param-item">
-            <span class="param-label">停止位</span>
+            <span class="param-label">{{ t('comTerminal.stopBits') }}</span>
             <el-select v-model="stopBits" size="small" class="param-select">
               <el-option label="1" :value="1" />
               <el-option label="1.5" :value="1.5" />
@@ -77,7 +77,7 @@
           </div>
 
           <div class="param-item">
-            <span class="param-label">编码</span>
+            <span class="param-label">{{ t('comTerminal.encoding') }}</span>
             <el-select v-model="encoding" size="small" class="param-select-encoding">
               <el-option label="UTF-8" value="utf8" />
               <el-option label="GB2312" value="gb2312" />
@@ -97,49 +97,49 @@
               <el-option label="UTF-16BE" value="utf16be" />
             </el-select>
             <el-button type="primary" icon="More" size="small" class="more-btn" @click="showMoreDialog = true">
-              更多
+              {{ t('comTerminal.more') }}
             </el-button>
           </div>
         </div>
 
         <!-- 更多设置对话框 -->
-        <el-dialog v-model="showMoreDialog" title="串口高级设置" width="400px">
+        <el-dialog v-model="showMoreDialog" :title="t('comTerminal.advancedSettings')" width="400px">
           <el-form label-width="100px">
-            <el-form-item label="打开超时">
+            <el-form-item :label="t('comTerminal.openTimeout')">
               <div class="input-with-unit">
                 <el-input-number v-model="readTimeout" :min="0" :step="100" size="small" class="full-width" :controls="false" placeholder="ms" />
                 <span class="unit-label">ms</span>
               </div>
             </el-form-item>
-            <el-form-item label="写超时">
+            <el-form-item :label="t('comTerminal.writeTimeout')">
               <div class="input-with-unit">
                 <el-input-number v-model="writeTimeout" :min="0" :step="100" size="small" class="full-width" :controls="false" placeholder="ms" />
                 <span class="unit-label">ms</span>
               </div>
             </el-form-item>
-            <el-form-item label="流控制">
+            <el-form-item :label="t('comTerminal.flowControl')">
               <el-select v-model="flowControl" size="small" class="full-width">
-                <el-option label="无" value="none" />
-                <el-option label="硬件(RTS/CTS)" value="hardware" />
-                <el-option label="软件(XON/XOFF)" value="software" />
+                <el-option :label="t('comTerminal.none')" value="none" />
+                <el-option :label="t('comTerminal.hardware')" value="hardware" />
+                <el-option :label="t('comTerminal.software')" value="software" />
               </el-select>
             </el-form-item>
-            <el-form-item label="DTR初始">
+            <el-form-item :label="t('comTerminal.dtr')">
               <el-switch v-model="dtr" />
             </el-form-item>
-            <el-form-item label="RTS初始">
+            <el-form-item :label="t('comTerminal.rts')">
               <el-switch v-model="rts" />
             </el-form-item>
           </el-form>
           <template #footer>
-            <el-button size="small" @click="showMoreDialog = false">关闭</el-button>
+            <el-button size="small" @click="showMoreDialog = false">{{ t('common.close') }}</el-button>
           </template>
         </el-dialog>
 
         <!-- 新增波特率对话框 -->
-        <el-dialog v-model="showAddBaudRateDialog" title="新增波特率" width="300px" @opened="onBaudRateDialogOpened">
+        <el-dialog v-model="showAddBaudRateDialog" :title="t('comTerminal.addBaudRateTitle')" width="300px" @opened="onBaudRateDialogOpened">
           <el-form label-width="80px" @submit.prevent>
-            <el-form-item label="波特率">
+            <el-form-item :label="t('comTerminal.baudRateLabel')">
               <el-input-number
                 ref="baudRateInputRef"
                 v-model="newBaudRate"
@@ -150,14 +150,14 @@
                 class="full-width"
                 controls-position="right"
                 :controls="false"
-                placeholder="输入波特率"
+                :placeholder="t('comTerminal.baudRatePlaceholder')"
                 @keyup.enter="addBaudRate"
               />
             </el-form-item>
           </el-form>
           <template #footer>
-            <el-button size="small" @click="showAddBaudRateDialog = false">取消</el-button>
-            <el-button size="small" type="primary" @click="addBaudRate">确定</el-button>
+            <el-button size="small" @click="showAddBaudRateDialog = false">{{ t('common.cancel') }}</el-button>
+            <el-button size="small" type="primary" @click="addBaudRate">{{ t('common.confirm') }}</el-button>
           </template>
         </el-dialog>
       </template>
@@ -167,9 +167,12 @@
 
 <script setup lang="ts">
 import { ref, onUnmounted, onMounted, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import UnifiedTerminal from './UnifiedTerminal.vue'
 import { useTerminal } from '../composables/useTerminal'
+
+const { t } = useI18n()
 
 const emit = defineEmits(['onClose', 'commandSent', 'onConnect', 'onDisconnect', 'openCommandEditor', 'remarkUpdated', 'fontLoaded'])
 const props = withDefaults(defineProps<{
@@ -332,11 +335,11 @@ const applyComConfig = async () => {
       }
     )
     if (!result.success) {
-      ElMessage.error(result.message || '更新配置失败')
+      ElMessage.error(result.message || t('comTerminal.updateConfigFailed'))
     }
   } catch (error) {
     console.error('applyComConfig error:', error)
-    ElMessage.error('更新串口配置失败')
+    ElMessage.error(t('comTerminal.updateConfigFailed2'))
   }
 }
 
@@ -389,7 +392,7 @@ const loadComSettings = async () => {
       emit('fontLoaded', terminal.fontFamily.value)
     }
   } catch (error) {
-    console.error('加载串口设置失败:', error)
+    console.error(t('comTerminal.loadSettingsFailed'), error)
   }
 }
 
@@ -418,7 +421,7 @@ const saveComSettings = async () => {
     }
     await window.storageApi.saveComSettings(props.connection.comName, settings)
   } catch (error) {
-    console.error('保存串口设置失败:', error)
+    console.error(t('comTerminal.saveSettingsFailed'), error)
   }
 }
 
@@ -448,7 +451,7 @@ const loadBaudRates = async () => {
     const allSettings = await window.storageApi.getSettings()
     baudRates.value = allSettings?.supportedBaudRates || [9600, 19200, 115200, 1500000]
   } catch (error) {
-    console.error('加载波特率列表失败:', error)
+    console.error(t('comTerminal.loadSettingsFailed'), error)
     baudRates.value = [9600, 19200, 115200, 1500000]
   }
 }
@@ -481,9 +484,9 @@ const addBaudRate = async () => {
     } catch (error) {
       console.error('saveBaudRates error:', error)
     }
-    ElMessage.success(`已添加波特率 ${rate}`)
+      ElMessage.success(t('comTerminal.addBaudRateSuccess', { rate }))
   } else if (baudRates.value.includes(rate)) {
-    ElMessage.warning('该波特率已存在')
+    ElMessage.warning(t('serialSettings.rateExists'))
     baudRate.value = rate
   }
   showAddBaudRateDialog.value = false
@@ -492,7 +495,7 @@ const addBaudRate = async () => {
 // 删除波特率（更新全局设置）
 const deleteBaudRate = async (rate: number) => {
   if (baudRates.value.length <= 1) {
-    ElMessage.warning('至少保留一个波特率')
+    ElMessage.warning(t('serialSettings.atLeastOneRate'))
     return
   }
   const index = baudRates.value.indexOf(rate)
@@ -510,13 +513,13 @@ const deleteBaudRate = async (rate: number) => {
     } catch (error) {
       console.error('saveBaudRates error:', error)
     }
-    ElMessage.success(`已删除波特率 ${rate}`)
+    ElMessage.success(t('comTerminal.deleteBaudRateSuccess', { rate }))
   }
 }
 
 const handleConnect = async () => {
   isConnecting.value = true
-  unifiedTerminalRef.value?.appendToTerminal(`\n正在连接 ${props.connection.comName}...\n`)
+  unifiedTerminalRef.value?.appendToTerminal(`\n${t('comTerminal.connecting', { port: props.connection.comName })}\n`)
 
   try {
     const result = await window.connectApi.startConnect({
@@ -538,7 +541,7 @@ const handleConnect = async () => {
       currentSessionId.value = props.connection.sessionId
       isConnected.value = true
       isConnecting.value = false
-      unifiedTerminalRef.value?.appendToTerminal(`\n连接成功!\n`)
+      unifiedTerminalRef.value?.appendToTerminal(`\n${t('comTerminal.connectSuccess')}\n`)
       emit('onConnect', props.connection.sessionId)
 
       notifyLogTimestampToBackend(terminal.showTimestamp.value)
@@ -559,12 +562,12 @@ const handleConnect = async () => {
 
       unifiedTerminalRef.value?.focusInput()
     } else {
-      throw new Error(result.message || '连接失败')
+      throw new Error(result.message || t('comTerminal.connectFailed'))
     }
   } catch (error) {
     isConnecting.value = false
-    unifiedTerminalRef.value?.appendToTerminal(`\n连接失败: ${(error as Error).message}\n`)
-    ElMessage.error('连接失败')
+    unifiedTerminalRef.value?.appendToTerminal(`\n${t('comTerminal.connectFailed')}: ${(error as Error).message}\n`)
+    ElMessage.error(t('comTerminal.connectFailed'))
   }
 }
 
@@ -581,7 +584,7 @@ const handleClose = async () => {
     removeMountedCloseListener()
     removeMountedCloseListener = null
   }
-  unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
+  unifiedTerminalRef.value?.appendToTerminal(`\n${t('comTerminal.connectionClosed')}\n`)
   try {
     await window.connectApi.stopConnect({
       connectionType: 'com',
@@ -589,7 +592,7 @@ const handleClose = async () => {
       sessionId: props.connection.sessionId
     })
   } catch (error) {
-    console.error('关闭连接失败:', error)
+    console.error(t('comTerminal.connectionClosed'), error)
   }
   isConnected.value = false
   emit('onDisconnect', props.connection.sessionId)
@@ -617,8 +620,8 @@ const handleSendCommand = async (command: string, originalInput?: string) => {
       command: command
     })
   } catch (error) {
-    ElMessage.error('命令发送失败')
-    console.error('发送失败:', error)
+    ElMessage.error(t('comTerminal.commandSendFailed'))
+    console.error(t('comTerminal.commandSendFailed'), error)
   }
 }
 
@@ -681,7 +684,7 @@ onMounted(async () => {
     if (String(sessionId) === String(props.connection.sessionId)) {
       if (preventAutoReconnect.value) return
       isConnected.value = false
-      unifiedTerminalRef.value?.appendToTerminal(`\n连接已断开\n`)
+      unifiedTerminalRef.value?.appendToTerminal(`\n${t('comTerminal.disconnected')}\n`)
       emit('onDisconnect', sessionId)
     }
   })
@@ -714,7 +717,7 @@ onUnmounted(() => {
         sessionId: props.connection.sessionId
       })
       .catch((err) => {
-        console.error('卸载时断开失败:', err)
+        console.error(t('comTerminal.connectionClosed'), err)
       })
   }
 })

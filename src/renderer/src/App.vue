@@ -18,7 +18,7 @@
           <!-- 固定区域：新建连接 + 搜索 -->
           <div class="connection-list-fixed">
             <el-button type="primary" class="vscode-btn" icon="Plus" @click="openCreateDialog"
-              >新建连接</el-button
+              >{{ t('sidebar.newConnection') }}</el-button
             >
             <SearchInput @search="handleSearch" />
           </div>
@@ -35,7 +35,7 @@
                   COM ({{ filteredSerialPorts.length }})
                 </span>
                 <el-button type="text" icon="Refresh" @click.stop="loadSerialPorts" size="small"
-                  >刷新</el-button
+                  >{{ t('common.refresh') }}</el-button
                 >
               </div>
               <div class="connection-group-list" v-show="serialPortExpanded">
@@ -57,10 +57,10 @@
                         <span v-if="serialRemarks[port.path]" class="serial-remark"> {{ serialRemarks[port.path] }}</span>
                       </div>
                       <div v-if="showPortType" class="serial-port-type">
-                        <el-tag v-if="port.type === 'virtual'" type="info" size="small" effect="dark">虚拟串口</el-tag>
-                        <el-tag v-else-if="port.type === 'usb'" type="success" size="small" effect="dark">USB</el-tag>
-                        <el-tag v-else-if="port.type === 'bluetooth'" class="bluetooth-tag" size="small" effect="dark">蓝牙</el-tag>
-                        <el-tag v-else type="info" size="small" effect="dark">无类型</el-tag>
+                        <el-tag v-if="port.type === 'virtual'" type="info" size="small" effect="dark">{{ t('sidebar.virtual') }}</el-tag>
+                        <el-tag v-else-if="port.type === 'usb'" type="success" size="small" effect="dark">{{ t('sidebar.usb') }}</el-tag>
+                        <el-tag v-else-if="port.type === 'bluetooth'" class="bluetooth-tag" size="small" effect="dark">{{ t('sidebar.bluetooth') }}</el-tag>
+                        <el-tag v-else type="info" size="small" effect="dark">{{ t('sidebar.noType') }}</el-tag>
                       </div>
                     </div>
                     <div class="serial-port-right">
@@ -70,18 +70,18 @@
                         class="el-button--primary serial-port-btn"
                         icon="Link"
                         @click="connectToSerialPort(port)"
-                      >连接</el-button>
+                      >{{ t('common.connect') }}</el-button>
                       <el-button
                         v-else
                         type="text"
                         class="el-button--danger serial-port-btn"
                         icon="Close"
                         @click="disconnectSerialPort(port.path)"
-                      >断开</el-button>
+                      >{{ t('common.disconnect') }}</el-button>
                     </div>
                   </div>
                 </el-card>
-                <div v-if="filteredSerialPorts.length === 0" class="no-ports-tip">无匹配串口</div>
+                <div v-if="filteredSerialPorts.length === 0" class="no-ports-tip">{{ t('sidebar.noPorts') }}</div>
               </div>
             </div>
 
@@ -111,8 +111,8 @@
                   <div class="connection-info">
                     <div class="conn-name">{{ conn.name }}</div>
                     <div class="conn-detail">
-                      <span>地址：{{ conn.host }}:{{ conn.port }}</span>
-                      <span v-if="conn.username">用户：{{ conn.username }}</span>
+                      <span>{{ t('sidebar.address') }}: {{ conn.host }}:{{ conn.port }}</span>
+                      <span v-if="conn.username">{{ t('sidebar.user') }}: {{ conn.username }}</span>
                     </div>
                   </div>
                   <div class="connection-actions">
@@ -122,7 +122,7 @@
                         class="el-button--primary"
                         icon="Link"
                         @click="connectToServer(conn)"
-                        >连接</el-button
+                        >{{ t('common.connect') }}</el-button
                       >
                     </div>
                     <div class="connection-btn">
@@ -132,7 +132,7 @@
                         style="color: #cccccc"
                         icon="edit"
                         @click="editCreateDialog(conn)"
-                        >编辑</el-button
+                        >{{ t('common.edit') }}</el-button
                       >
                     </div>
                     <div class="connection-btn">
@@ -142,7 +142,7 @@
                         icon="Delete"
                         @click="deleteConnection(conn)"
                         style="color: #b23f3f"
-                        >删除</el-button
+                        >{{ t('common.delete') }}</el-button
                       >
                     </div>
                   </div>
@@ -150,7 +150,7 @@
               </div>
             </div>
             <div v-if="Object.keys(connectionGroups).length === 0 && connections.length > 0" class="no-ports-tip">
-              无匹配连接
+              {{ t('sidebar.noConnections') }}
             </div>
           </div>
         </div>
@@ -165,13 +165,13 @@
               </svg>
             </div>
             <div class="sidebar-dropdown-menu" v-if="showSidebarMenu">
-              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('settings')">设置</div>
-              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('shortcuts')">快捷键</div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('settings')">{{ t('sidebar.settings') }}</div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('shortcuts')">{{ t('sidebar.shortcuts') }}</div>
               <div class="sidebar-menu-separator"></div>
-              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('plugins')">插件</div>
-              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('checkUpdate')">检查更新</div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('plugins')">{{ t('sidebar.plugins') }}</div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('checkUpdate')">{{ t('sidebar.checkUpdate') }}</div>
               <div class="sidebar-menu-separator"></div>
-              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('about')">关于</div>
+              <div class="sidebar-menu-item" @click="handleSidebarMenuCommand('about')">{{ t('titlebar.about') }}</div>
             </div>
           </div>
         </div>
@@ -205,7 +205,7 @@
                   class="tab-action-btn"
                   :class="{ pinned: pinnedTabs.has(tab.id) }"
                   @click.stop="togglePinTabByButton(tab.id)"
-                  :title="pinnedTabs.has(tab.id) ? '取消固定' : '固定'"
+                  :title="pinnedTabs.has(tab.id) ? t('tabs.unpin') : t('tabs.pin')"
                 ></span>
               </div>
             </div>
@@ -218,25 +218,25 @@
               :style="{ left: tabMenuPosition.x + 'px', top: tabMenuPosition.y + 'px' }"
               @click.stop
             >
-              <div v-if="hasAnyConnected" class="menu-item" @click="disconnectAllTabs">断开全部</div>
-              <div v-else class="menu-item" @click="connectAllTabs">连接全部</div>
+              <div v-if="hasAnyConnected" class="menu-item" @click="disconnectAllTabs">{{ t('tabs.disconnectAll') }}</div>
+              <div v-else class="menu-item" @click="connectAllTabs">{{ t('tabs.connectAll') }}</div>
               <div class="menu-divider"></div>
-              <div class="menu-item" @click="closeSingleTab(rightClickedTab)">关闭</div>
-              <div class="menu-item" @click="closeOtherTabs">关闭其它</div>
-              <div class="menu-item" @click="closeLeftTabs">关闭左边所有</div>
-              <div class="menu-item" @click="closeRightTabs">关闭右边所有</div>
-              <div class="menu-item danger" @click="closeAllTabs">关闭全部</div>
+              <div class="menu-item" @click="closeSingleTab(rightClickedTab)">{{ t('tabs.close') }}</div>
+              <div class="menu-item" @click="closeOtherTabs">{{ t('tabs.closeOther') }}</div>
+              <div class="menu-item" @click="closeLeftTabs">{{ t('tabs.closeLeft') }}</div>
+              <div class="menu-item" @click="closeRightTabs">{{ t('tabs.closeRight') }}</div>
+              <div class="menu-item danger" @click="closeAllTabs">{{ t('tabs.closeAll') }}</div>
               <div class="menu-divider"></div>
-              <div class="menu-item" @click="moveTabToFirst">移到最前</div>
-              <div class="menu-item" @click="moveTabToLast">移到最后</div>
+              <div class="menu-item" @click="moveTabToFirst">{{ t('tabs.moveToFirst') }}</div>
+              <div class="menu-item" @click="moveTabToLast">{{ t('tabs.moveToLast') }}</div>
               <div class="menu-divider"></div>
               <div class="menu-item" @click="togglePinTab">
-                {{ pinnedTabs.has(rightClickedTab?.id) ? '取消固定' : '固定' }}
+                {{ pinnedTabs.has(rightClickedTab?.id) ? t('tabs.unpin') : t('tabs.pin') }}
               </div>
               <!-- 串口备注编辑 -->
               <template v-if="rightClickedTab?.connectionType === 'com'">
                 <div class="menu-divider"></div>
-                <div class="menu-item" @click="openRemarkDialog">编辑备注</div>
+                <div class="menu-item" @click="openRemarkDialog">{{ t('tabs.editRemark') }}</div>
               </template>
             </div>
           </Teleport>
@@ -304,61 +304,60 @@
       <div class="resource-monitor">
         <ResourceMonitor />
       </div>
-      <div class="command-status" v-if="lastSentCommand">已发送命令：{{ lastSentCommand }}</div>
+      <div class="command-status" v-if="lastSentCommand">{{ t('notification.commandSent', { command: lastSentCommand }) }}</div>
     </div>
 
     <!-- 新建连接弹窗：Element Plus 美化表单 -->
     <el-dialog
-      title="新建连接"
+      :title="t('dialog.newConnection')"
       v-model="isCreateDialogOpen"
       width="500px"
       @keydown.enter.native="submitNewConn"
       :close-on-click-modal="false"
     >
       <el-form :model="newConnForm" :rules="newConnRules" ref="connFormRef" label-width="120px">
-        <el-form-item label="协议类型" prop="connectionType">
+        <el-form-item :label="t('dialog.protocolType')" prop="connectionType">
           <el-select
             v-model="newConnForm.connectionType"
             @change="handleProtocolChange"
-            placeholder="选择协议"
+            :placeholder="t('dialog.selectProtocol')"
           >
             <el-option label="Telnet" value="telnet" />
             <el-option label="SSH" value="ssh" disabled />
             <el-option label="FTP" value="ftp" />
-            <!-- 预留 SSH 选项 -->
           </el-select>
         </el-form-item>
-        <el-form-item label="连接名称" prop="name">
-          <el-input v-model="newConnForm.name" placeholder="输入连接名称" prefix="User" />
+        <el-form-item :label="t('dialog.connectionName')" prop="name">
+          <el-input v-model="newConnForm.name" :placeholder="t('dialog.namePlaceholder')" prefix="User" />
         </el-form-item>
-        <el-form-item label="服务器地址" prop="host">
-          <el-input v-model="newConnForm.host" placeholder="输入 IP 地址或域名" prefix="Monitor" />
+        <el-form-item :label="t('dialog.serverAddress')" prop="host">
+          <el-input v-model="newConnForm.host" :placeholder="t('dialog.addressPlaceholder')" prefix="Monitor" />
         </el-form-item>
-        <el-form-item label="端口" prop="port">
+        <el-form-item :label="t('dialog.port')" prop="port">
           <el-input
             v-model.number="newConnForm.port"
-            placeholder="输入端口"
+            :placeholder="t('dialog.portPlaceholder')"
             prefix="Key"
             type="number"
           />
         </el-form-item>
-        <el-form-item label="用户名" prop="username">
+        <el-form-item :label="t('dialog.username')" prop="username">
           <el-input
             v-model="newConnForm.username"
-            placeholder="输入登录用户名（可选）"
+            :placeholder="t('dialog.usernamePlaceholder')"
             prefix="UserFilled"
           />
         </el-form-item>
-        <el-form-item label="密码" prop="password" v-if="newConnForm.connectionType === 'ftp'">
-          <el-input v-model="newConnForm.password" placeholder="输入密码" type="password" />
+        <el-form-item :label="t('dialog.password')" prop="password" v-if="newConnForm.connectionType === 'ftp'">
+          <el-input v-model="newConnForm.password" :placeholder="t('dialog.passwordPlaceholder')" type="password" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button type="danger" style="width: 100px" @click="isCreateDialogOpen = false"
-          >取消</el-button
+          >{{ t('common.cancel') }}</el-button
         >
         <el-button type="primary" style="width: 100px" class="vscode-btn" @click="submitNewConn"
-          >确认保存</el-button
+          >{{ t('dialog.confirmSave') }}</el-button
         >
       </template>
     </el-dialog>
@@ -369,7 +368,7 @@
     <!-- 串口备注编辑弹窗 -->
     <el-dialog
       v-model="showRemarkDialog"
-      title="编辑备注"
+      :title="t('dialog.editRemark')"
       width="400px"
       :close-on-click-modal="false"
       @opened="onRemarkDialogOpened"
@@ -379,15 +378,15 @@
           <el-input
             ref="remarkInputRef"
             v-model="editingRemark"
-            placeholder="请输入备注名称"
+            :placeholder="t('dialog.remarkPlaceholder')"
             maxlength="50"
             @keydown.enter="saveSerialRemark"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showRemarkDialog = false">取消</el-button>
-        <el-button type="primary" @click="saveSerialRemark">保存</el-button>
+        <el-button @click="showRemarkDialog = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="saveSerialRemark">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -395,6 +394,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, reactive, computed, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElForm, ElMessageBox } from 'element-plus'
 import TelnetTerminal from './components/TelnetTerminal.vue'
 import ComTerminal from './components/ComTerminal.vue'
@@ -409,13 +409,15 @@ import CommandEditor from './components/CommandEditor.vue'
 import TelnetInfo from './entity/protocol/TelnetInfo'
 import logoImage from './assets/icon.png'
 
+const { t } = useI18n()
+
 const notifyContainerRef = ref<InstanceType<typeof NotifyContainer> | null>(null)
 
 const handleLogSplit = (data: { connId: string; oldFileName: string; newFileName: string }) => {
   const tab = connectionTabs.value.find((t) => String(t.sessionId) === String(data.connId))
   const tabName = tab?.name || tab?.comName || data.connId
-  const message = `"${tabName}" 日志已超过分片大小，新日志文件：${data.newFileName}`
-  notifyContainerRef.value?.add('日志分片', message)
+  const message = t('notification.logSplitMessage', { name: tabName, file: data.newFileName })
+  notifyContainerRef.value?.add(t('notification.logSplit'), message)
 }
 
 const searchKeyword = ref('')
@@ -450,13 +452,13 @@ const handleSidebarMenuCommand = async (command: string) => {
   showSidebarMenu.value = false
   switch (command) {
     case 'options':
-      ElMessage.info('选项功能开发中...')
+      ElMessage.info(t('notification.optionsDeveloping'))
       break
     case 'plugins':
-      ElMessage.info('插件功能开发中...')
+      ElMessage.info(t('notification.pluginsDeveloping'))
       break
     case 'checkUpdate':
-      ElMessage.info('已是最新版本')
+      ElMessage.info(t('notification.alreadyLatest'))
       break
     case 'shortcuts':
       openShortcutsTab()
@@ -701,7 +703,7 @@ const saveSerialRemark = async () => {
     const tabId = rightClickedTab.value.id.toString()
     if (comTerminalRefs[tabId]?.updateRemark) {
       await comTerminalRefs[tabId].updateRemark(editingRemark.value)
-      ElMessage.success('备注已保存')
+      ElMessage.success(t('dialog.remarkSaved'))
       showRemarkDialog.value = false
       return
     }
@@ -714,10 +716,10 @@ const saveSerialRemark = async () => {
       ...currentSettings,
       remark: editingRemark.value
     })
-    ElMessage.success('备注已保存')
+    ElMessage.success(t('dialog.remarkSaved'))
   } catch (error) {
-    console.error('保存备注失败:', error)
-    ElMessage.error('保存备注失败')
+    console.error(t('dialog.remarkSaveFailed'), error)
+    ElMessage.error(t('dialog.remarkSaveFailed'))
   }
   showRemarkDialog.value = false
 }
@@ -1012,7 +1014,7 @@ const loadSidebarState = async () => {
     const settings = await window.storageApi.getSettings()
     showPortType.value = settings.showPortType ?? true
   } catch (error) {
-    console.error('加载侧边栏状态失败:', error)
+    console.error(t('common.loadFailed'), error)
   }
 }
 
@@ -1032,7 +1034,7 @@ const saveSidebarState = async () => {
     }
     await window.storageApi.saveAppSettings(newSettings)
   } catch (error) {
-    console.error('保存侧边栏状态失败:', error)
+    console.error(t('common.saveFailed'), error)
   }
 }
 
@@ -1111,9 +1113,8 @@ const loadConnections = async () => {
     const savedConn = await window.storageApi.getConnections()
     connections.value = Array.isArray(savedConn) ? savedConn : []
   } catch (e) {
-    ElMessage.error('加载连接失败，请重启应用')
-    console.error('加载连接失败：', e)
-    // 出错时也强制设为空数组，避免后续操作报错
+    ElMessage.error(t('dialog.loadFailed'))
+    console.error(t('dialog.loadFailed'), e)
     connections.value = []
   }
 }
@@ -1154,14 +1155,13 @@ const submitNewConn = async () => {
 
     loadConnections()
     isCreateDialogOpen.value = false
-    ElMessage.success(`连接 "${newConnForm.name}" 已保存`)
+    ElMessage.success(t('dialog.connectionSaved', { name: newConnForm.name }))
   } catch (error: any) {
     console.error(error)
-    // 检查是否是重复连接错误
     if (error?.message?.includes('已存在相同的连接')) {
-      ElMessage.error('该连接已存在，请修改连接名称或地址')
+      ElMessage.error(t('dialog.connectionExists'))
     } else {
-      ElMessage.error('请完善表单信息并修正错误')
+      ElMessage.error(t('dialog.completeForm'))
     }
   }
 }
@@ -1169,23 +1169,20 @@ const submitNewConn = async () => {
 // 删除连接
 const deleteConnection = async (conn) => {
   try {
-    // 显示确认对话框
-    await ElMessageBox.confirm(`确认删除 ${conn.name}?`, '删除连接', {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('dialog.deleteConfirm', { name: conn.name }), t('dialog.deleteConnection'), {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
       center: true
     })
 
-    // 用户确认后执行删除操作
     const newConnections = await window.storageApi.deleteConnection(conn.id)
     connections.value = newConnections
-    ElMessage.success('连接已删除')
+    ElMessage.success(t('dialog.connectionDeleted'))
   } catch (error) {
-    // 用户取消删除时不做任何操作，或显示提示
     if (error !== 'cancel') {
-      console.error('删除失败:', error)
-      ElMessage.error('删除连接失败')
+      console.error(t('common.operationFailed'), error)
+      ElMessage.error(t('common.operationFailed'))
     }
   }
 }
@@ -1238,7 +1235,7 @@ const closeTabOnly = async (tabId: string) => {
 const closeTab = async (tabId, force = false) => {
   // 如果选项卡被固定且不是强制关闭，则不关闭
   if (pinnedTabs.has(tabId) && !force) {
-    ElMessage.warning('此选项卡已固定，请先取消固定')
+    ElMessage.warning(t('tabs.tabPinned'))
     return
   }
 
@@ -1406,7 +1403,7 @@ const loadShortcutActions = async () => {
       }
     }
   } catch (error) {
-    console.error('加载快捷键命令映射失败:', error)
+    console.error(t('shortcuts.loadFailed'), error)
   }
 }
 
@@ -1418,7 +1415,7 @@ const loadShortcuts = async () => {
       shortcuts.value = data
     }
   } catch (error) {
-    console.error('加载快捷键失败:', error)
+    console.error(t('shortcuts.loadFailed'), error)
   }
 }
 
@@ -1544,11 +1541,10 @@ const loadSerialPorts = async () => {
       port.type = parseSerialPortType(port)
     })
     serialPorts.value = ports
-    console.log('已扫描串口:', ports)
-    // 预加载所有串口备注（异步执行，不阻塞串口列表显示）
+    console.log(t('notification.scanPortsSuccess'), ports)
     loadAllSerialRemarks()
   } catch (error) {
-    console.error('扫描串口失败:', error)
+    console.error(t('notification.scanPortsFailed'), error)
     serialPorts.value = []
   }
 }

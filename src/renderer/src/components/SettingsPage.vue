@@ -5,7 +5,7 @@
       <div class="search-inner">
         <input
           type="text"
-          placeholder="搜索设置..."
+          :placeholder="t('settings.search')"
           v-model="searchKeyword"
           class="search-input"
         />
@@ -27,7 +27,7 @@
           {{ category.label }}
         </div>
         <div class="nav-footer">
-          <el-button size="small" @click="resetSettings">恢复默认</el-button>
+          <el-button size="small" @click="resetSettings">{{ t('settings.reset') }}</el-button>
         </div>
       </div>
 
@@ -37,21 +37,21 @@
         <div v-if="activeCategory === 'basic'" class="settings-group">
           <!-- 基本配置 -->
           <div class="group-section">
-            <div class="group-title">基本配置</div>
+            <div class="group-title">{{ t('basicSettings.title') }}</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">界面语言</span>
-                <span class="label-desc">选择界面显示语言</span>
+                <span class="label-text">{{ t('basicSettings.language') }}</span>
+                <span class="label-desc">{{ t('basicSettings.languageDesc') }}</span>
               </div>
               <el-select v-model="settings.language" size="small" style="width: 120px">
-                <el-option label="简体中文" value="zh-CN" />
-                <el-option label="English" value="en-US" />
+                <el-option :label="t('languages.zh-CN')" value="zh-CN" />
+                <el-option :label="t('languages.en-US')" value="en-US" />
               </el-select>
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">关闭后最小化到托盘</span>
-                <span class="label-desc">关闭窗口时最小化到系统托盘而不是退出程序</span>
+                <span class="label-text">{{ t('basicSettings.minimizeToTray') }}</span>
+                <span class="label-desc">{{ t('basicSettings.minimizeToTrayDesc') }}</span>
               </div>
               <el-switch v-model="settings.minimizeToTray" />
             </div>
@@ -59,39 +59,39 @@
 
           <!-- 显示 -->
           <div class="group-section">
-            <div class="group-title">显示（未实现）</div>
+            <div class="group-title">{{ t('basicSettings.displayUnimplemented') }}</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">固定滚屏</span>
-                <span class="label-desc">终端自动滚动到最新输出</span>
+                <span class="label-text">{{ t('basicSettings.autoScroll') }}</span>
+                <span class="label-desc">{{ t('basicSettings.autoScrollDesc') }}</span>
               </div>
               <el-switch v-model="settings.autoScroll" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">固定滚屏时弹出提示</span>
-                <span class="label-desc">当滚屏被固定时显示提示信息</span>
+                <span class="label-text">{{ t('basicSettings.autoScrollToast') }}</span>
+                <span class="label-desc">{{ t('basicSettings.autoScrollToastDesc') }}</span>
               </div>
               <el-switch v-model="settings.autoScrollToast" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">获得焦点时固定</span>
-                <span class="label-desc">鼠标点击终端区域时自动固定滚屏</span>
+                <span class="label-text">{{ t('basicSettings.autoScrollOnFocus') }}</span>
+                <span class="label-desc">{{ t('basicSettings.autoScrollOnFocusDesc') }}</span>
               </div>
               <el-switch v-model="settings.autoScrollOnFocus" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">发送命令后停止滚屏</span>
-                <span class="label-desc">发送命令后自动取消固定滚屏</span>
+                <span class="label-text">{{ t('basicSettings.autoScrollAfterSend') }}</span>
+                <span class="label-desc">{{ t('basicSettings.autoScrollAfterSendDesc') }}</span>
               </div>
               <el-switch v-model="settings.autoScrollAfterSend" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">鼠标滚动决策固定</span>
-                <span class="label-desc">滚动鼠标时提示是否固定滚屏</span>
+                <span class="label-text">{{ t('basicSettings.autoScrollOnWheel') }}</span>
+                <span class="label-desc">{{ t('basicSettings.autoScrollOnWheelDesc') }}</span>
               </div>
               <el-switch v-model="settings.autoScrollOnWheel" />
             </div>
@@ -99,38 +99,38 @@
 
           <!-- 备份 -->
           <div class="group-section">
-            <div class="group-title">备份（未实现）</div>
+            <div class="group-title">{{ t('basicSettings.backupUnimplemented') }}</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">自动备份</span>
-                <span class="label-desc">自动备份连接和命令配置</span>
+                <span class="label-text">{{ t('basicSettings.autoBackup') }}</span>
+                <span class="label-desc">{{ t('basicSettings.autoBackupDesc') }}</span>
               </div>
               <el-switch v-model="settings.autoBackup" />
             </div>
             <div class="setting-item" v-if="settings.autoBackup">
               <div class="setting-label">
-                <span class="label-text">备份周期</span>
-                <span class="label-desc">自动备份的间隔天数</span>
+                <span class="label-text">{{ t('basicSettings.backupInterval') }}</span>
+                <span class="label-desc">{{ t('basicSettings.backupIntervalDesc') }}</span>
               </div>
               <el-select v-model="settings.backupInterval" size="small" style="width: 100px">
-                <el-option label="1 天" :value="1" />
-                <el-option label="3 天" :value="3" />
-                <el-option label="7 天" :value="7" />
-                <el-option label="15 天" :value="15" />
-                <el-option label="30 天" :value="30" />
-                <el-option label="60 天" :value="60" />
-                <el-option label="180 天" :value="180" />
+                <el-option :label="`1 ${t('basicSettings.day')}`" :value="1" />
+                <el-option :label="`3 ${t('basicSettings.day')}`" :value="3" />
+                <el-option :label="`7 ${t('basicSettings.day')}`" :value="7" />
+                <el-option :label="`15 ${t('basicSettings.day')}`" :value="15" />
+                <el-option :label="`30 ${t('basicSettings.day')}`" :value="30" />
+                <el-option :label="`60 ${t('basicSettings.day')}`" :value="60" />
+                <el-option :label="`180 ${t('basicSettings.day')}`" :value="180" />
               </el-select>
             </div>
           </div>
 
           <!-- 系统 -->
           <div class="group-section">
-            <div class="group-title">系统</div>
+            <div class="group-title">{{ t('basicSettings.system') }}</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">防止屏幕息屏及系统休眠</span>
-                <span class="label-desc">阻止系统进入休眠或屏幕关闭</span>
+                <span class="label-text">{{ t('basicSettings.preventSleep') }}</span>
+                <span class="label-desc">{{ t('basicSettings.preventSleepDesc') }}</span>
               </div>
               <el-switch v-model="settings.preventSleep" />
             </div>
@@ -140,11 +140,11 @@
         <!-- 串口设置 -->
         <div v-else-if="activeCategory === 'serial'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">串口COM设置</div>
+            <div class="group-title">{{ t('serialSettings.title') }}</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">支持的波特率列表</span>
-                <span class="label-desc">管理串口连接时可选的波特率</span>
+                <span class="label-text">{{ t('serialSettings.supportedBaudRates') }}</span>
+                <span class="label-desc">{{ t('serialSettings.supportedBaudRatesDesc') }}</span>
               </div>
               <div class="baudrate-tags">
                 <el-tag
@@ -167,13 +167,13 @@
                   @keyup.enter="confirmAddBaudRate"
                   @blur="confirmAddBaudRate"
                 />
-                <el-button v-else size="small" text type="primary" @click="startAddBaudRate">+ 新增</el-button>
+                <el-button v-else size="small" text type="primary" @click="startAddBaudRate">+ {{ t('serialSettings.addNew') }}</el-button>
               </div>
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">显示串口类型</span>
-                <span class="label-desc">在串口列表中显示类型标签（虚拟串口、USB、蓝牙）</span>
+                <span class="label-text">{{ t('serialSettings.showPortType') }}</span>
+                <span class="label-desc">{{ t('serialSettings.showPortTypeDesc') }}</span>
               </div>
               <el-switch v-model="settings.showPortType" />
             </div>
@@ -183,25 +183,25 @@
         <!-- 日志 -->
         <div v-else-if="activeCategory === 'log'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">日志存储（未实现）</div>
+            <div class="group-title">{{ t('logSettings.title') }}</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">启用日志存储</span>
-                <span class="label-desc">将终端输出保存到日志文件</span>
+                <span class="label-text">{{ t('logSettings.enableLogStorage') }}</span>
+                <span class="label-desc">{{ t('logSettings.enableLogStorageDesc') }}</span>
               </div>
               <el-switch v-model="settings.enableLogStorage" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">日志保存路径</span>
-                <span class="label-desc">日志文件的存储位置</span>
+                <span class="label-text">{{ t('logSettings.logPath') }}</span>
+                <span class="label-desc">{{ t('logSettings.logPathDesc') }}</span>
               </div>
               <el-input v-model="settings.logPath" size="small" style="width: 200px" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">日志分片大小</span>
-                <span class="label-desc">单个日志文件超过此大小时分片（MB）</span>
+                <span class="label-text">{{ t('logSettings.logSplitSize') }}</span>
+                <span class="label-desc">{{ t('logSettings.logSplitSizeDesc') }}</span>
               </div>
               <div class="slider-control">
                 <el-slider
@@ -221,22 +221,22 @@
         <!-- 语法高亮 -->
         <div v-else-if="activeCategory === 'syntax'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">语法高亮（未实现）</div>
+            <div class="group-title">{{ t('syntaxSettings.title') }}</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">启用语法高亮</span>
-                <span class="label-desc">对命令输出进行语法着色</span>
+                <span class="label-text">{{ t('syntaxSettings.enableSyntaxHighlight') }}</span>
+                <span class="label-desc">{{ t('syntaxSettings.enableSyntaxHighlightDesc') }}</span>
               </div>
               <el-switch v-model="settings.enableSyntaxHighlight" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">高亮主题</span>
-                <span class="label-desc">语法高亮颜色方案</span>
+                <span class="label-text">{{ t('syntaxSettings.syntaxTheme') }}</span>
+                <span class="label-desc">{{ t('syntaxSettings.syntaxThemeDesc') }}</span>
               </div>
               <el-select v-model="settings.syntaxTheme" size="small" style="width: 120px">
-                <el-option label="暗色" value="dark" />
-                <el-option label="亮色" value="light" />
+                <el-option :label="t('syntaxSettings.dark')" value="dark" />
+                <el-option :label="t('syntaxSettings.light')" value="light" />
               </el-select>
             </div>
           </div>
@@ -245,25 +245,25 @@
         <!-- 搜索 -->
         <div v-else-if="activeCategory === 'search'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">搜索设置（未实现）</div>
+            <div class="group-title">{{ t('searchSettings.title') }}</div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">区分大小写</span>
-                <span class="label-desc">搜索时区分英文字母大小写</span>
+                <span class="label-text">{{ t('searchSettings.caseSensitive') }}</span>
+                <span class="label-desc">{{ t('searchSettings.caseSensitiveDesc') }}</span>
               </div>
               <el-switch v-model="settings.searchCaseSensitive" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">正则表达式</span>
-                <span class="label-desc">启用正则表达式搜索</span>
+                <span class="label-text">{{ t('searchSettings.regex') }}</span>
+                <span class="label-desc">{{ t('searchSettings.regexDesc') }}</span>
               </div>
               <el-switch v-model="settings.searchRegex" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
-                <span class="label-text">整词匹配</span>
-                <span class="label-desc">只匹配完整的单词</span>
+                <span class="label-text">{{ t('searchSettings.wholeWord') }}</span>
+                <span class="label-desc">{{ t('searchSettings.wholeWordDesc') }}</span>
               </div>
               <el-switch v-model="settings.searchWholeWord" />
             </div>
@@ -275,19 +275,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { setLocale } from '../locales'
+
+const { t } = useI18n()
 
 const searchKeyword = ref('')
 const activeCategory = ref('basic')
 
-const categories = [
-  { key: 'basic', label: '基本设置' },
-  { key: 'serial', label: '串口COM设置' },
-  { key: 'log', label: '日志' },
-  { key: 'syntax', label: '语法高亮' },
-  { key: 'search', label: '搜索' }
-]
+const categories = computed(() => [
+  { key: 'basic', label: t('settingsNav.basic') },
+  { key: 'serial', label: t('settingsNav.serial') },
+  { key: 'log', label: t('settingsNav.log') },
+  { key: 'syntax', label: t('settingsNav.syntax') },
+  { key: 'search', label: t('settingsNav.search') }
+])
 
 // 默认配置从后端获取
 const defaultSettings = ref<Record<string, any>>({})
@@ -302,7 +306,7 @@ const loadDefaultSettings = async () => {
       defaultSettings.value = data
     }
   } catch (error) {
-    console.error('加载默认设置失败:', error)
+    console.error(t('common.loadFailed'), error)
   }
 }
 
@@ -314,7 +318,7 @@ const loadSettings = async () => {
       isLoading = false
     }
   } catch (error) {
-    console.error('加载设置失败:', error)
+    console.error(t('common.loadFailed'), error)
   }
 }
 
@@ -326,7 +330,7 @@ const saveSettings = async () => {
     // 通知主进程设置更新（用于防止屏幕息屏功能）
     window.toolApi?.notifySettingsUpdate(plainSettings)
   } catch (error) {
-    console.error('保存设置失败:', error)
+    console.error(t('common.saveFailed'), error)
   }
 }
 
@@ -337,21 +341,28 @@ watch(settings, () => {
   }
 }, { deep: true })
 
+// 监听语言设置变化，实时切换界面语言
+watch(() => settings.value.language, (newLocale) => {
+  if (newLocale && (newLocale === 'zh-CN' || newLocale === 'en-US')) {
+    setLocale(newLocale)
+  }
+})
+
 const resetSettings = async () => {
   try {
-    await ElMessageBox.confirm('确定要恢复默认设置吗？', '恢复默认设置', {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('settings.resetConfirm'), t('settings.reset'), {
+      confirmButtonText: t('settings.confirm'),
+      cancelButtonText: t('settings.cancel'),
       type: 'warning',
       center: true,
       confirmButtonClass: 'el-button--primary',
       cancelButtonClass: 'el-button--danger'
     })
     settings.value = JSON.parse(JSON.stringify(defaultSettings.value))
-    ElMessage.success('已恢复默认设置')
+    ElMessage.success(t('settings.resetSuccess'))
   } catch (error: any) {
     if (error !== 'cancel') {
-      console.error('恢复默认设置失败:', error)
+      console.error(t('common.operationFailed'), error)
     }
   }
 }
@@ -366,7 +377,7 @@ const removeBaudRate = (rate: number) => {
   if (rates.length > 1) {
     settings.value.supportedBaudRates = rates.filter(r => r !== rate)
   } else {
-    ElMessage.warning('至少保留一个波特率')
+    ElMessage.warning(t('serialSettings.atLeastOneRate'))
   }
 }
 
@@ -380,9 +391,9 @@ const startAddBaudRate = () => {
 const confirmAddBaudRate = () => {
   const rate = parseInt(newBaudRate.value)
   if (isNaN(rate) || rate <= 0) {
-    ElMessage.warning('请输入有效的波特率')
+    ElMessage.warning(t('serialSettings.invalidBaudRate'))
   } else if (settings.value.supportedBaudRates.includes(rate)) {
-    ElMessage.warning('该波特率已存在')
+    ElMessage.warning(t('serialSettings.rateExists'))
   } else {
     settings.value.supportedBaudRates.push(rate)
     settings.value.supportedBaudRates.sort((a, b) => a - b)

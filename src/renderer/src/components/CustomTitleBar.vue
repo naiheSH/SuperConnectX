@@ -28,19 +28,19 @@
         class="menu-button"
         @mouseenter="((showFileMenu = true), (showEditMenu = false), (showHelpMenu = false))"
       >
-        <button class="menu-btn">文件</button>
+        <button class="menu-btn">{{ t('titlebar.file') }}</button>
         <div
           class="dropdown-menu"
           v-if="showFileMenu"
           @mouseenter="((showFileMenu = true), (showEditMenu = false), (showHelpMenu = false))"
           @mouseleave="hideFileMenu"
         >
-          <div class="menu-item" @click="importCmd">导入命令</div>
-          <div class="menu-item" @click="exportCmd">导出命令</div>
+          <div class="menu-item" @click="importCmd">{{ t('titlebar.importCmd') }}</div>
+          <div class="menu-item" @click="exportCmd">{{ t('titlebar.exportCmd') }}</div>
           <div class="menu-separator"></div>
-          <div class="menu-item" @click="openAppDir">打开程序所在路径</div>
+          <div class="menu-item" @click="openAppDir">{{ t('titlebar.openAppDir') }}</div>
           <div class="menu-separator"></div>
-          <div class="menu-item" @click="handleExit">退出</div>
+          <div class="menu-item" @click="handleExit">{{ t('titlebar.exit') }}</div>
         </div>
       </div>
 
@@ -49,14 +49,14 @@
         @mouseenter="handleMenuMouseEnter('edit')"
         @mouseleave="handleMenuMouseLeave('edit')"
       >
-        <button class="menu-btn">编辑</button>
+        <button class="menu-btn">{{ t('titlebar.edit') }}</button>
         <div class="dropdown-menu" v-if="showEditMenu">
           <div
             class="menu-item submenu-trigger"
             @mouseenter="handleFontSubmenuMouseEnter"
             @mouseleave="handleFontSubmenuMouseLeave"
           >
-            字体
+            {{ t('titlebar.font') }}
             <div class="dropdown-submenu" v-if="showFontSubmenu">
               <div
                 class="menu-item"
@@ -77,17 +77,17 @@
         class="menu-button"
         @mouseenter="((showFileMenu = false), (showEditMenu = false), (showHelpMenu = true))"
       >
-        <button class="menu-btn">帮助</button>
+        <button class="menu-btn">{{ t('titlebar.help') }}</button>
         <div
           class="dropdown-menu"
           v-if="showHelpMenu"
           @mouseenter="((showFileMenu = false), (showEditMenu = false), (showHelpMenu = true))"
           @mouseleave="hideHelpMenu"
         >
-          <div class="menu-item" @click="handleDoc">文档</div>
-          <div class="menu-item" @click="handleAbout">关于</div>
-          <div class="menu-item" @click="handleFeedBack">反馈问题</div>
-          <div class="menu-item" @click="handleDevelop">参与开发</div>
+          <div class="menu-item" @click="handleDoc">{{ t('titlebar.doc') }}</div>
+          <div class="menu-item" @click="handleAbout">{{ t('titlebar.about') }}</div>
+          <div class="menu-item" @click="handleFeedBack">{{ t('titlebar.feedback') }}</div>
+          <div class="menu-item" @click="handleDevelop">{{ t('titlebar.develop') }}</div>
         </div>
       </div>
     </div>
@@ -160,7 +160,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { getSystemFonts, formatFontName } from '../utils/FontDetector'
+
+const { t } = useI18n()
 
 const isMaximized = ref(false)
 const showFileMenu = ref(false)
@@ -212,7 +215,7 @@ const hideHelpMenu = () => {
 const importCmd = async () => {
   try {
     const result = await window.dialogApi.openFileDialog({
-      title: '导入命令',
+      title: t('titlebar.importCmd'),
       filters: [
         { name: '命令文件', extensions: ['json'] },
         { name: '所有文件', extensions: ['*'] }
@@ -223,17 +226,16 @@ const importCmd = async () => {
       const importResult = await window.storageApi.importCommands(result.filePaths[0])
       if (importResult.success) {
         ElMessage.success(
-          `成功导入 ${importResult.imported} 条命令，跳过 ${importResult.skipped} 条重复命令`
+          t('notification.importSuccess', { imported: importResult.imported, skipped: importResult.skipped })
         )
-        // 通知PresetCommands组件刷新数据
         emit('refreshCommands')
       } else {
-        ElMessage.error(`导入失败: ${importResult.message}`)
+        ElMessage.error(`${t('notification.importFailed')}: ${importResult.message}`)
       }
     }
   } catch (error) {
-    console.error('导入命令失败:', error)
-    ElMessage.error('导入命令失败')
+    console.error(t('notification.importFailed'), error)
+    ElMessage.error(t('notification.importFailed'))
   }
 }
 
@@ -241,7 +243,7 @@ const importCmd = async () => {
 const exportCmd = async () => {
   try {
     const result = await window.dialogApi.saveFileDialog({
-      title: '导出命令',
+      title: t('titlebar.exportCmd'),
       defaultPath: 'commands.json',
       filters: [{ name: '命令文件', extensions: ['json'] }]
     })
@@ -249,14 +251,14 @@ const exportCmd = async () => {
     if (result.filePath) {
       const exportResult = await window.storageApi.exportCommands(result.filePath)
       if (exportResult.success) {
-        ElMessage.success(`成功导出 ${exportResult.count} 条命令`)
+        ElMessage.success(t('notification.exportSuccess', { count: exportResult.count }))
       } else {
-        ElMessage.error(`导出失败: ${exportResult.message}`)
+        ElMessage.error(`${t('notification.exportFailed')}: ${exportResult.message}`)
       }
     }
   } catch (error) {
-    console.error('导出命令失败:', error)
-    ElMessage.error('导出命令失败')
+    console.error(t('notification.exportFailed'), error)
+    ElMessage.error(t('notification.exportFailed'))
   }
 }
 
