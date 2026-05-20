@@ -34,10 +34,10 @@
       >
         清空屏幕
       </el-button>
-      <el-button type="default" icon="Document" size="small" class="log-btn" @click="emit('onOpenLog')">
+      <el-button icon="Document" size="small" class="btn-primary log-btn" @click="emit('onOpenLog')">
         打开日志
       </el-button>
-      <el-button type="default" icon="DocumentAdd" size="small" class="log-btn" @click="emit('onSaveLog')">
+      <el-button icon="DocumentAdd" size="small" class="btn-primary log-btn" @click="emit('onSaveLog')">
         日志另存为
       </el-button>
       <el-switch
@@ -164,9 +164,6 @@ const showTimestamp = computed({
 }
 
 .log-btn {
-  background-color: #1A97ED !important;
-  border-color: #4db3f7 !important;
-  color: white !important;
   width: 90px !important;
   padding: 6px 12px !important;
   border-radius: 4px !important;
@@ -175,7 +172,6 @@ const showTimestamp = computed({
 }
 
 .log-btn:hover {
-  filter: brightness(0.85);
   transform: translateY(-1px);
 }
 

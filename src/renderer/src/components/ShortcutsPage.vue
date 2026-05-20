@@ -90,7 +90,7 @@
       
       <template #footer>
         <el-button type="danger" style="width: 100px" @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" style="width: 100px" class="vscode-btn" :disabled="!canConfirm" @click="confirmShortcut">
+        <el-button class="btn-primary" style="width: 100px !important" :disabled="!canConfirm" @click="confirmShortcut">
           确定
         </el-button>
       </template>
@@ -510,6 +510,7 @@ const clearSearch = () => {
 }
 
 .restore-btn {
+  width: auto !important;
   padding: 6px 12px !important;
   font-size: 12px !important;
 }

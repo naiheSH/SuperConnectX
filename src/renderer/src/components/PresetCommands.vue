@@ -70,12 +70,11 @@
 
     <!-- 新增命令按钮 -->
     <el-button
-      type="primary"
       icon="Plus"
       size="small"
       @click="openAddPresetDialog"
       :disabled="!selectedGroupId"
-      class="add-preset-btn"
+      class="btn-primary add-preset-btn"
     >
       新增命令
     </el-button>
@@ -130,7 +129,7 @@
       </el-form>
       <template #footer>
         <el-button @click="isGroupDialogOpen = false">取消</el-button>
-        <el-button type="primary" @click="saveGroup">保存</el-button>
+        <el-button class="btn-primary" style="width: auto !important" @click="saveGroup">保存</el-button>
       </template>
     </el-dialog>
 
@@ -173,7 +172,7 @@
       </el-form>
       <template #footer>
         <el-button @click="isPresetDialogOpen = false">取消</el-button>
-        <el-button type="primary" @click="savePresetCommand">保存</el-button>
+        <el-button class="btn-primary" style="width: auto !important" @click="savePresetCommand">保存</el-button>
       </template>
     </el-dialog>
 
@@ -925,20 +924,14 @@ const handlePresetCommandsChanged = (connectionType: string) => {
 }
 
 .add-preset-btn {
-  background-color: #1A97ED !important;
-  border-color: #1A97ED !important;
-  color: white !important;
   width: 90px !important;
 }
 
 .add-preset-btn:hover {
-  filter: brightness(0.85);
   transform: translateY(-1px);
 }
 
 .add-preset-btn:disabled {
-  background-color: #444 !important;
-  border-color: #555 !important;
   cursor: not-allowed;
 }
 

@@ -480,3 +480,11 @@ input[type="number"] {
 .btn-primary:active {
   background-color: #0d5a8c !important;
 }
+
+.btn-primary:disabled {
+  background-color: #444 !important;
+  border-color: #555 !important;
+  color: #888 !important;
+  cursor: not-allowed;
+  opacity: 1 !important;
+}

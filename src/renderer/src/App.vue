@@ -356,7 +356,7 @@
         <el-button type="danger" style="width: 100px" @click="isCreateDialogOpen = false"
           >{{ t('common.cancel') }}</el-button
         >
-        <el-button style="width: 100px" class="btn-primary" @click="submitNewConn"
+        <el-button class="btn-primary submit-btn" @click="submitNewConn"
           >{{ t('dialog.confirmSave') }}</el-button
         >
       </template>
@@ -386,7 +386,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showRemarkDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="saveSerialRemark">{{ t('common.save') }}</el-button>
+        <el-button class="btn-primary" style="width: auto !important" @click="saveSerialRemark">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -2074,6 +2074,10 @@ onUnmounted(() => {
 .el-input:focus-within,
 .el-select:focus-within {
   --el-border-color: #42b983 !important;
+}
+
+.submit-btn {
+  width: 100px !important;
 }
 
 .status-bar {

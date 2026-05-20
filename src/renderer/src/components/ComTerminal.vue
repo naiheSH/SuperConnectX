@@ -157,7 +157,7 @@
           </el-form>
           <template #footer>
             <el-button size="small" @click="showAddBaudRateDialog = false">{{ t('common.cancel') }}</el-button>
-            <el-button size="small" class="btn-primary" @click="addBaudRate">{{ t('common.confirm') }}</el-button>
+            <el-button size="small" class="btn-primary" style="width: auto !important" @click="addBaudRate">{{ t('common.confirm') }}</el-button>
           </template>
         </el-dialog>
       </template>

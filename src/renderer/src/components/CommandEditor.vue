@@ -37,11 +37,11 @@
     <div class="main-content">
       <!-- 工具栏 -->
       <div class="toolbar">
-        <el-button type="primary" size="small" :disabled="!selectedGroupId" @click="addCommand">
+        <el-button size="small" class="btn-primary" style="width: auto !important" :disabled="!selectedGroupId" @click="addCommand">
           <el-icon><Plus /></el-icon>
           添加命令
         </el-button>
-        <el-button size="small" :disabled="!currentRow" @click="insertCommandAbove">
+        <el-button size="small" class="btn-primary" style="width: auto !important" :disabled="!currentRow" @click="insertCommandAbove">
           <el-icon><Edit /></el-icon>
           插入命令
         </el-button>
@@ -133,7 +133,7 @@
       </el-form>
       <template #footer>
         <el-button size="small" @click="showGroupDialog = false">取消</el-button>
-        <el-button size="small" type="primary" @click="saveGroup">确定</el-button>
+        <el-button size="small" class="btn-primary" style="width: auto !important" @click="saveGroup">确定</el-button>
       </template>
     </el-dialog>
 
@@ -160,7 +160,7 @@
       </el-form>
       <template #footer>
         <el-button size="small" @click="showCommandDialog = false">取消</el-button>
-        <el-button size="small" type="primary" @click="saveCommand">确定</el-button>
+        <el-button size="small" class="btn-primary" style="width: auto !important" @click="saveCommand">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -598,31 +598,12 @@ onMounted(() => {
   gap: 8px;
 }
 
-.toolbar .el-button {
-  background-color: #1A97ED !important;
-  border-color: #1A97ED !important;
-  color: white !important;
-}
-
 .toolbar .el-button:hover {
-  filter: brightness(0.85);
   transform: translateY(-1px);
 }
 
 .toolbar .el-button:disabled {
-  background-color: #444 !important;
-  border-color: #555 !important;
   cursor: not-allowed;
-}
-
-.toolbar .el-button--primary {
-  background-color: #1A97ED !important;
-  border-color: #1A97ED !important;
-}
-
-.toolbar .el-button--primary:hover {
-  filter: brightness(0.85);
-  transform: translateY(-1px);
 }
 
 .command-table {
