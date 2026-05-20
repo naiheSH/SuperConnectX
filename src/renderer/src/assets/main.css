@@ -488,3 +488,31 @@ input[type="number"] {
   cursor: not-allowed;
   opacity: 1 !important;
 }
+
+/* ==============================
+   Cancel 按钮样式
+   ============================== */
+.btn-cancel {
+  width: 100px !important;
+  background-color: #c45656 !important;
+  border-color: #c45656 !important;
+  color: #ffffff !important;
+}
+
+.btn-cancel:hover {
+  background-color: #d66a6a !important;
+  border-color: #d66a6a !important;
+}
+
+.btn-cancel:active {
+  background-color: #b04545 !important;
+  border-color: #b04545 !important;
+}
+
+.btn-cancel:disabled {
+  background-color: #444 !important;
+  border-color: #555 !important;
+  color: #888 !important;
+  cursor: not-allowed;
+  opacity: 1 !important;
+}

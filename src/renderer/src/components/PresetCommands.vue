@@ -128,7 +128,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="isGroupDialogOpen = false">取消</el-button>
+        <el-button class="btn-cancel" style="width: auto !important" @click="isGroupDialogOpen = false">取消</el-button>
         <el-button class="btn-primary" style="width: auto !important" @click="saveGroup">保存</el-button>
       </template>
     </el-dialog>
@@ -171,7 +171,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="isPresetDialogOpen = false">取消</el-button>
+        <el-button class="btn-cancel" style="width: auto !important" @click="isPresetDialogOpen = false">取消</el-button>
         <el-button class="btn-primary" style="width: auto !important" @click="savePresetCommand">保存</el-button>
       </template>
     </el-dialog>

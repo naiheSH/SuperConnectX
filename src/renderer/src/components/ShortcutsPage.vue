@@ -89,7 +89,7 @@
       </div>
       
       <template #footer>
-        <el-button type="danger" style="width: 100px" @click="dialogVisible = false">取消</el-button>
+        <el-button class="btn-cancel" @click="dialogVisible = false">取消</el-button>
         <el-button class="btn-primary" style="width: 100px !important" :disabled="!canConfirm" @click="confirmShortcut">
           确定
         </el-button>

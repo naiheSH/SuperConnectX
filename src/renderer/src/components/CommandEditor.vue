@@ -132,7 +132,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button size="small" @click="showGroupDialog = false">取消</el-button>
+        <el-button class="btn-cancel" style="width: auto !important" size="small" @click="showGroupDialog = false">取消</el-button>
         <el-button size="small" class="btn-primary" style="width: auto !important" @click="saveGroup">确定</el-button>
       </template>
     </el-dialog>
@@ -159,7 +159,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button size="small" @click="showCommandDialog = false">取消</el-button>
+        <el-button class="btn-cancel" style="width: auto !important" size="small" @click="showCommandDialog = false">取消</el-button>
         <el-button size="small" class="btn-primary" style="width: auto !important" @click="saveCommand">确定</el-button>
       </template>
     </el-dialog>

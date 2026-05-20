@@ -353,7 +353,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="danger" style="width: 100px" @click="isCreateDialogOpen = false"
+        <el-button class="btn-cancel" @click="isCreateDialogOpen = false"
           >{{ t('common.cancel') }}</el-button
         >
         <el-button class="btn-primary submit-btn" @click="submitNewConn"

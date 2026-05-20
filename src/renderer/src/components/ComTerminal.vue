@@ -132,7 +132,7 @@
             </el-form-item>
           </el-form>
           <template #footer>
-            <el-button size="small" @click="showMoreDialog = false">{{ t('common.close') }}</el-button>
+            <el-button class="btn-cancel" size="small" @click="showMoreDialog = false">{{ t('common.close') }}</el-button>
           </template>
         </el-dialog>
 
@@ -156,7 +156,7 @@
             </el-form-item>
           </el-form>
           <template #footer>
-            <el-button size="small" @click="showAddBaudRateDialog = false">{{ t('common.cancel') }}</el-button>
+            <el-button class="btn-cancel" style="width: auto !important" size="small" @click="showAddBaudRateDialog = false">{{ t('common.cancel') }}</el-button>
             <el-button size="small" class="btn-primary" style="width: auto !important" @click="addBaudRate">{{ t('common.confirm') }}</el-button>
           </template>
         </el-dialog>
