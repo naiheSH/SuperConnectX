@@ -462,3 +462,21 @@ input[type="number"] {
   -moz-appearance: textfield !important;
   appearance: textfield !important;
 }
+
+/* ==============================
+   Primary 按钮样式
+   ============================== */
+.btn-primary {
+  width: 100% !important;
+  background-color: #0e639c !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.btn-primary:hover {
+  background-color: #1177bb !important;
+}
+
+.btn-primary:active {
+  background-color: #0d5a8c !important;
+}

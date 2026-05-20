@@ -4,7 +4,7 @@
     <div class="sidebar">
       <!-- 添加组按钮 -->
       <div class="sidebar-header">
-        <el-button type="primary" size="small" class="add-group-btn" @click="openGroupDialog">
+        <el-button class="btn-primary add-group-btn" @click="openGroupDialog">
           <el-icon><Plus /></el-icon>
           新建分组
         </el-button>
@@ -497,19 +497,13 @@ onMounted(() => {
 
 .add-group-btn {
   width: 100%;
-  background-color: #1A97ED !important;
-  border-color: #1A97ED !important;
-  color: white !important;
 }
 
 .add-group-btn:hover {
-  filter: brightness(0.85);
   transform: translateY(-1px);
 }
 
 .add-group-btn:disabled {
-  background-color: #444 !important;
-  border-color: #555 !important;
   cursor: not-allowed;
 }
 

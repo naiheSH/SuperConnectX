@@ -1,7 +1,7 @@
 <template>
   <div class="preset-commands">
     <!-- 编辑命令按钮 -->
-    <el-button type="primary" size="small" class="edit-commands-btn" @click="openCommandEditor">
+    <el-button class="btn-primary edit-commands-btn" @click="openCommandEditor">
       <el-icon><Edit /></el-icon>
       编辑命令
     </el-button>
@@ -855,15 +855,13 @@ const handlePresetCommandsChanged = (connectionType: string) => {
 }
 
 .edit-commands-btn {
-  background-color: #1A97ED !important;
-  border-color: #1A97ED !important;
-  color: white !important;
   width: 90px !important;
+  height: 24px !important;
   flex-shrink: 0;
+  padding: 5px 11px !important;
 }
 
 .edit-commands-btn:hover {
-  filter: brightness(0.85);
   transform: translateY(-1px);
 }
 

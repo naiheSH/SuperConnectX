@@ -12,7 +12,7 @@
         <button class="clear-btn" @click="clearSearch" v-if="searchKeyword">×</button>
       </div>
       <div class="search-actions">
-        <el-button type="text" class="restore-btn" @click="restoreDefaults">
+        <el-button class="btn-primary restore-btn" @click="restoreDefaults">
           恢复默认设置
         </el-button>
       </div>
@@ -510,13 +510,8 @@ const clearSearch = () => {
 }
 
 .restore-btn {
-  color: #888 !important;
+  padding: 6px 12px !important;
   font-size: 12px !important;
-  padding: 4px 8px !important;
-}
-
-.restore-btn:hover {
-  color: #409eff !important;
 }
 
 .search-input {

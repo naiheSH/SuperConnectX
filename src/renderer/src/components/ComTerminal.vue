@@ -96,7 +96,7 @@
               <el-option label="UTF-16LE" value="utf16le" />
               <el-option label="UTF-16BE" value="utf16be" />
             </el-select>
-            <el-button type="primary" icon="More" size="small" class="more-btn" @click="showMoreDialog = true">
+            <el-button icon="More" size="small" class="btn-primary more-btn" @click="showMoreDialog = true">
               {{ t('comTerminal.more') }}
             </el-button>
           </div>
@@ -157,7 +157,7 @@
           </el-form>
           <template #footer>
             <el-button size="small" @click="showAddBaudRateDialog = false">{{ t('common.cancel') }}</el-button>
-            <el-button size="small" type="primary" @click="addBaudRate">{{ t('common.confirm') }}</el-button>
+            <el-button size="small" class="btn-primary" @click="addBaudRate">{{ t('common.confirm') }}</el-button>
           </template>
         </el-dialog>
       </template>
@@ -819,16 +819,12 @@ onUnmounted(() => {
 
 .more-btn {
   margin-left: auto;
-  background-color: #1A97ED !important;
-  border-color: #1A97ED !important;
-  color: white !important;
   width: 90px !important;
   border-radius: 4px !important;
   transition: all 0.2s ease !important;
 }
 
 .more-btn:hover {
-  filter: brightness(0.85);
   transform: translateY(-1px);
 }
 

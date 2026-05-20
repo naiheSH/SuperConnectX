@@ -17,7 +17,7 @@
         <div class="connection-list">
           <!-- 固定区域：新建连接 + 搜索 -->
           <div class="connection-list-fixed">
-            <el-button type="primary" class="vscode-btn" icon="Plus" @click="openCreateDialog"
+            <el-button class="btn-primary" icon="Plus" @click="openCreateDialog"
               >{{ t('sidebar.newConnection') }}</el-button
             >
             <SearchInput @search="handleSearch" />
@@ -356,7 +356,7 @@
         <el-button type="danger" style="width: 100px" @click="isCreateDialogOpen = false"
           >{{ t('common.cancel') }}</el-button
         >
-        <el-button type="primary" style="width: 100px" class="vscode-btn" @click="submitNewConn"
+        <el-button style="width: 100px" class="btn-primary" @click="submitNewConn"
           >{{ t('dialog.confirmSave') }}</el-button
         >
       </template>
@@ -2074,16 +2074,6 @@ onUnmounted(() => {
 .el-input:focus-within,
 .el-select:focus-within {
   --el-border-color: #42b983 !important;
-}
-
-.vscode-btn {
-  width: 100%;
-  background-color: #0e639c;
-  border: none;
-}
-
-.vscode-btn:hover {
-  background-color: #1177bb;
 }
 
 .status-bar {

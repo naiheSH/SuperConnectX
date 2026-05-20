@@ -76,10 +76,9 @@
         :disabled="!isConnected"
       />
       <el-button
-        type="primary"
         icon="Promotion"
         size="small"
-        class="send-btn"
+        class="btn-primary send-btn"
         @click="handleSendCommand"
         :disabled="!isConnected"
       >
@@ -579,18 +578,12 @@ onUnmounted(() => {
 
 .send-btn {
   margin-right: 10px;
-  background-color: #165dff !important;
-  border-color: #3370ff !important;
-  color: white !important;
+  width: auto !important;
 }
 
 .command-input.hex-mode {
   font-family: monospace;
   letter-spacing: 1px;
-}
-
-.send-btn:hover:not(:disabled) {
-  background-color: #4080ff !important;
 }
 
 .send-btn:disabled {
