@@ -762,15 +762,18 @@ onUnmounted(() => {
   width: 100px;
 }
 
-.com-terminal .param-row .el-select.param-select .el-input__wrapper {
+:deep(.param-row .el-select.param-select .el-select__wrapper) {
   height: 26px !important;
   min-height: 26px !important;
-  padding: 0 8px !important;
 }
 
-.com-terminal .param-row .el-select.param-select .el-input__inner {
-  height: 26px !important;
+:deep(.param-row .el-select.param-select .el-select__caret) {
   line-height: 26px !important;
+}
+
+:deep(.param-row .el-select.param-select-encoding .el-select__wrapper) {
+  height: 26px !important;
+  min-height: 26px !important;
 }
 
 .param-select-encoding {
