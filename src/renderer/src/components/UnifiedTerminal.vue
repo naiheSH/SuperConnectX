@@ -53,6 +53,7 @@
           inactive-text="CRLF"
           inline-prompt
           size="small"
+          class="terminal-switch-inline"
           :disabled="!isConnected"
         />
         <el-switch
@@ -62,6 +63,7 @@
           inactive-text="STR"
           inline-prompt
           size="small"
+          class="terminal-switch-inline"
           :disabled="!isConnected"
         />
       </div>

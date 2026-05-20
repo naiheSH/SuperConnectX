@@ -26,7 +26,7 @@
             inactive-text="STR"
             inline-prompt
             size="small"
-            class="terminal-switch"
+            class="terminal-switch terminal-switch-inline"
           />
           <div class="param-item">
             <span class="param-label">{{ t('comTerminal.baudRate') }}</span>
@@ -125,10 +125,10 @@
               </el-select>
             </el-form-item>
             <el-form-item :label="t('comTerminal.dtr')">
-              <el-switch v-model="dtr" />
+              <el-switch class="terminal-switch" v-model="dtr" />
             </el-form-item>
             <el-form-item :label="t('comTerminal.rts')">
-              <el-switch v-model="rts" />
+              <el-switch class="terminal-switch" v-model="rts" />
             </el-form-item>
           </el-form>
           <template #footer>
@@ -829,41 +829,6 @@ onUnmounted(() => {
 
 .more-btn:hover {
   transform: translateY(-1px);
-}
-
-.terminal-switch {
-  margin-left: 8px;
-}
-
-.terminal-switch.el-switch {
-  --el-switch-off-color: #131315 !important;
-  --el-switch-on-color: #2E5CC7 !important;
-}
-
-.terminal-switch .el-switch__core {
-  height: 20px !important;
-  min-height: 20px !important;
-  background-color: #131315 !important;
-  border-color: transparent !important;
-}
-
-.terminal-switch .el-switch__core:hover {
-  background-color: #2A2A2C !important;
-}
-
-.terminal-switch .el-switch__core::after {
-  top: 2px !important;
-  width: 16px !important;
-  height: 16px !important;
-}
-
-.terminal-switch .el-switch.is-checked .el-switch__core {
-  background-color: #2E5CC7 !important;
-  border-color: #2E5CC7 !important;
-}
-
-.terminal-switch .el-switch__label {
-  font-size: 11px;
 }
 
 /* 下拉框和输入框边框样式 */

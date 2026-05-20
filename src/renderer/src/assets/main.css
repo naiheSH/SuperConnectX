@@ -516,3 +516,78 @@ input[type="number"] {
   cursor: not-allowed;
   opacity: 1 !important;
 }
+
+/* ==============================
+   Switch 开关样式
+   ============================== */
+.terminal-switch {
+  margin-left: 8px;
+}
+
+.terminal-switch.el-switch {
+  --el-switch-off-color: #131315 !important;
+  --el-switch-on-color: #2E5CC7 !important;
+}
+
+.terminal-switch .el-switch__core {
+  height: 20px !important;
+  min-height: 20px !important;
+  background-color: #131315 !important;
+  border-color: transparent !important;
+}
+
+.terminal-switch .el-switch__core:hover {
+  background-color: #2A2A2C !important;
+}
+
+.terminal-switch .el-switch__core::after {
+  top: 2px !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.terminal-switch.is-checked .el-switch__core {
+  background-color: #2E5CC7 !important;
+  border-color: #2E5CC7 !important;
+}
+
+.terminal-switch .el-switch__core {
+  width: 36px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  border-radius: 9px !important;
+}
+
+.terminal-switch .el-switch__core::after {
+  width: 14px !important;
+  height: 14px !important;
+  top: 2px !important;
+}
+
+.terminal-switch .el-switch__label {
+  font-size: 11px;
+}
+
+/* inline-prompt 类型的 switch（CRLF/HEX 等） */
+.terminal-switch-inline {
+  padding: 0 2px !important;
+  margin-right: 0 !important;
+}
+
+.terminal-switch-inline .el-switch__core {
+  height: 22px !important;
+  min-height: 22px !important;
+  width: 50px !important;
+  border-radius: 11px !important;
+}
+
+.terminal-switch-inline .el-switch__core::after {
+  width: 18px !important;
+  height: 18px !important;
+  top: 2px !important;
+}
+
+.terminal-switch-inline .el-switch__label {
+  font-size: 12px !important;
+  line-height: 22px !important;
+}

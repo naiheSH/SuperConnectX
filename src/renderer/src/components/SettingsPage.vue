@@ -53,7 +53,7 @@
                 <span class="label-text">{{ t('basicSettings.minimizeToTray') }}</span>
                 <span class="label-desc">{{ t('basicSettings.minimizeToTrayDesc') }}</span>
               </div>
-              <el-switch v-model="settings.minimizeToTray" />
+              <el-switch class="terminal-switch" v-model="settings.minimizeToTray" />
             </div>
           </div>
 
@@ -65,35 +65,35 @@
                 <span class="label-text">{{ t('basicSettings.autoScroll') }}</span>
                 <span class="label-desc">{{ t('basicSettings.autoScrollDesc') }}</span>
               </div>
-              <el-switch v-model="settings.autoScroll" />
+              <el-switch class="terminal-switch" v-model="settings.autoScroll" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('basicSettings.autoScrollToast') }}</span>
                 <span class="label-desc">{{ t('basicSettings.autoScrollToastDesc') }}</span>
               </div>
-              <el-switch v-model="settings.autoScrollToast" />
+              <el-switch class="terminal-switch" v-model="settings.autoScrollToast" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('basicSettings.autoScrollOnFocus') }}</span>
                 <span class="label-desc">{{ t('basicSettings.autoScrollOnFocusDesc') }}</span>
               </div>
-              <el-switch v-model="settings.autoScrollOnFocus" />
+              <el-switch class="terminal-switch" v-model="settings.autoScrollOnFocus" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('basicSettings.autoScrollAfterSend') }}</span>
                 <span class="label-desc">{{ t('basicSettings.autoScrollAfterSendDesc') }}</span>
               </div>
-              <el-switch v-model="settings.autoScrollAfterSend" />
+              <el-switch class="terminal-switch" v-model="settings.autoScrollAfterSend" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('basicSettings.autoScrollOnWheel') }}</span>
                 <span class="label-desc">{{ t('basicSettings.autoScrollOnWheelDesc') }}</span>
               </div>
-              <el-switch v-model="settings.autoScrollOnWheel" />
+              <el-switch class="terminal-switch" v-model="settings.autoScrollOnWheel" />
             </div>
           </div>
 
@@ -105,7 +105,7 @@
                 <span class="label-text">{{ t('basicSettings.autoBackup') }}</span>
                 <span class="label-desc">{{ t('basicSettings.autoBackupDesc') }}</span>
               </div>
-              <el-switch v-model="settings.autoBackup" />
+              <el-switch class="terminal-switch" v-model="settings.autoBackup" />
             </div>
             <div class="setting-item" v-if="settings.autoBackup">
               <div class="setting-label">
@@ -132,7 +132,7 @@
                 <span class="label-text">{{ t('basicSettings.preventSleep') }}</span>
                 <span class="label-desc">{{ t('basicSettings.preventSleepDesc') }}</span>
               </div>
-              <el-switch v-model="settings.preventSleep" />
+              <el-switch class="terminal-switch" v-model="settings.preventSleep" />
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@
                 <span class="label-text">{{ t('serialSettings.showPortType') }}</span>
                 <span class="label-desc">{{ t('serialSettings.showPortTypeDesc') }}</span>
               </div>
-              <el-switch v-model="settings.showPortType" />
+              <el-switch class="terminal-switch" v-model="settings.showPortType" />
             </div>
           </div>
         </div>
@@ -189,7 +189,7 @@
                 <span class="label-text">{{ t('logSettings.enableLogStorage') }}</span>
                 <span class="label-desc">{{ t('logSettings.enableLogStorageDesc') }}</span>
               </div>
-              <el-switch v-model="settings.enableLogStorage" />
+              <el-switch class="terminal-switch" v-model="settings.enableLogStorage" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
@@ -227,7 +227,7 @@
                 <span class="label-text">{{ t('syntaxSettings.enableSyntaxHighlight') }}</span>
                 <span class="label-desc">{{ t('syntaxSettings.enableSyntaxHighlightDesc') }}</span>
               </div>
-              <el-switch v-model="settings.enableSyntaxHighlight" />
+              <el-switch class="terminal-switch" v-model="settings.enableSyntaxHighlight" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
@@ -251,21 +251,21 @@
                 <span class="label-text">{{ t('searchSettings.caseSensitive') }}</span>
                 <span class="label-desc">{{ t('searchSettings.caseSensitiveDesc') }}</span>
               </div>
-              <el-switch v-model="settings.searchCaseSensitive" />
+              <el-switch class="terminal-switch" v-model="settings.searchCaseSensitive" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('searchSettings.regex') }}</span>
                 <span class="label-desc">{{ t('searchSettings.regexDesc') }}</span>
               </div>
-              <el-switch v-model="settings.searchRegex" />
+              <el-switch class="terminal-switch" v-model="settings.searchRegex" />
             </div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('searchSettings.wholeWord') }}</span>
                 <span class="label-desc">{{ t('searchSettings.wholeWordDesc') }}</span>
               </div>
-              <el-switch v-model="settings.searchWholeWord" />
+              <el-switch class="terminal-switch" v-model="settings.searchWholeWord" />
             </div>
           </div>
         </div>

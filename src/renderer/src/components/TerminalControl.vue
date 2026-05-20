@@ -40,16 +40,19 @@
       <el-switch
         v-model="autoScroll"
         size="small"
+        class="terminal-switch"
         active-text="自动滚动"
       />
       <el-switch
         v-model="showLog"
         size="small"
+        class="terminal-switch"
         active-text="显示日志"
       />
       <el-switch
         v-model="showTimestamp"
         size="small"
+        class="terminal-switch"
         active-text="时间戳"
       />
     </div>
