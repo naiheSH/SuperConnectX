@@ -7,6 +7,7 @@ import CommandGroupStorage from '../storage/CommandGroupStorage'
 import ComSettingsStorage from '../storage/ComSettingsStorage'
 import AppSettingsStorage from '../storage/AppSettingsStorage'
 import SettingsStorage from '../storage/SettingsStorage'
+import IpcConnector from './IpcConnector'
 
 export default class IpcStorage {
   private static sInstance: IpcStorage
@@ -88,6 +89,10 @@ export default class IpcStorage {
     ipcMain.handle('get-default-settings', () => settingsStorage.getDefaults())
     ipcMain.handle('save-settings', (_, settings: any) => {
       settingsStorage.saveSettings(settings)
+      // 日志分片大小需实时生效，无需重启
+      if (settings.logSplitSize) {
+        IpcConnector.getInstance().applySettings({ logSplitSize: settings.logSplitSize })
+      }
       return true
     })
 

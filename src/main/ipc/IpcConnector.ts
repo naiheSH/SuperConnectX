@@ -24,6 +24,7 @@ export default class IpcConnector {
 
   private settingsStorage: SettingsStorage
   private windows!: { mainWindow?: BrowserWindow | null }
+  private _logger: ProtocolLogger | null = null
 
   constructor() {
     this.settingsStorage = new SettingsStorage()
@@ -64,6 +65,7 @@ export default class IpcConnector {
 
   init(_logger: ProtocolLogger, winRef: { mainWindow?: BrowserWindow | null }): void {
     this.windows = winRef
+    this._logger = _logger
 
     // 设置日志分片回调
     _logger.setLogSplitCallback((connId, oldFileName, newFileName) => {
@@ -203,5 +205,12 @@ export default class IpcConnector {
     })
 
     logger.info(`init IpcTelnet done`)
+  }
+
+  // 运行时应用设置变更（无需重启）
+  applySettings(settings: { logSplitSize?: number }): void {
+    if (settings.logSplitSize && this._logger) {
+      this._logger.setLogSplitSize(settings.logSplitSize)
+    }
   }
 }
