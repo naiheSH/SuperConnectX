@@ -315,7 +315,7 @@
       @keydown.enter.native="submitNewConn"
       :close-on-click-modal="false"
     >
-      <el-form :model="newConnForm" :rules="newConnRules" ref="connFormRef" label-width="120px">
+      <el-form :model="newConnForm" :rules="newConnRules" ref="connFormRef" label-width="120px" @submit.prevent>
         <el-form-item :label="t('dialog.protocolType')" prop="connectionType">
           <el-select
             v-model="newConnForm.connectionType"

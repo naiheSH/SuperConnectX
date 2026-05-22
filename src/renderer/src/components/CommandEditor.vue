@@ -126,7 +126,7 @@
 
     <!-- 分组编辑对话框 -->
     <el-dialog v-model="showGroupDialog" :title="isEditingGroup ? '编辑分组' : '新建分组'" width="400px" @opened="onGroupDialogOpened">
-      <el-form :model="groupForm" label-width="80px">
+      <el-form :model="groupForm" label-width="80px" @submit.prevent @keydown.enter="saveGroup">
         <el-form-item label="分组名称">
           <el-input ref="groupNameInputRef" v-model="groupForm.name" placeholder="请输入分组名称" />
         </el-form-item>
@@ -139,7 +139,7 @@
 
     <!-- 命令编辑对话框 -->
     <el-dialog v-model="showCommandDialog" :title="isEditingCommand ? '编辑命令' : '添加命令'" width="500px">
-      <el-form :model="commandForm" label-width="80px">
+      <el-form :model="commandForm" label-width="80px" @submit.prevent @keydown.enter="saveCommand">
         <el-form-item label="序号">
           <el-input-number v-model="commandForm.seqNum" :min="1" :max="999" size="small" />
         </el-form-item>

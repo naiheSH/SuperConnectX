@@ -101,9 +101,8 @@
       v-model="isGroupDialogOpen"
       width="400px"
       :close-on-click-modal="false"
-      @keydown.enter.native="saveGroup"
     >
-      <el-form :model="groupForm" :rules="groupRules" ref="groupFormRef" label-width="120px">
+      <el-form :model="groupForm" :rules="groupRules" ref="groupFormRef" label-width="120px" @submit.prevent @keydown.enter="saveGroup">
         <el-form-item label="命令组名称" prop="name">
           <el-input v-model="groupForm.name" placeholder="命令组名称" />
         </el-form-item>
@@ -137,11 +136,10 @@
     <el-dialog
       :title="isEditing ? '编辑命令' : '新增命令'"
       v-model="isPresetDialogOpen"
-      @keydown.enter.native="savePresetCommand"
       width="400px"
       :close-on-click-modal="false"
     >
-      <el-form :model="presetForm" :rules="presetRules" ref="presetFormRef" label-width="120px">
+      <el-form :model="presetForm" :rules="presetRules" ref="presetFormRef" label-width="120px" @submit.prevent @keydown.enter="savePresetCommand">
         <el-form-item label="命令名称" prop="name">
           <el-input v-model="presetForm.name" placeholder="输入命令名称" ref="nameInputRef" />
         </el-form-item>

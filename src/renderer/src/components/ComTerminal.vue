@@ -104,7 +104,7 @@
 
         <!-- 更多设置对话框 -->
         <el-dialog v-model="showMoreDialog" :title="t('comTerminal.advancedSettings')" width="400px">
-          <el-form label-width="100px">
+          <el-form label-width="100px" @submit.prevent>
             <el-form-item :label="t('comTerminal.openTimeout')">
               <div class="input-with-unit">
                 <el-input-number v-model="readTimeout" :min="0" :step="100" size="small" class="full-width" :controls="false" placeholder="ms" />
