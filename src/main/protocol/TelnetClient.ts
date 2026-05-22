@@ -145,7 +145,7 @@ export default class TelnetClient extends BaseClient {
       logger.info(`connect ok`)
       return { success: true, message: '连接成功', connId: sessionId }
     } catch (error) {
-      console.error(error)
+      logger.error('telnet connect failed', { host, port, sessionId, error })
       return {
         success: false,
         message: error instanceof Error ? error.message : '连接失败'
@@ -167,6 +167,7 @@ export default class TelnetClient extends BaseClient {
       logger.info(`send command: ${command}`)
       return { success: true }
     } catch (error) {
+      logger.error('telnet send failed', { connId, command, error })
       return {
         success: false,
         message: error instanceof Error ? error.message : '发送命令失败'
@@ -192,7 +193,7 @@ export default class TelnetClient extends BaseClient {
       this.connectionInfos.delete(connId)
       this.telnetConnectionData.delete(connId)
     } else {
-      console.warn('not find connId:', connId)
+      logger.warn('not find connId for disconnect', { connId })
     }
     return { success: true }
   }

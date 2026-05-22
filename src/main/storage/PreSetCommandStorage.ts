@@ -94,7 +94,9 @@ export default class PreSetCommandStorage extends BaseStorage {
         commands: commands
       }
 
+      logger.info(`exporting ${commands.length} commands, ${groups.length} groups to ${filePath}`)
       fs.writeFileSync(filePath, JSON.stringify(exportData, null, 2), 'utf8')
+      logger.info(`export success: ${commands.length} commands saved`)
       return { success: true, count: commands.length }
     } catch (error) {
       const err = error as Error
@@ -107,6 +109,7 @@ export default class PreSetCommandStorage extends BaseStorage {
   importCommands(commandGroupStorage: CommandGroupStorage, filePath: string) {
     try {
       if (!fs.existsSync(filePath)) {
+        logger.warn(`import file not found: ${filePath}`)
         return { success: false, message: 'file not exists' }
       }
 
@@ -114,12 +117,16 @@ export default class PreSetCommandStorage extends BaseStorage {
       const importData = JSON.parse(content)
 
       if (!importData.groups || !importData.commands) {
+        logger.warn(`import file has invalid format: ${filePath}`)
         return { success: false, message: 'not have groups or commands' }
       }
+
+      logger.info(`importing commands from ${filePath}, groups: ${importData.groups.length}, commands: ${importData.commands.length}`)
 
       const existingGroups = commandGroupStorage.getAll()
       let importedCount = 0
       let skippedCount = 0
+      let createdGroups = 0
 
       // 先导入组（如果不存在）
       importData.groups.forEach((group) => {
@@ -132,6 +139,7 @@ export default class PreSetCommandStorage extends BaseStorage {
             name: group.name,
             connectionType: group.connectionType
           })
+          createdGroups++
         }
       })
 
@@ -177,6 +185,7 @@ export default class PreSetCommandStorage extends BaseStorage {
         importedCount++
       })
 
+      logger.info(`import complete: ${importedCount} imported, ${skippedCount} skipped, ${createdGroups} groups created`)
       return {
         success: true,
         imported: importedCount,

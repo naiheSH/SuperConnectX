@@ -60,6 +60,7 @@ export default class ConnectionStorage extends BaseStorage {
     const connections = this.getAll() as any[]
     let con = connections.filter((item) => item.id === conn.id)
     if (!con.length) {
+      logger.warn(`update connection not found, id: ${conn.id}`)
       return
     }
 

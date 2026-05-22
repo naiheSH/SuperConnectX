@@ -198,7 +198,7 @@ export default class ComClient extends BaseClient {
         })
       })
     } catch (error) {
-      console.error(error)
+      logger.error('serial connect failed', { comName, baudRate, sessionId, error })
       return {
         success: false,
         message: error instanceof Error ? error.message : '连接失败'
@@ -226,6 +226,7 @@ export default class ComClient extends BaseClient {
 
       return { success: true }
     } catch (error) {
+      logger.error('serial send failed', { connId, command, error })
       return {
         success: false,
         message: error instanceof Error ? error.message : '发送命令失败'
@@ -251,7 +252,7 @@ export default class ComClient extends BaseClient {
       })
       this.serialConnections.delete(connId)
     } else {
-      console.warn('not find connId:', connId)
+      logger.warn('not find connId for disconnect', { connId })
     }
     return { success: true }
   }

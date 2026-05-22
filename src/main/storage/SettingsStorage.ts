@@ -2,6 +2,7 @@ import Store from 'electron-store'
 import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import logger from '../ipc/IpcAppLogger'
 
 const SAVE_DIR_NAME = 'userdata'
 
@@ -76,11 +77,13 @@ export default class SettingsStorage {
   private readonly STORAGE_NAME = 'settings'
 
   constructor() {
+    const cwd = this.getAppUserDataPath()
     this.storageData = new Store<any>({
       name: this.STORAGE_NAME,
-      cwd: this.getAppUserDataPath(),
+      cwd,
       defaults: defaultSettings
     })
+    logger.debug(`SettingsStorage initialized at: ${cwd}`)
   }
 
   private getAppUserDataPath(): string {
