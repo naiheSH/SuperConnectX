@@ -13,6 +13,7 @@
     "delete": "删除",
     "confirm": "确认",
     "cancel": "取消",
+    "noResults": "没有找到匹配的设置项",
     "save": "保存",
     "close": "关闭",
     "refresh": "刷新",
@@ -28,7 +29,8 @@
     "resetConfirm": "确定要恢复默认设置吗？",
     "resetSuccess": "已恢复默认设置",
     "confirm": "确认",
-    "cancel": "取消"
+    "cancel": "取消",
+    "noResults": "没有找到匹配的设置项"
   },
   "settingsNav": {
     "basic": "基本设置",

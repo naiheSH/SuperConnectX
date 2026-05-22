@@ -13,6 +13,7 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "cancel": "Cancel",
+    "noResults": "No matching settings found",
     "save": "Save",
     "close": "Close",
     "refresh": "Refresh",
@@ -28,7 +29,8 @@
     "resetConfirm": "Are you sure you want to reset to default settings?",
     "resetSuccess": "Settings reset to default",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "noResults": "No matching settings found"
   },
   "settingsNav": {
     "basic": "General",
