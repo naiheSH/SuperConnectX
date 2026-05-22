@@ -192,6 +192,15 @@
                 @contextmenu="handleTabContextMenu($event, tab)"
                 :data-tab-id="tab.id"
               >
+                <span class="tab-icon">
+                  <el-icon v-if="tab.connectionType === 'telnet'" :size="14"><Monitor /></el-icon>
+                  <el-icon v-else-if="tab.connectionType === 'ssh'" :size="14"><Lock /></el-icon>
+                  <el-icon v-else-if="tab.connectionType === 'ftp'" :size="14"><FolderOpened /></el-icon>
+                  <el-icon v-else-if="tab.connectionType === 'com'" :size="14"><Cpu /></el-icon>
+                  <el-icon v-else-if="tab.connectionType === 'commandEditor'" :size="14"><EditPen /></el-icon>
+                  <el-icon v-else-if="tab.connectionType === 'shortcuts'" :size="14"><Operation /></el-icon>
+                  <el-icon v-else-if="tab.connectionType === 'settings'" :size="14"><Setting /></el-icon>
+                </span>
                 <span
                   v-if="tab.connectionType !== 'commandEditor' && tab.connectionType !== 'shortcuts' && tab.connectionType !== 'settings'"
                   class="connection-dot"
@@ -2348,11 +2357,28 @@ onUnmounted(() => {
   color: #fff;
 }
 
+.tab-item .tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  color: #888;
+}
+
+.tab-item.active .tab-icon {
+  color: #fff;
+}
+
 .tab-item .tab-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  line-height: 1;
+  font-size: 14px;
 }
 
 .tab-item .connection-dot {
