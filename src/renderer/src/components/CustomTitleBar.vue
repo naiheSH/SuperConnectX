@@ -60,6 +60,7 @@
             <div class="dropdown-submenu" v-if="showFontSubmenu">
               <div
                 class="menu-item"
+                :class="{ 'font-item-active': font && currentFontFamily && font === currentFontFamily }"
                 v-for="font in systemFonts"
                 :key="font"
                 @click="changeFont(font)"
@@ -536,6 +537,13 @@ const handleClickOutside = (event: MouseEvent) => {
   color: #409eff;
   font-weight: bold;
   width: 16px;
+}
+
+/* 当前选中字体项高亮 */
+.font-item-active {
+  background-color: rgba(64, 158, 255, 0.15) !important;
+  color: #409eff !important;
+  font-weight: 600;
 }
 
 /* 子菜单触发器箭头 */
