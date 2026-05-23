@@ -1,5 +1,5 @@
 import { Tray, Menu, nativeImage, app, BrowserWindow } from 'electron'
-import { join } from 'path'
+import { join, dirname } from 'path'
 import logger from './IpcAppLogger'
 
 export default class IpcTray {
@@ -18,12 +18,18 @@ export default class IpcTray {
 
   private getIconPath(): string {
     // 根据平台返回图标路径
+    const basePath = app.isPackaged
+      ? (process.platform === 'win32'
+          ? dirname(app.getPath('exe'))   // 与 exe 同目录
+          : process.resourcesPath)        // macOS/Linux: Resources 目录
+      : join(__dirname, '../../build')    // 开发模式: build 目录
+
     if (process.platform === 'win32') {
-      return join(__dirname, '../../build/icon.ico')
+      return join(basePath, 'icon.ico')
     } else if (process.platform === 'darwin') {
-      return join(__dirname, '../../build/icon.icns')
+      return join(basePath, 'icon.icns')
     }
-    return join(__dirname, '../../build/icon.png')
+    return join(basePath, 'icon.png')
   }
 
   createTray(mainWindow: BrowserWindow): void {
@@ -32,7 +38,13 @@ export default class IpcTray {
     }
 
     const iconPath = this.getIconPath()
-    const icon = nativeImage.createFromPath(iconPath)
+    let icon = nativeImage.createFromPath(iconPath)
+
+    if (icon.isEmpty()) {
+      logger.warn(`Tray icon not found at: ${iconPath}, using default 16x16 icon`)
+      // 创建一张简单的 16x16 占位图标，避免托盘图标完全空白
+      icon = nativeImage.createEmpty()
+    }
     
     // Windows 上使用 16x16 或 32x32 的图标
     if (process.platform === 'win32') {

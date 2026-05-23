@@ -43,6 +43,11 @@ linux:
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
+extraFiles:
+  - from: "build/icon.ico"
+    to: "./icon.ico"
+  - from: "build/icon.icns"
+    to: "./icon.icns"
 npmRebuild: false
 publish:
   provider: generic
