@@ -68,7 +68,7 @@
         />
       </div>
       <span class="prompt">></span>
-      <div class="input-wrapper">
+      <div class="input-wrapper" @click="commandInput?.focus()">
         <input
           v-model="currentCommand"
           @keydown="handleInputKeydown"
@@ -856,6 +856,7 @@ const handleSettingsUpdated = async (event: Event) => {
 /* 历史命令弹窗 */
 .input-wrapper {
   flex: 1;
+  min-width: 0;
   position: relative;
 }
 
