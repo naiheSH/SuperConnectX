@@ -1,5 +1,5 @@
 import { Tray, Menu, nativeImage, app, BrowserWindow } from 'electron'
-import { join, dirname } from 'path'
+import { join } from 'path'
 import logger from './IpcAppLogger'
 
 export default class IpcTray {
@@ -19,10 +19,8 @@ export default class IpcTray {
   private getIconPath(): string {
     // 根据平台返回图标路径
     const basePath = app.isPackaged
-      ? (process.platform === 'win32'
-          ? dirname(app.getPath('exe'))   // 与 exe 同目录
-          : process.resourcesPath)        // macOS/Linux: Resources 目录
-      : join(__dirname, '../../build')    // 开发模式: build 目录
+      ? process.resourcesPath              // 打包后: resources/ 目录
+      : join(__dirname, '../../build')     // 开发模式: build/ 目录
 
     if (process.platform === 'win32') {
       return join(basePath, 'icon.ico')

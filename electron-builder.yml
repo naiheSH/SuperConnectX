@@ -2,6 +2,7 @@ appId: superconnectx.superstudio
 productName: superconnectx
 directories:
   buildResources: build
+  output: release
 files:
   - 'out/**/*'
   - '!out/**/*.map'
@@ -13,8 +14,6 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
   - '!**/node_modules/{CHANGELOG.md,README.md,readme.md,test,__tests__,tests,powered-test,example,examples}'
   - '!**/node_modules/.bin'
-asarUnpack:
-  - resources/**
 win:
   executableName: SuperConnectX
 nsis:
@@ -22,7 +21,6 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
-  compression: lzma
 mac:
   target: dmg
   entitlementsInherit: build/entitlements.mac.plist
@@ -43,11 +41,6 @@ linux:
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
-extraFiles:
-  - from: "build/icon.ico"
-    to: "./icon.ico"
-  - from: "build/icon.icns"
-    to: "./icon.icns"
 npmRebuild: false
 publish:
   provider: generic

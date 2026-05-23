@@ -1,0 +1,25 @@
+{
+  "files.watcherExclude": {
+    "**/release/**": true,
+    "**/out/**": true,
+    "**/dist/**": true,
+    "**/node_modules/**": true,
+    "**/.git/objects/**": true,
+    "**/*.asar": true
+  },
+  "files.exclude": {
+    "**/release": true,
+    "**/dist": true,
+    "**/*.asar": true
+  },
+  "search.exclude": {
+    "**/release": true,
+    "**/dist": true,
+    "**/*.asar": true
+  },
+  "git.autoRepositoryDetection": "subFolders",
+  "git.detectSubmodulesLimit": 0,
+  "files.readonlyInclude": {
+    "**/*.asar": true
+  }
+}
