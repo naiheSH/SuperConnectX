@@ -42,7 +42,13 @@ contextBridge.exposeInMainWorld('storageApi', {
   getShortcuts: () => ipcRenderer.invoke('get-shortcuts'),
   getDefaultShortcuts: () => ipcRenderer.invoke('get-default-shortcuts'),
   saveShortcuts: (shortcuts: any[]) => ipcRenderer.invoke('save-shortcuts', shortcuts),
-  getShortcutActions: () => ipcRenderer.invoke('get-shortcut-actions')
+  getShortcutActions: () => ipcRenderer.invoke('get-shortcut-actions'),
+
+  /* 命令历史 */
+  getCommandHistory: (protocolType: string) => ipcRenderer.invoke('get-command-history', protocolType),
+  addCommandHistory: (protocolType: string, command: string) => ipcRenderer.invoke('add-command-history', protocolType, command),
+  clearCommandHistory: (protocolType: string) => ipcRenderer.invoke('clear-command-history', protocolType),
+  removeCommandHistory: (protocolType: string, command: string) => ipcRenderer.invoke('remove-command-history', protocolType, command)
 })
 
 contextBridge.exposeInMainWorld('connectApi', {

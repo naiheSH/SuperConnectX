@@ -68,15 +68,34 @@
         />
       </div>
       <span class="prompt">></span>
-      <input
-        v-model="currentCommand"
-        @keydown.enter="handleSendCommand"
-        :placeholder="isConnected ? (hexMode ? '输入HEX数据 (如: 01 02 03)' : placeholder) : '连接后可发送命令'"
-        ref="commandInput"
-        class="command-input"
-        :class="{ 'not-connected': !isConnected, 'hex-mode': hexMode }"
-        :disabled="!isConnected"
-      />
+      <div class="input-wrapper">
+        <input
+          v-model="currentCommand"
+          @keydown="handleInputKeydown"
+          :placeholder="isConnected ? (hexMode ? '输入HEX数据 (如: 01 02 03)' : placeholder) : '连接后可发送命令'"
+          ref="commandInput"
+          class="command-input"
+          :class="{ 'not-connected': !isConnected, 'hex-mode': hexMode }"
+          :disabled="!isConnected"
+          @input="onInputChange"
+          @focus="onInputFocus"
+          @blur="onInputBlur"
+        />
+        <!-- 历史命令弹窗 -->
+        <div v-if="showHistoryPopup && filteredHistory.length > 0" class="history-popup">
+          <div
+            v-for="(item, index) in filteredHistory"
+            :key="index"
+            class="history-item"
+            :class="{ 'history-item-active': index === historySelectedIndex }"
+            @mousedown.prevent="selectHistoryItem(item)"
+            @mouseenter="historySelectedIndex = index"
+          >
+            <span class="history-item-text">{{ item }}</span>
+            <span class="history-item-delete" @mousedown.prevent.stop="deleteHistoryItem(item)" :title="t('historySettings.deleteCommand')">×</span>
+          </div>
+        </div>
+      </div>
       <el-button
         icon="Promotion"
         size="small"
@@ -91,7 +110,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as monaco from 'monaco-editor'
 import PresetCommands from './PresetCommands.vue'
 import TerminalControl from './TerminalControl.vue'
@@ -151,6 +171,16 @@ const fontSize = ref(14) // 终端字体大小
 const fontFamily = ref('Fira Code') // 终端字体系列
 const MIN_FONT_SIZE = 8
 const MAX_FONT_SIZE = 30
+
+const { t } = useI18n()
+
+// 命令历史相关
+const commandHistory = ref<string[]>([])
+const showHistoryPopup = ref(false)
+const historySelectedIndex = ref(-1)
+let historyTempInput = '' // 保存输入时临时内容，用于上下键恢复
+let historyFilterInput = '' // 导航时的过滤基准，避免选中改变输入后过滤结果变化
+let showCommandHistory = true // 是否显示历史命令弹窗
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 let editorModel: monaco.editor.ITextModel | null = null
 let totalRecvSize = 0
@@ -328,9 +358,164 @@ const handleSendCommand = () => {
     sendData = sendData + '\r\n'
   }
 
+  // 保存命令到历史记录
+  addToHistory(originalInput)
+
   // 传递原始输入用于显示（在HEX模式下需要显示原始HEX字符串）
   emit('onSend', sendData, originalInput)
   currentCommand.value = ''
+  closeHistoryPopup()
+}
+
+// 命令历史相关方法
+const filteredHistory = computed(() => {
+  // 导航中用 historyFilterInput 作为过滤基准，避免选中项改变输入后过滤结果变化
+  const input = (historySelectedIndex.value >= 0 ? historyFilterInput : currentCommand.value).trim().toLowerCase()
+  if (!input) return commandHistory.value
+  return commandHistory.value.filter(cmd => cmd.toLowerCase().includes(input))
+})
+
+const loadHistory = async () => {
+  try {
+    const history = await window.storageApi.getCommandHistory(props.connection.connectionType)
+    commandHistory.value = history || []
+    // 加载显示历史命令的设置
+    const settings = await window.storageApi.getSettings()
+    showCommandHistory = settings?.showCommandHistory !== false
+  } catch (error) {
+    console.error('加载命令历史失败:', error)
+  }
+}
+
+const addToHistory = async (command: string) => {
+  if (!command.trim()) return
+  try {
+    await window.storageApi.addCommandHistory(props.connection.connectionType, command)
+    // 更新本地列表
+    commandHistory.value = commandHistory.value.filter(c => c !== command)
+    commandHistory.value.unshift(command)
+    // 从设置获取最大数量限制
+    const settings = await window.storageApi.getSettings()
+    const maxCount = settings?.commandHistoryMaxCount || 10
+    if (commandHistory.value.length > maxCount) {
+      commandHistory.value = commandHistory.value.slice(0, maxCount)
+    }
+  } catch (error) {
+    console.error('保存命令历史失败:', error)
+  }
+}
+
+const onInputChange = () => {
+  historySelectedIndex.value = -1
+  historyTempInput = currentCommand.value
+  historyFilterInput = '' // 用户手动输入时清除导航过滤基准
+  if (!showCommandHistory) return
+  // 有输入内容时自动弹出历史
+  if (currentCommand.value.trim() && filteredHistory.value.length > 0) {
+    showHistoryPopup.value = true
+  } else if (!currentCommand.value.trim()) {
+    // 输入框为空时不弹窗
+    showHistoryPopup.value = false
+  }
+}
+
+const onInputFocus = () => {
+  if (!showCommandHistory) return
+  // 聚焦时如果有输入内容且有匹配历史，自动弹窗
+  if (currentCommand.value.trim() && filteredHistory.value.length > 0) {
+    showHistoryPopup.value = true
+  }
+}
+
+const onInputBlur = () => {
+  // 延迟关闭，允许点击历史项
+  setTimeout(() => {
+    closeHistoryPopup()
+  }, 150)
+}
+
+const closeHistoryPopup = () => {
+  showHistoryPopup.value = false
+  historySelectedIndex.value = -1
+  historyFilterInput = ''
+}
+
+const selectHistoryItem = (item: string) => {
+  currentCommand.value = item
+  closeHistoryPopup()
+  commandInput.value?.focus()
+}
+
+const deleteHistoryItem = async (item: string) => {
+  try {
+    await window.storageApi.removeCommandHistory(props.connection.connectionType, item)
+    commandHistory.value = commandHistory.value.filter(c => c !== item)
+    // 如果删除后列表为空，关闭弹窗
+    if (filteredHistory.value.length === 0) {
+      closeHistoryPopup()
+    } else if (historySelectedIndex.value >= filteredHistory.value.length) {
+      historySelectedIndex.value = filteredHistory.value.length - 1
+    }
+  } catch (error) {
+    console.error('删除命令历史失败:', error)
+  }
+}
+
+const handleInputKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    // 如果弹窗中有选中项，将选中项填入输入框而非直接发送
+    if (showHistoryPopup.value && historySelectedIndex.value >= 0 && historySelectedIndex.value < filteredHistory.value.length) {
+      currentCommand.value = filteredHistory.value[historySelectedIndex.value]
+      closeHistoryPopup()
+      e.preventDefault()
+      return
+    }
+    handleSendCommand()
+    return
+  }
+
+  // 上下键导航历史
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    if (!showCommandHistory) return
+    const list = filteredHistory.value
+    if (list.length === 0) return
+
+    if (!showHistoryPopup.value) {
+      showHistoryPopup.value = true
+    }
+
+    e.preventDefault()
+
+    if (e.key === 'ArrowUp') {
+      if (historySelectedIndex.value <= 0) {
+        if (historySelectedIndex.value === -1) {
+          historyTempInput = currentCommand.value
+          historyFilterInput = currentCommand.value.trim().toLowerCase()
+        }
+        historySelectedIndex.value = list.length - 1
+      } else {
+        historySelectedIndex.value--
+      }
+    } else {
+      if (historySelectedIndex.value === -1) {
+        historyTempInput = currentCommand.value
+        historyFilterInput = currentCommand.value.trim().toLowerCase()
+        historySelectedIndex.value = 0
+      } else if (historySelectedIndex.value >= list.length - 1) {
+        historySelectedIndex.value = 0
+      } else {
+        historySelectedIndex.value++
+      }
+    }
+
+    return
+  }
+
+  // Escape 关闭弹窗
+  if (e.key === 'Escape') {
+    closeHistoryPopup()
+    return
+  }
 }
 
 // 解析HEX字符串为二进制
@@ -443,6 +628,10 @@ defineExpose({
 
 onMounted(() => {
   initEditor()
+  loadHistory()
+
+  // 监听设置更新事件（历史最大数量变化时刷新）
+  window.addEventListener('settings-updated', handleSettingsUpdated)
 })
 
 onUnmounted(() => {
@@ -455,7 +644,26 @@ onUnmounted(() => {
     editor.dispose()
     editor = null
   }
+
+  window.removeEventListener('settings-updated', handleSettingsUpdated)
 })
+
+// 设置更新处理
+const handleSettingsUpdated = async (event: Event) => {
+  const updatedSettings = (event as CustomEvent).detail
+  if (updatedSettings) {
+    if ('showCommandHistory' in updatedSettings) {
+      showCommandHistory = updatedSettings.showCommandHistory !== false
+      if (!showCommandHistory) {
+        closeHistoryPopup()
+      }
+    }
+    if ('commandHistoryMaxCount' in updatedSettings) {
+      // 重新加载历史记录
+      await loadHistory()
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -643,5 +851,104 @@ onUnmounted(() => {
 
 .terminal-output::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* 历史命令弹窗 */
+.input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.history-popup {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: #2d2d2d;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 100;
+  margin-bottom: 2px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.history-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  color: #ccc;
+  font-size: 12px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid #3a3a3a;
+  display: flex;
+  align-items: center;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-item:hover {
+  background: #094771;
+  color: #fff;
+}
+
+.history-item-active {
+  background: #094771;
+  color: #fff;
+}
+
+.history-item-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.history-item-delete {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.history-item:hover .history-item-delete {
+  display: flex;
+}
+
+.history-item-delete:hover {
+  background: #c43e3e;
+  color: #fff;
+}
+
+.history-popup::-webkit-scrollbar {
+  width: 6px;
+}
+
+.history-popup::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.history-popup::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+
+.history-popup::-webkit-scrollbar-thumb:hover {
+  background: #666;
 }
 </style>

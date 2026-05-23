@@ -7,6 +7,7 @@ import CommandGroupStorage from '../storage/CommandGroupStorage'
 import ComSettingsStorage from '../storage/ComSettingsStorage'
 import AppSettingsStorage from '../storage/AppSettingsStorage'
 import SettingsStorage from '../storage/SettingsStorage'
+import CommandHistoryStorage from '../storage/CommandHistoryStorage'
 import IpcConnector from './IpcConnector'
 
 export default class IpcStorage {
@@ -85,6 +86,10 @@ export default class IpcStorage {
 
     /* 设置页面持久化 */
     const settingsStorage = new SettingsStorage()
+
+    /* 命令历史持久化（需要在 settings 之后初始化，因为依赖 settingsStorage） */
+    const commandHistoryStorage = new CommandHistoryStorage(settingsStorage)
+
     ipcMain.handle('get-settings', () => settingsStorage.getSettings())
     ipcMain.handle('get-default-settings', () => settingsStorage.getDefaults())
     ipcMain.handle('save-settings', (_, settings: any) => {
@@ -93,6 +98,24 @@ export default class IpcStorage {
       if (settings.logSplitSize) {
         IpcConnector.getInstance().applySettings({ logSplitSize: settings.logSplitSize })
       }
+      // 命令历史最大数量变更时裁剪历史记录
+      if (settings.commandHistoryMaxCount) {
+        commandHistoryStorage.applyMaxCount(settings.commandHistoryMaxCount)
+      }
+      return true
+    })
+
+    ipcMain.handle('get-command-history', (_, protocolType: string) => commandHistoryStorage.getHistory(protocolType))
+    ipcMain.handle('add-command-history', (_, protocolType: string, command: string) => {
+      commandHistoryStorage.addCommand(protocolType, command)
+      return true
+    })
+    ipcMain.handle('clear-command-history', (_, protocolType: string) => {
+      commandHistoryStorage.clearHistory(protocolType)
+      return true
+    })
+    ipcMain.handle('remove-command-history', (_, protocolType: string, command: string) => {
+      commandHistoryStorage.removeCommand(protocolType, command)
       return true
     })
 

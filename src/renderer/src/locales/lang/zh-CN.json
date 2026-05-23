@@ -37,7 +37,8 @@
     "serial": "串口COM设置",
     "log": "日志",
     "syntax": "语法高亮",
-    "search": "搜索"
+    "search": "搜索",
+    "history": "命令历史"
   },
   "basicSettings": {
     "title": "基本配置",
@@ -105,6 +106,15 @@
     "regexDesc": "启用正则表达式搜索",
     "wholeWord": "整词匹配",
     "wholeWordDesc": "只匹配完整的单词"
+  },
+  "historySettings": {
+    "title": "命令历史",
+    "commandHistoryMaxCount": "历史命令最大条数",
+    "commandHistoryMaxCountDesc": "每种协议保存的发送命令历史记录最大数量，超出后自动覆盖旧记录",
+    "commandHistoryMaxCountUnit": "条",
+    "showCommandHistory": "显示历史命令",
+    "showCommandHistoryDesc": "输入命令时自动弹出历史命令记录，关闭后不再弹出",
+    "deleteCommand": "删除"
   },
   "languages": {
     "zh-CN": "简体中文",

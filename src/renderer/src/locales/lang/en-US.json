@@ -37,7 +37,8 @@
     "serial": "Serial COM",
     "log": "Logs",
     "syntax": "Syntax Highlight",
-    "search": "Search"
+    "search": "Search",
+    "history": "Command History"
   },
   "basicSettings": {
     "title": "General Settings",
@@ -105,6 +106,15 @@
     "regexDesc": "Enable regular expression search",
     "wholeWord": "Whole Word Match",
     "wholeWordDesc": "Only match complete words"
+  },
+  "historySettings": {
+    "title": "Command History",
+    "commandHistoryMaxCount": "Max History Count",
+    "commandHistoryMaxCountDesc": "Maximum number of sent command history records per protocol, older records are automatically overwritten",
+    "commandHistoryMaxCountUnit": "items",
+    "showCommandHistory": "Show Command History",
+    "showCommandHistoryDesc": "Automatically show command history popup when typing, disable to hide the popup",
+    "deleteCommand": "Delete"
   },
   "languages": {
     "zh-CN": "简体中文",

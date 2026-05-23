@@ -293,6 +293,37 @@
             </div>
           </div>
         </div>
+
+        <!-- 命令历史 -->
+        <div v-else-if="activeCategory === 'history'" class="settings-group">
+          <div class="group-section">
+            <div class="group-title">{{ t('historySettings.title') }}</div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('historySettings.showCommandHistory') }}</span>
+                <span class="label-desc">{{ t('historySettings.showCommandHistoryDesc') }}</span>
+              </div>
+              <el-switch class="terminal-switch" v-model="settings.showCommandHistory" />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('historySettings.commandHistoryMaxCount') }}</span>
+                <span class="label-desc">{{ t('historySettings.commandHistoryMaxCountDesc') }}</span>
+              </div>
+              <div class="slider-control">
+                <el-slider
+                  v-model="settings.commandHistoryMaxCount"
+                  :min="1"
+                  :max="100"
+                  :step="1"
+                  :show-tooltip="false"
+                  style="width: 120px"
+                />
+                <span class="slider-value">{{ settings.commandHistoryMaxCount }} {{ t('historySettings.commandHistoryMaxCountUnit') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -315,7 +346,8 @@ const categories = computed(() => [
   { key: 'serial', label: t('settingsNav.serial') },
   { key: 'log', label: t('settingsNav.log') },
   { key: 'syntax', label: t('settingsNav.syntax') },
-  { key: 'search', label: t('settingsNav.search') }
+  { key: 'search', label: t('settingsNav.search') },
+  { key: 'history', label: t('settingsNav.history') }
 ])
 
 // ---- 搜索功能 ----
@@ -398,6 +430,14 @@ const allSettingsSections = computed<SearchSection[]>(() => [
       { labelKey: 'searchSettings.caseSensitive', descKey: 'searchSettings.caseSensitiveDesc', key: 'searchCaseSensitive' },
       { labelKey: 'searchSettings.regex', descKey: 'searchSettings.regexDesc', key: 'searchRegex' },
       { labelKey: 'searchSettings.wholeWord', descKey: 'searchSettings.wholeWordDesc', key: 'searchWholeWord' },
+    ]
+  },
+  // 命令历史
+  {
+    categoryKey: 'history', sectionKey: 'historySettings.title', sectionKeyI18n: 'historySettings.title', sectionTitle: t('historySettings.title'),
+    items: [
+      { labelKey: 'historySettings.showCommandHistory', descKey: 'historySettings.showCommandHistoryDesc', key: 'showCommandHistory' },
+      { labelKey: 'historySettings.commandHistoryMaxCount', descKey: 'historySettings.commandHistoryMaxCountDesc', key: 'commandHistoryMaxCount' },
     ]
   },
 ])

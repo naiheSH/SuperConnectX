@@ -37,6 +37,9 @@ interface Settings {
   searchCaseSensitive?: boolean
   searchRegex?: boolean
   searchWholeWord?: boolean
+  // 命令历史
+  commandHistoryMaxCount?: number
+  showCommandHistory?: boolean
 }
 
 const defaultSettings: Settings = {
@@ -69,7 +72,10 @@ const defaultSettings: Settings = {
   // 搜索
   searchCaseSensitive: false,
   searchRegex: false,
-  searchWholeWord: false
+  searchWholeWord: false,
+  // 命令历史
+  commandHistoryMaxCount: 10,
+  showCommandHistory: true
 }
 
 export default class SettingsStorage {

@@ -44,6 +44,10 @@ declare global {
       getDefaultShortcuts: () => Promise<any[]>
       saveShortcuts: (shortcuts: any[]) => Promise<boolean>
       getShortcutActions: () => Promise<any[]>
+      getCommandHistory: (protocolType: string) => Promise<string[]>
+      addCommandHistory: (protocolType: string, command: string) => Promise<boolean>
+      clearCommandHistory: (protocolType: string) => Promise<boolean>
+      removeCommandHistory: (protocolType: string, command: string) => Promise<boolean>
     }
     connectApi: {
       startConnect: (conn: any) => Promise<any>
