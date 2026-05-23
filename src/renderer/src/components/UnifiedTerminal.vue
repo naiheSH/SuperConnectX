@@ -267,6 +267,7 @@ const appendToTerminal = (content: string) => {
   }
 
   totalRecvSize += content.length
+  rxBytes.value = formatBytes(totalRecvSize)
   if (totalRecvSize > MAX_CLEAR_INTERVAL_SIZE) {
     clearTerminal()
   }
@@ -300,6 +301,8 @@ const clearTerminal = () => {
   if (editorModel) {
     editorModel.setValue('')
   }
+  totalRecvSize = 0
+  rxBytes.value = '0 B'
 }
 
 const handleCommandSent = (cmdName: string) => emit('onCommandSent', cmdName)
@@ -368,8 +371,7 @@ const formatBytes = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-const updateRxBytes = (len: number) => {
-  totalRecvSize += len
+const updateRxBytes = (_len: number) => {
   rxBytes.value = formatBytes(totalRecvSize)
 }
 
