@@ -350,7 +350,6 @@ const getCrcBytesBinary = (): string | null => {
 const commandHistory = ref<string[]>([])
 const showHistoryPopup = ref(false)
 const historySelectedIndex = ref(-1)
-let historyTempInput = '' // 保存输入时临时内容，用于上下键恢复
 let historyFilterInput = '' // 导航时的过滤基准，避免选中改变输入后过滤结果变化
 let showCommandHistory = true // 是否显示历史命令弹窗
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
@@ -591,7 +590,6 @@ const addToHistory = async (command: string) => {
 
 const onInputChange = () => {
   historySelectedIndex.value = -1
-  historyTempInput = currentCommand.value
   historyFilterInput = '' // 用户手动输入时清除导航过滤基准
   if (!showCommandHistory) return
   // 有输入内容时自动弹出历史
@@ -673,7 +671,6 @@ const handleInputKeydown = (e: KeyboardEvent) => {
     if (e.key === 'ArrowUp') {
       if (historySelectedIndex.value <= 0) {
         if (historySelectedIndex.value === -1) {
-          historyTempInput = currentCommand.value
           historyFilterInput = currentCommand.value.trim().toLowerCase()
         }
         historySelectedIndex.value = list.length - 1
@@ -682,7 +679,6 @@ const handleInputKeydown = (e: KeyboardEvent) => {
       }
     } else {
       if (historySelectedIndex.value === -1) {
-        historyTempInput = currentCommand.value
         historyFilterInput = currentCommand.value.trim().toLowerCase()
         historySelectedIndex.value = 0
       } else if (historySelectedIndex.value >= list.length - 1) {
