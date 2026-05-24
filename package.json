@@ -25,6 +25,8 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@element-plus/icons-vue": "^2.3.2",
     "@serialport/parser-readline": "^13.0.0",
+    "buffer": "^6.0.3",
+    "crc": "^4.3.2",
     "electron-store": "^3.3.0",
     "element-plus": "^2.11.9",
     "ftp-srv": "^4.6.3",

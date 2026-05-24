@@ -23,6 +23,8 @@ interface ComPortSettings {
   showTimestamp?: boolean
   autoNewline?: boolean
   hexMode?: boolean
+  crcEnabled?: boolean
+  crcMethod?: string
 }
 
 interface StoredData {

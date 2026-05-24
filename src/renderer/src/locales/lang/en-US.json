@@ -227,7 +227,13 @@
     "saveSettingsFailed": "Failed to save serial settings",
     "addBaudRateSuccess": "Baud rate {rate} added",
     "deleteBaudRateSuccess": "Baud rate {rate} deleted",
-    "addBaudRateTitle": "Add Baud Rate"
+    "addBaudRateTitle": "Add Baud Rate",
+    "crc": "CRC",
+    "crcTitle": "CRC Checksum",
+    "crcInputEmpty": "Please enter data",
+    "crcInvalidHex": "Invalid HEX format",
+    "crcEnable": "Enable",
+    "crcMethod": "CRC Method"
   },
   "shortcuts": {
     "title": "Shortcuts",

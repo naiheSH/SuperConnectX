@@ -227,7 +227,13 @@
     "saveSettingsFailed": "保存串口设置失败",
     "addBaudRateSuccess": "已添加波特率 {rate}",
     "deleteBaudRateSuccess": "已删除波特率 {rate}",
-    "addBaudRateTitle": "新增波特率"
+    "addBaudRateTitle": "新增波特率",
+    "crc": "CRC",
+    "crcTitle": "CRC 校验计算",
+    "crcInputEmpty": "请输入数据",
+    "crcInvalidHex": "无效的HEX格式",
+    "crcEnable": "启用计算",
+    "crcMethod": "计算方式"
   },
   "shortcuts": {
     "title": "快捷键",

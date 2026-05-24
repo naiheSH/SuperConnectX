@@ -226,6 +226,8 @@ const rts = ref(false)
 const hexDisplayMode = ref(false)
 const autoNewline = ref(true)
 const hexMode = ref(false)
+const crcEnabled = ref(true)
+const crcMethod = ref<string>('crc32')
 
 let removeMountedCloseListener: (() => void) | null = null
 let removeDataListener: (() => void) | null = null
@@ -299,6 +301,18 @@ watch(hexMode, (newVal) => {
   unifiedTerminalRef.value?.setHexMode?.(newVal)
 })
 
+// 监听 CRC 启用状态变化
+watch(crcEnabled, (newVal) => {
+  saveComSettings()
+  unifiedTerminalRef.value?.setCrcEnabled?.(newVal)
+})
+
+// 监听 CRC 计算方式变化
+watch(crcMethod, (newVal) => {
+  saveComSettings()
+  unifiedTerminalRef.value?.setCrcMethod?.(newVal)
+})
+
 // 监听 UnifiedTerminal 的状态变化
 watch(() => unifiedTerminalRef.value?.getAutoNewline?.(), (newVal) => {
   if (newVal !== undefined && newVal !== autoNewline.value) {
@@ -309,6 +323,18 @@ watch(() => unifiedTerminalRef.value?.getAutoNewline?.(), (newVal) => {
 watch(() => unifiedTerminalRef.value?.getHexMode?.(), (newVal) => {
   if (newVal !== undefined && newVal !== hexMode.value) {
     hexMode.value = newVal
+  }
+}, { immediate: true })
+
+watch(() => unifiedTerminalRef.value?.getCrcEnabled?.(), (newVal) => {
+  if (newVal !== undefined && newVal !== crcEnabled.value) {
+    crcEnabled.value = newVal
+  }
+}, { immediate: true })
+
+watch(() => unifiedTerminalRef.value?.getCrcMethod?.(), (newVal) => {
+  if (newVal !== undefined && newVal !== crcMethod.value) {
+    crcMethod.value = newVal
   }
 }, { immediate: true })
 
@@ -380,6 +406,8 @@ const loadComSettings = async () => {
       terminal.showTimestamp.value = settings.showTimestamp !== undefined ? settings.showTimestamp : true
       autoNewline.value = settings.autoNewline !== undefined ? settings.autoNewline : true
       hexMode.value = settings.hexMode || false
+      crcEnabled.value = settings.crcEnabled !== undefined ? settings.crcEnabled : true
+      crcMethod.value = settings.crcMethod || 'crc32'
       terminal.fontSize.value = settings.fontSize !== undefined ? settings.fontSize : 14
       terminal.fontFamily.value = settings.fontFamily || 'Fira Code'
 
@@ -387,6 +415,8 @@ const loadComSettings = async () => {
       unifiedTerminalRef.value?.setShowTimestamp?.(terminal.showTimestamp.value)
       unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
       unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
+      unifiedTerminalRef.value?.setCrcEnabled?.(crcEnabled.value)
+      unifiedTerminalRef.value?.setCrcMethod?.(crcMethod.value)
       unifiedTerminalRef.value?.setFontSize?.(terminal.fontSize.value)
       unifiedTerminalRef.value?.setFontFamily?.(terminal.fontFamily.value)
       emit('fontLoaded', terminal.fontFamily.value)
@@ -416,6 +446,8 @@ const saveComSettings = async () => {
       showTimestamp: terminal.showTimestamp.value,
       autoNewline: autoNewline.value,
       hexMode: hexMode.value,
+      crcEnabled: crcEnabled.value,
+      crcMethod: crcMethod.value,
       fontSize: terminal.fontSize.value,
       fontFamily: terminal.fontFamily.value
     }
@@ -601,7 +633,17 @@ const handleClose = async () => {
 const handleSendCommand = async (command: string, originalInput?: string) => {
   if (!command.trim() || !isConnected.value) return
 
-  const displayCommand = hexMode.value && originalInput ? originalInput : command
+  // HEX 模式下将实际发送的二进制数据转成 HEX 显示（包含 CRLF 和 CRC 字节）
+  let displayCommand: string
+  if (hexMode.value) {
+    const hexBytes: string[] = []
+    for (let i = 0; i < command.length; i++) {
+      hexBytes.push(command.charCodeAt(i).toString(16).padStart(2, '0').toUpperCase())
+    }
+    displayCommand = hexBytes.join(' ')
+  } else {
+    displayCommand = originalInput || command
+  }
   terminal.totalTxSize += command.length
   unifiedTerminalRef.value?.updateTxBytes(command.length)
 
@@ -677,6 +719,8 @@ onMounted(async () => {
     unifiedTerminalRef.value?.setShowTimestamp?.(terminal.showTimestamp.value)
     unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
     unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
+    unifiedTerminalRef.value?.setCrcEnabled?.(crcEnabled.value)
+    unifiedTerminalRef.value?.setCrcMethod?.(crcMethod.value)
   })
 
   if (removeMountedCloseListener) removeMountedCloseListener()
