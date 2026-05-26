@@ -1427,6 +1427,7 @@ const loadShortcutActions = async () => {
         },
         'ConnectionList:toggle': () => toggleConnectionList(),
         'SerialPort:refresh': () => loadSerialPorts(),
+        'Window:toggleFullscreen': () => window.windowApi.toggleFullscreenWindow(),
       }
     }
   } catch (error) {

@@ -91,7 +91,8 @@ contextBridge.exposeInMainWorld('windowApi', {
   maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
   getWindowState: () => ipcRenderer.invoke('get-window-state'),
-  getAppVersion: () => ipcRenderer.invoke('get-app-version')
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  toggleFullscreenWindow: () => ipcRenderer.invoke('toggle-fullscreen-window')
 })
 
 contextBridge.exposeInMainWorld('toolApi', {

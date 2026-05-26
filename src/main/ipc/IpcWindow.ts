@@ -40,6 +40,11 @@ export default class IpcWindow {
         : windows.mainWindow?.maximize()
     )
     ipcMain.handle('get-app-version', () => app.getVersion())
+    ipcMain.handle('toggle-fullscreen-window', () => {
+      if (windows.mainWindow) {
+        windows.mainWindow.setFullScreen(!windows.mainWindow.isFullScreen())
+      }
+    })
 
     logger.info(`init IpcWindow done`)
   }

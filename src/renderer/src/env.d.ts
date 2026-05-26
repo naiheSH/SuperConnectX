@@ -83,6 +83,7 @@ interface WindowApi {
   closeWindow: () => Promise<void>
   getWindowState: () => Promise<any>
   getAppVersion: () => Promise<string>
+  toggleFullscreenWindow: () => Promise<void>
 }
 
 declare global {

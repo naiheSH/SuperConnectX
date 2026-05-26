@@ -69,6 +69,7 @@ declare global {
       closeWindow: () => Promise<void>
       getWindowState: () => Promise<boolean>
       getAppVersion: () => Promise<string>
+      toggleFullscreenWindow: () => Promise<void>
     }
     toolApi: {
       openDevtools: () => Promise<void>
