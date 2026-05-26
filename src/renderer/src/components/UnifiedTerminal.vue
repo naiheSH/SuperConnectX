@@ -158,7 +158,7 @@ import * as monaco from 'monaco-editor'
 import PresetCommands from './PresetCommands.vue'
 import TerminalControl from './TerminalControl.vue'
 
-const MAX_CLEAR_INTERVAL_SIZE = 1024 * 1024 * 30
+const maxClearSizeMB = ref(30)
 
 const props = withDefaults(defineProps<{
   connection: {
@@ -469,8 +469,9 @@ const appendToTerminal = (content: string) => {
 
   totalRecvSize += content.length
   rxBytes.value = formatBytes(totalRecvSize)
-  if (totalRecvSize > MAX_CLEAR_INTERVAL_SIZE) {
+  if (totalRecvSize > getMaxClearSize()) {
     clearTerminal()
+    window.dispatchEvent(new CustomEvent('terminal-text-cleared'))
   }
 }
 
@@ -812,9 +813,23 @@ defineExpose({
   getFontFamily: () => fontFamily.value
 })
 
+const getMaxClearSize = () => {
+  return (maxClearSizeMB.value || 30) * 1024 * 1024
+}
+
+const loadMaxClearSize = async () => {
+  try {
+    const settings = await window.storageApi.getSettings()
+    maxClearSizeMB.value = settings?.maxDisplayText ?? 30
+  } catch (e) {
+    // ignore
+  }
+}
+
 onMounted(async () => {
   initEditor()
   loadHistory()
+  await loadMaxClearSize()
 
   // 加载数据校验算法列表
   try {
@@ -857,6 +872,9 @@ const handleSettingsUpdated = async (event: Event) => {
     if ('commandHistoryMaxCount' in updatedSettings) {
       // 重新加载历史记录
       await loadHistory()
+    }
+    if ('maxDisplayText' in updatedSettings) {
+      maxClearSizeMB.value = updatedSettings.maxDisplayText ?? 30
     }
   }
 }

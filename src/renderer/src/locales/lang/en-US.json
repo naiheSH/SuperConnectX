@@ -58,6 +58,8 @@
     "autoScrollAfterSendDesc": "Automatically disable auto scroll after sending command",
     "autoScrollOnWheel": "Prompt on Mouse Scroll",
     "autoScrollOnWheelDesc": "Prompt whether to enable auto scroll when scrolling mouse",
+    "maxDisplayText": "Max Display Text",
+    "maxDisplayTextDesc": "Auto clear terminal when text size exceeds this limit (MB)",
     "backup": "Backup",
     "backupUnimplemented": "Backup (Not Implemented)",
     "autoBackup": "Auto Backup",
@@ -242,6 +244,8 @@
   "notification": {
     "logSplit": "Log Split",
     "logSplitMessage": "\"{name}\" log exceeded split size, new log file: {file}",
+    "textCleared": "Text Cleared",
+    "textClearedMessage": "Log exceeded display limit, cleared current text (log file preserved)",
     "commandSent": "Command sent: {command}",
     "optionsDeveloping": "Options feature is under development...",
     "pluginsDeveloping": "Plugins feature is under development...",

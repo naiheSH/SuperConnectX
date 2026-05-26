@@ -79,6 +79,23 @@
               </div>
               <el-switch class="terminal-switch" v-model="settings.minimizeToTray" />
             </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('basicSettings.maxDisplayText') }}</span>
+                <span class="label-desc">{{ t('basicSettings.maxDisplayTextDesc') }}</span>
+              </div>
+              <div class="slider-control">
+                <el-slider
+                  v-model="settings.maxDisplayText"
+                  :min="1"
+                  :max="100"
+                  :step="1"
+                  :show-tooltip="false"
+                  style="width: 120px"
+                />
+                <span class="slider-value">{{ settings.maxDisplayText }} MB</span>
+              </div>
+            </div>
           </div>
 
           <!-- 显示 -->
@@ -383,6 +400,7 @@ const allSettingsSections = computed<SearchSection[]>(() => [
       { labelKey: 'basicSettings.autoScrollOnFocus', descKey: 'basicSettings.autoScrollOnFocusDesc', key: 'autoScrollOnFocus' },
       { labelKey: 'basicSettings.autoScrollAfterSend', descKey: 'basicSettings.autoScrollAfterSendDesc', key: 'autoScrollAfterSend' },
       { labelKey: 'basicSettings.autoScrollOnWheel', descKey: 'basicSettings.autoScrollOnWheelDesc', key: 'autoScrollOnWheel' },
+      { labelKey: 'basicSettings.maxDisplayText', descKey: 'basicSettings.maxDisplayTextDesc', key: 'maxDisplayText' },
     ]
   },
   {

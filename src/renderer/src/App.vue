@@ -427,6 +427,23 @@ const handleLogSplit = (data: { connId: string; oldFileName: string; newFileName
   const tabName = tab?.name || tab?.comName || data.connId
   const message = t('notification.logSplitMessage', { name: tabName, file: data.newFileName })
   notifyContainerRef.value?.add(t('notification.logSplit'), message)
+
+  // 分片后清空对应终端的文本框
+  if (tab) {
+    const tabId = tab.id
+    if (tab.connectionType === 'com') {
+      comTerminalRefs[tabId]?.clearTerminal?.()
+    } else if (tab.connectionType === 'telnet') {
+      telnetTerminalRefs[tabId]?.clearTerminal?.()
+    }
+  }
+}
+
+const handleTerminalTextCleared = () => {
+  notifyContainerRef.value?.add(
+    t('notification.textCleared'),
+    t('notification.textClearedMessage')
+  )
 }
 
 const searchKeyword = ref('')
@@ -1703,6 +1720,9 @@ onMounted(() => {
     handleLogSplit(data)
   })
 
+  // 监听终端文本清空事件（达到显示上限时触发）
+  window.addEventListener('terminal-text-cleared', handleTerminalTextCleared)
+
   // 文档级右键事件处理：点击空白区域关闭菜单
   document.addEventListener('contextmenu', (e: MouseEvent) => {
     const tabEl = (e.target as HTMLElement).closest('.tab-item')
@@ -1762,6 +1782,7 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutsideSidebarMenu)
   window.removeEventListener('shortcuts-updated', handleShortcutsUpdated)
   window.removeEventListener('settings-updated', handleSettingsUpdated)
+  window.removeEventListener('terminal-text-cleared', handleTerminalTextCleared)
 })
 </script>
 

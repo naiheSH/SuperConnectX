@@ -58,6 +58,8 @@
     "autoScrollAfterSendDesc": "发送命令后自动取消固定滚屏",
     "autoScrollOnWheel": "鼠标滚动决策固定",
     "autoScrollOnWheelDesc": "滚动鼠标时提示是否固定滚屏",
+    "maxDisplayText": "可显示最大文本",
+    "maxDisplayTextDesc": "终端文本框达到此大小时自动清空（MB）",
     "backup": "备份",
     "backupUnimplemented": "备份（未实现）",
     "autoBackup": "自动备份",
@@ -242,6 +244,8 @@
   "notification": {
     "logSplit": "日志分片",
     "logSplitMessage": "\"{name}\" 日志已超过分片大小，新日志文件：{file}",
+    "textCleared": "文本已清空",
+    "textClearedMessage": "日志超过显示上限，清空当前文本（日志文件保留）",
     "commandSent": "已发送命令：{command}",
     "optionsDeveloping": "选项功能开发中...",
     "pluginsDeveloping": "插件功能开发中...",
