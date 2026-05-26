@@ -199,6 +199,33 @@ body {
   padding: 12px 20px !important;
 }
 
+/* 消息弹窗确认按钮（统一样式，匹配 btn-primary） */
+.el-message-box__btns .el-button--primary {
+  background-color: #0e639c !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.el-message-box__btns .el-button--primary:hover {
+  background-color: #1177bb !important;
+}
+
+.el-message-box__btns .el-button--primary:active {
+  background-color: #0d5a8c !important;
+}
+
+/* 消息弹窗取消按钮（统一样式，匹配 btn-cancel） */
+.el-message-box__btns .el-button--danger {
+  background-color: #c45656 !important;
+  border-color: #c45656 !important;
+  color: #ffffff !important;
+}
+
+.el-message-box__btns .el-button--danger:hover {
+  background-color: #d66a6a !important;
+  border-color: #d66a6a !important;
+}
+
 /* ==============================
    统一菜单样式变量
    ============================== */

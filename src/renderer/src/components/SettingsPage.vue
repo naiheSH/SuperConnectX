@@ -28,7 +28,7 @@
           <span v-if="searchKeyword && searchResultCategories.has(category.key)" class="match-count">{{ getCategoryMatchCount(category.key) }}</span>
         </div>
         <div class="nav-footer">
-          <el-button size="small" @click="resetSettings">{{ t('settings.reset') }}</el-button>
+          <el-button class="btn-primary" size="small" @click="resetSettings">{{ t('settings.reset') }}</el-button>
         </div>
       </div>
 
@@ -547,7 +547,6 @@ const resetSettings = async () => {
       cancelButtonText: t('settings.cancel'),
       type: 'warning',
       center: true,
-      confirmButtonClass: 'el-button--primary',
       cancelButtonClass: 'el-button--danger'
     })
     settings.value = JSON.parse(JSON.stringify(defaultSettings.value))
@@ -714,16 +713,7 @@ const handleSettingsUpdated = (event: Event) => {
   border-top: 1px solid #3c3c3c;
 }
 
-.nav-footer .el-button {
-  width: 100%;
-  background-color: #0e639c;
-  border: none;
-  color: #fff;
-}
 
-.nav-footer .el-button:hover {
-  background-color: #1177bb;
-}
 
 .settings-panel {
   flex: 1;

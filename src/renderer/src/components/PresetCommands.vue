@@ -477,7 +477,8 @@ const deleteGroup = async (group: any) => {
       confirmButtonText: '确认',
       cancelButtonText: '取消',
       type: 'warning',
-      center: true
+      center: true,
+      cancelButtonClass: 'el-button--danger'
     })
 
     await window.storageApi.deleteCommandGroup(group.groupId)

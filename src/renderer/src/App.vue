@@ -1182,7 +1182,8 @@ const deleteConnection = async (conn) => {
       confirmButtonText: t('common.confirm'),
       cancelButtonText: t('common.cancel'),
       type: 'warning',
-      center: true
+      center: true,
+      cancelButtonClass: 'el-button--danger'
     })
 
     const newConnections = await window.storageApi.deleteConnection(conn.id)

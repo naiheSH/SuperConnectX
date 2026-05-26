@@ -342,7 +342,8 @@ const deleteGroup = async (group: CommandGroup) => {
     await ElMessageBox.confirm(`确定要删除分组 "${group.name}" 吗？该分组下的所有命令也会被删除。`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
+      cancelButtonClass: 'el-button--danger'
     })
     await window.storageApi.deleteCommandGroup(group.groupId)
     ElMessage.success('分组已删除')
@@ -438,7 +439,8 @@ const deleteCommand = async (command: PresetCommand) => {
     await ElMessageBox.confirm(`确定要删除命令 "${command.name}" 吗？`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
+      cancelButtonClass: 'el-button--danger'
     })
     await window.storageApi.deletePresetCommand(command.id)
     ElMessage.success('命令已删除')

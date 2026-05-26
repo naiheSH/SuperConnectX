@@ -425,7 +425,6 @@ const restoreDefaults = async () => {
       cancelButtonText: '取消',
       type: 'warning',
       center: true,
-      confirmButtonClass: 'el-button--primary',
       cancelButtonClass: 'el-button--danger'
     })
     
