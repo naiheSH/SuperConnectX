@@ -1,18 +1,5 @@
 <template>
   <div class="settings-page">
-    <!-- 搜索框 -->
-    <div class="settings-search">
-      <div class="search-inner">
-        <input
-          type="text"
-          :placeholder="t('settings.search')"
-          v-model="searchKeyword"
-          class="search-input"
-        />
-        <button class="clear-btn" @click="searchKeyword = ''" v-if="searchKeyword">×</button>
-      </div>
-    </div>
-
     <!-- 设置内容区 -->
     <div class="settings-content">
       <!-- 左侧分类导航 -->
@@ -21,11 +8,10 @@
           v-for="category in categories"
           :key="category.key"
           class="nav-item"
-          :class="{ active: activeCategory === category.key, 'has-match': searchKeyword && searchResultCategories.has(category.key) }"
-          @click="selectCategory(category.key)"
+          :class="{ active: activeCategory === category.key }"
+          @click="activeCategory = category.key"
         >
           {{ category.label }}
-          <span v-if="searchKeyword && searchResultCategories.has(category.key)" class="match-count">{{ getCategoryMatchCount(category.key) }}</span>
         </div>
         <div class="nav-footer">
           <el-button class="btn-primary" size="small" @click="resetSettings">{{ t('settings.reset') }}</el-button>
@@ -34,29 +20,7 @@
 
       <!-- 右侧设置项 -->
       <div class="settings-panel">
-        <!-- 搜索结果视图 -->
-        <div v-if="searchKeyword" class="search-results">
-          <div v-if="searchResults.length === 0" class="search-empty">{{ t('settings.noResults') }}</div>
-          <template v-else>
-            <div v-for="result in searchResults" :key="result.categoryKey + '|' + result.sectionKey" class="search-result-section">
-              <div class="search-section-header" @click="selectCategory(result.categoryKey)">
-                <span class="search-category">{{ getCategoryLabel(result.categoryKey) }}</span>
-                <el-icon :size="12"><ArrowRight /></el-icon>
-                <span class="search-section">{{ result.sectionTitle }}</span>
-              </div>
-              <div
-                v-for="item in result.items"
-                :key="item.key"
-                class="search-result-item"
-                @click="selectCategory(result.categoryKey)"
-              >
-                <span class="search-label" v-html="highlightText(t(item.labelKey))"></span>
-                <span class="search-desc" v-html="highlightText(t(item.descKey))"></span>
-              </div>
-            </div>
-          </template>
-        </div>
-        <div v-else>
+        <div>
         <!-- 基本设置 -->
         <div v-if="activeCategory === 'basic'" class="settings-group">
           <!-- 基本配置 -->
@@ -310,34 +274,6 @@
           </div>
         </div>
 
-        <!-- 搜索 -->
-        <div v-else-if="activeCategory === 'search'" class="settings-group">
-          <div class="group-section">
-            <div class="group-title">{{ t('searchSettings.title') }}</div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">{{ t('searchSettings.caseSensitive') }}</span>
-                <span class="label-desc">{{ t('searchSettings.caseSensitiveDesc') }}</span>
-              </div>
-              <el-switch class="terminal-switch" v-model="settings.searchCaseSensitive" />
-            </div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">{{ t('searchSettings.regex') }}</span>
-                <span class="label-desc">{{ t('searchSettings.regexDesc') }}</span>
-              </div>
-              <el-switch class="terminal-switch" v-model="settings.searchRegex" />
-            </div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">{{ t('searchSettings.wholeWord') }}</span>
-                <span class="label-desc">{{ t('searchSettings.wholeWordDesc') }}</span>
-              </div>
-              <el-switch class="terminal-switch" v-model="settings.searchWholeWord" />
-            </div>
-          </div>
-        </div>
-
         <!-- 命令历史 -->
         <div v-else-if="activeCategory === 'history'" class="settings-group">
           <div class="group-section">
@@ -382,7 +318,6 @@ import { setLocale } from '../locales'
 
 const { t } = useI18n()
 
-const searchKeyword = ref('')
 const activeCategory = ref('basic')
 
 const categories = computed(() => [
@@ -390,145 +325,8 @@ const categories = computed(() => [
   { key: 'serial', label: t('settingsNav.serial') },
   { key: 'log', label: t('settingsNav.log') },
   { key: 'syntax', label: t('settingsNav.syntax') },
-  { key: 'search', label: t('settingsNav.search') },
   { key: 'history', label: t('settingsNav.history') }
 ])
-
-// ---- 搜索功能 ----
-
-interface SearchSectionItem {
-  labelKey: string
-  descKey: string
-  key: string
-}
-
-interface SearchSection {
-  categoryKey: string
-  sectionKey: string
-  sectionKeyI18n: string
-  sectionTitle: string
-  items: SearchSectionItem[]
-}
-
-const allSettingsSections = computed<SearchSection[]>(() => [
-  // 基本设置
-  {
-    categoryKey: 'basic', sectionKey: 'basicSettings.title', sectionKeyI18n: 'basicSettings.title', sectionTitle: t('basicSettings.title'),
-    items: [
-      { labelKey: 'basicSettings.language', descKey: 'basicSettings.languageDesc', key: 'language' },
-      { labelKey: 'basicSettings.minimizeToTray', descKey: 'basicSettings.minimizeToTrayDesc', key: 'minimizeToTray' },
-    ]
-  },
-  {
-    categoryKey: 'basic', sectionKey: 'basicSettings.display', sectionKeyI18n: 'basicSettings.display', sectionTitle: t('basicSettings.display'),
-    items: [
-      { labelKey: 'basicSettings.autoScrollToast', descKey: 'basicSettings.autoScrollToastDesc', key: 'autoScrollToast' },
-      { labelKey: 'basicSettings.autoScrollOnFocus', descKey: 'basicSettings.autoScrollOnFocusDesc', key: 'autoScrollOnFocus' },
-      { labelKey: 'basicSettings.autoScrollAfterSend', descKey: 'basicSettings.autoScrollAfterSendDesc', key: 'autoScrollAfterSend' },
-      { labelKey: 'basicSettings.autoScrollOnWheel', descKey: 'basicSettings.autoScrollOnWheelDesc', key: 'autoScrollOnWheel' },
-      { labelKey: 'basicSettings.maxDisplayText', descKey: 'basicSettings.maxDisplayTextDesc', key: 'maxDisplayText' },
-    ]
-  },
-  {
-    categoryKey: 'basic', sectionKey: 'basicSettings.backupUnimplemented', sectionKeyI18n: 'basicSettings.backupUnimplemented', sectionTitle: t('basicSettings.backupUnimplemented'),
-    items: [
-      { labelKey: 'basicSettings.autoBackup', descKey: 'basicSettings.autoBackupDesc', key: 'autoBackup' },
-      { labelKey: 'basicSettings.backupInterval', descKey: 'basicSettings.backupIntervalDesc', key: 'backupInterval' },
-    ]
-  },
-  {
-    categoryKey: 'basic', sectionKey: 'basicSettings.system', sectionKeyI18n: 'basicSettings.system', sectionTitle: t('basicSettings.system'),
-    items: [
-      { labelKey: 'basicSettings.preventSleep', descKey: 'basicSettings.preventSleepDesc', key: 'preventSleep' },
-    ]
-  },
-  // 串口设置
-  {
-    categoryKey: 'serial', sectionKey: 'serialSettings.title', sectionKeyI18n: 'serialSettings.title', sectionTitle: t('serialSettings.title'),
-    items: [
-      { labelKey: 'serialSettings.supportedBaudRates', descKey: 'serialSettings.supportedBaudRatesDesc', key: 'supportedBaudRates' },
-      { labelKey: 'serialSettings.showPortType', descKey: 'serialSettings.showPortTypeDesc', key: 'showPortType' },
-    ]
-  },
-  // 日志
-  {
-    categoryKey: 'log', sectionKey: 'logSettings.title', sectionKeyI18n: 'logSettings.title', sectionTitle: t('logSettings.title'),
-    items: [
-      { labelKey: 'logSettings.enableLogStorage', descKey: 'logSettings.enableLogStorageDesc', key: 'enableLogStorage' },
-      { labelKey: 'logSettings.logPath', descKey: 'logSettings.logPathDesc', key: 'logPath' },
-      { labelKey: 'logSettings.logFileName', descKey: 'logSettings.logFileNameDesc', key: 'logFileName' },
-      { labelKey: 'logSettings.logSplitSize', descKey: 'logSettings.logSplitSizeDesc', key: 'logSplitSize' },
-    ]
-  },
-  // 语法高亮
-  {
-    categoryKey: 'syntax', sectionKey: 'syntaxSettings.title', sectionKeyI18n: 'syntaxSettings.title', sectionTitle: t('syntaxSettings.title'),
-    items: [
-      { labelKey: 'syntaxSettings.enableSyntaxHighlight', descKey: 'syntaxSettings.enableSyntaxHighlightDesc', key: 'enableSyntaxHighlight' },
-      { labelKey: 'syntaxSettings.syntaxTheme', descKey: 'syntaxSettings.syntaxThemeDesc', key: 'syntaxTheme' },
-    ]
-  },
-  // 搜索
-  {
-    categoryKey: 'search', sectionKey: 'searchSettings.title', sectionKeyI18n: 'searchSettings.title', sectionTitle: t('searchSettings.title'),
-    items: [
-      { labelKey: 'searchSettings.caseSensitive', descKey: 'searchSettings.caseSensitiveDesc', key: 'searchCaseSensitive' },
-      { labelKey: 'searchSettings.regex', descKey: 'searchSettings.regexDesc', key: 'searchRegex' },
-      { labelKey: 'searchSettings.wholeWord', descKey: 'searchSettings.wholeWordDesc', key: 'searchWholeWord' },
-    ]
-  },
-  // 命令历史
-  {
-    categoryKey: 'history', sectionKey: 'historySettings.title', sectionKeyI18n: 'historySettings.title', sectionTitle: t('historySettings.title'),
-    items: [
-      { labelKey: 'historySettings.showCommandHistory', descKey: 'historySettings.showCommandHistoryDesc', key: 'showCommandHistory' },
-      { labelKey: 'historySettings.commandHistoryMaxCount', descKey: 'historySettings.commandHistoryMaxCountDesc', key: 'commandHistoryMaxCount' },
-    ]
-  },
-])
-
-const searchResults = computed(() => {
-  const kw = searchKeyword.value.trim().toLowerCase()
-  if (!kw) return []
-  return allSettingsSections.value
-    .map(section => ({
-      ...section,
-      items: section.items.filter(item => {
-        const label = t(item.labelKey).toLowerCase()
-        const desc = t(item.descKey).toLowerCase()
-        return label.includes(kw) || desc.includes(kw)
-      })
-    }))
-    .filter(section => section.items.length > 0)
-})
-
-const searchResultCategories = computed(() => {
-  if (!searchKeyword.value.trim()) return new Set<string>()
-  return new Set(searchResults.value.map(r => r.categoryKey))
-})
-
-const getCategoryMatchCount = (categoryKey: string): number => {
-  return searchResults.value
-    .filter(r => r.categoryKey === categoryKey)
-    .reduce((sum, r) => sum + r.items.length, 0)
-}
-
-const getCategoryLabel = (key: string): string => {
-  return categories.value.find(c => c.key === key)?.label || key
-}
-
-const highlightText = (text: string): string => {
-  const kw = searchKeyword.value.trim()
-  if (!kw) return text
-  const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const regex = new RegExp(`(${escaped})`, 'gi')
-  return text.replace(regex, '<b class="search-highlight">$1</b>')
-}
-
-const selectCategory = (key: string) => {
-  activeCategory.value = key
-  searchKeyword.value = ''
-}
 
 // 默认配置从后端获取
 const defaultSettings = ref<Record<string, any>>({})
