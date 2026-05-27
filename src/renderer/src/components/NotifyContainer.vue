@@ -15,7 +15,7 @@
         tabindex="0"
       >
         <div class="notify-close" @click="remove(notify.id)">✕</div>
-        <div class="notify-title">{{ notify.title }}</div>
+        <div class="notify-title">{{ notify.title }}<span v-if="notify.count > 1" class="notify-count">{{ notify.count }}</span></div>
         <div class="notify-message">{{ notify.message }}</div>
       </div>
     </div>
@@ -42,6 +42,7 @@ export interface NotifyItem {
   title: string
   message: string
   focused: boolean
+  count: number
 }
 
 const notifies = ref<NotifyItem[]>([])
@@ -70,8 +71,25 @@ const handleClearAll = () => {
 }
 
 const add = (title: string, message: string) => {
+  // 查找相同 title 和 message 的已有通知
+  const existing = notifies.value.find((n) => n.title === title && n.message === message)
+  if (existing) {
+    existing.count++
+    // 将已有通知移到最前面
+    const index = notifies.value.indexOf(existing)
+    if (index > 0) {
+      notifies.value.splice(index, 1)
+      notifies.value.unshift(existing)
+    }
+    nextTick(() => {
+      if (containerRef.value) {
+        containerRef.value.scrollTop = 0
+      }
+    })
+    return existing.id
+  }
   const id = ++idCounter
-  notifies.value.push({ id, title, message, focused: false })
+  notifies.value.unshift({ id, title, message, focused: false, count: 1 })
   nextTick(() => {
     if (containerRef.value) {
       containerRef.value.scrollTop = 0
@@ -154,6 +172,19 @@ defineExpose({ add, remove, clear })
   font-weight: 600;
   color: #fff;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notify-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: #999;
+  background: #3a3a3a;
+  border-radius: 10px;
+  padding: 1px 7px;
+  line-height: 1.4;
 }
 
 .notify-message {
