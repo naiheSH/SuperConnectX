@@ -28,6 +28,7 @@ interface Settings {
   // 日志
   enableLogStorage?: boolean
   logPath?: string
+  logFileName?: string
   maxLogSize?: number
   logTimestamp?: boolean
   logHex?: boolean
@@ -65,6 +66,7 @@ const defaultSettings: Settings = {
   // 日志
   enableLogStorage: true,
   logPath: '',
+  logFileName: '%C-%Y-%M-%D-%hh-%mm-%ss',
   maxLogSize: 10,
   logTimestamp: true,
   logHex: false,

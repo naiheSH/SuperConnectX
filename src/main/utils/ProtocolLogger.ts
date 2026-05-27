@@ -11,9 +11,13 @@ export interface LogSplitCallback {
 
 export default class ProtocolLogger {
   private logDir: string
+  private logDirPattern: string = '' // 目录模板（用户设置的原始模板）
+  private defaultLogDir: string // 默认目录（程序目录/logs）
   private connLogFiles = new Map<string, string>()
+  private connLogDirs = new Map<string, string>() // 每个连接解析后的日志目录
   private connLogIndexes = new Map<string, number>()
   private connLogNames = new Map<string, string>() // 保存原始连接名
+  private connLogRemarks = new Map<string, string>() // 保存备注名
   private logCache = new Map<string, string[]>()
   private currentFileSizes = new Map<string, number>()
   private logSplitCallback: LogSplitCallback | null = null
@@ -21,11 +25,13 @@ export default class ProtocolLogger {
   private readonly BATCH_WRITE_INTERVAL_MS = 10 * 1000
   private logSplitSizeMB: number = 10 // 默认 10MB
   private enableLogStorage: boolean = true // 是否启用日志存储
+  private logFileNamePattern: string = '%C-%Y-%M-%D-%hh-%mm-%ss' // 文件名模板
 
   constructor() {
     const exePath = app.isPackaged ? app.getPath('exe') : process.cwd()
     const appDir = path.dirname(exePath)
-    this.logDir = join(appDir, 'logs')
+    this.defaultLogDir = join(appDir, 'logs')
+    this.logDir = this.defaultLogDir
 
     if (!existsSync(this.logDir)) {
       mkdirSync(this.logDir, { recursive: true })
@@ -52,6 +58,79 @@ export default class ProtocolLogger {
   // 获取日志存储启用状态
   getEnableLogStorage(): boolean {
     return this.enableLogStorage
+  }
+
+  // 设置日志目录模板（运行时生效）
+  // dirPath 支持与文件名相同的占位符，在连接建立时解析
+  setLogDir(dirPath: string): void {
+    if (dirPath) {
+      this.logDirPattern = dirPath
+    } else {
+      this.logDirPattern = ''
+      this.logDir = this.defaultLogDir
+      this.ensureDir(this.logDir)
+    }
+  }
+
+  // 获取日志目录
+  getLogDir(): string {
+    return this.logDir
+  }
+
+  // 获取某个连接的日志目录
+  private getConnLogDir(connId: string): string {
+    return this.connLogDirs.get(connId) || this.defaultLogDir
+  }
+
+  // 根据模板和日期解析目录名
+  private resolveDirName(connName: string, remark?: string): string {
+    if (!this.logDirPattern) {
+      return this.defaultLogDir
+    }
+
+    const date = new Date()
+    const Y = String(date.getFullYear())
+    const M = String(date.getMonth() + 1).padStart(2, '0')
+    const D = String(date.getDate()).padStart(2, '0')
+    const h = String(date.getHours()).padStart(2, '0')
+    const m = String(date.getMinutes()).padStart(2, '0')
+    const s = String(date.getSeconds()).padStart(2, '0')
+    const f = String(date.getMilliseconds()).padStart(3, '0')
+
+    let result = this.logDirPattern
+      .replace(/%C/g, connName)
+      .replace(/%R/g, remark || '')
+      .replace(/%Y/g, Y)
+      .replace(/%M/g, M)
+      .replace(/%D/g, D)
+      .replace(/%h/g, h)
+      .replace(/%m/g, m)
+      .replace(/%s/g, s)
+      .replace(/%f/g, f)
+      // 不补零版本
+      .replace(/%MM/g, String(date.getMonth() + 1))
+      .replace(/%DD/g, String(date.getDate()))
+      .replace(/%hh/g, String(date.getHours()))
+      .replace(/%mm/g, String(date.getMinutes()))
+      .replace(/%ss/g, String(date.getSeconds()))
+      .replace(/%fff/g, String(date.getMilliseconds()))
+
+    // 替换非法文件名字符（保留 \ / : 作为路径分隔符和盘符）
+    return result.replace(/[*?"<>|]/g, '-')
+  }
+
+  // 确保目录存在
+  private ensureDir(dirPath: string): void {
+    if (!existsSync(dirPath)) {
+      mkdirSync(dirPath, { recursive: true })
+    }
+  }
+
+  // 设置日志文件名模板
+  setLogFileName(pattern: string): void {
+    if (pattern) {
+      this.logFileNamePattern = pattern
+    }
   }
 
   // 生成高精度时间戳
@@ -90,7 +169,7 @@ export default class ProtocolLogger {
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return fileName || ''
 
-    const logFile = join(this.logDir, fileName)
+    const logFile = join(this.getConnLogDir(connId), fileName)
     
     // 获取当前文件大小
     let currentSize = this.currentFileSizes.get(connId) || 0
@@ -111,9 +190,10 @@ export default class ProtocolLogger {
       const index = (this.connLogIndexes.get(connId) || 0) + 1
       this.connLogIndexes.set(connId, index)
 
-      // 使用保存的原始连接名
+      // 使用保存的原始连接名和备注生成新文件名
       const connName = this.connLogNames.get(connId) || 'unknown'
-      const newFileName = `${connName}-${this.getFileTimeStamp()}-${index}.log`
+      const remark = this.connLogRemarks.get(connId)
+      const newFileName = `${this.resolveFileName(connName, remark)}-${index}.log`
       this.connLogFiles.set(connId, newFileName)
       this.currentFileSizes.set(connId, 0)
 
@@ -141,7 +221,7 @@ export default class ProtocolLogger {
       const fileName = this.connLogFiles.get(connId)
       if (!fileName) return
 
-      const logFile = join(this.logDir, fileName)
+      const logFile = join(this.getConnLogDir(connId), fileName)
       const logData = logEntries.join('\n') + '\n'
 
       try {
@@ -179,15 +259,57 @@ export default class ProtocolLogger {
     this.flushAllLogs(true)
   }
 
-  createConnLogFile(connId: string, connName: string): string {
+  // 根据模板和日期生成文件名
+  private resolveFileName(connName: string, remark?: string): string {
+    const date = new Date()
+    const Y = String(date.getFullYear())
+    const M = String(date.getMonth() + 1).padStart(2, '0')
+    const D = String(date.getDate()).padStart(2, '0')
+    const h = String(date.getHours()).padStart(2, '0')
+    const m = String(date.getMinutes()).padStart(2, '0')
+    const s = String(date.getSeconds()).padStart(2, '0')
+    const f = String(date.getMilliseconds()).padStart(3, '0')
+
+    let result = this.logFileNamePattern
+      .replace(/%C/g, connName)
+      .replace(/%R/g, remark || '')
+      .replace(/%Y/g, Y)
+      .replace(/%M/g, M)
+      .replace(/%D/g, D)
+      .replace(/%h/g, h)
+      .replace(/%m/g, m)
+      .replace(/%s/g, s)
+      .replace(/%f/g, f)
+      // 不补零版本
+      .replace(/%MM/g, String(date.getMonth() + 1))
+      .replace(/%DD/g, String(date.getDate()))
+      .replace(/%hh/g, String(date.getHours()))
+      .replace(/%mm/g, String(date.getMinutes()))
+      .replace(/%ss/g, String(date.getSeconds()))
+      .replace(/%fff/g, String(date.getMilliseconds()))
+
+    // 替换非法文件名字符（保留 \ 和 / 作为路径分隔符）
+    return result.replace(/[*?:"<>|]/g, '-')
+  }
+
+  createConnLogFile(connId: string, connName: string, remark?: string): string {
     if (!this.enableLogStorage) {
       return ''
     }
-    const safeName = connName.replace(/[\\/*?:"<>|]/g, '-')
-    const fileName = `${safeName}-${this.getFileTimeStamp()}.log`
+    // 解析目录模板，创建对应的目录
+    const resolvedDir = this.resolveDirName(connName, remark)
+    this.ensureDir(resolvedDir)
+    this.connLogDirs.set(connId, resolvedDir)
+    // 同时更新全局 logDir（用于 openLogDir 等无连接上下文的操作）
+    this.logDir = resolvedDir
+
+    const fileName = `${this.resolveFileName(connName, remark)}.log`
     this.connLogFiles.set(connId, fileName)
     this.connLogIndexes.set(connId, 0)
-    this.connLogNames.set(connId, safeName) // 保存原始连接名
+    this.connLogNames.set(connId, connName) // 保存原始连接名
+    if (remark) {
+      this.connLogRemarks.set(connId, remark)
+    }
     this.logCache.set(connId, [])
     this.currentFileSizes.set(connId, 0)
     return fileName
@@ -231,7 +353,7 @@ export default class ProtocolLogger {
     if (remainingLogs && remainingLogs.length > 0) {
       const fileName = this.connLogFiles.get(connId)
       if (fileName) {
-        const logFile = join(this.logDir, fileName)
+        const logFile = join(this.getConnLogDir(connId), fileName)
         const logData = remainingLogs.join('\n') + '\n'
         try {
           appendFileSync(logFile, logData, 'utf-8') // 同步写入
@@ -247,8 +369,10 @@ export default class ProtocolLogger {
   clearConnLogFile(connId: string): void {
     this.flushConnLog(connId)
     this.connLogFiles.delete(connId)
+    this.connLogDirs.delete(connId)
     this.connLogIndexes.delete(connId)
     this.connLogNames.delete(connId)
+    this.connLogRemarks.delete(connId)
     this.currentFileSizes.delete(connId)
   }
 
@@ -266,7 +390,7 @@ export default class ProtocolLogger {
         return { success: false, message: '未找到连接日志' }
       }
 
-      const logFilePath = join(this.logDir, fileName)
+      const logFilePath = join(this.getConnLogDir(connId), fileName)
       if (!existsSync(logFilePath)) {
         return { success: false, message: '日志文件不存在' }
       }
@@ -314,7 +438,7 @@ export default class ProtocolLogger {
         return { success: false, message: '未找到日志文件' }
       }
 
-      const logFilePath = join(this.logDir, fileName)
+      const logFilePath = join(this.getConnLogDir(connId), fileName)
       return { success: true, filePath: logFilePath }
     } catch (error) {
       return {
@@ -333,7 +457,7 @@ export default class ProtocolLogger {
         return { success: false, message: '未找到日志文件' }
       }
 
-      const sourcePath = join(this.logDir, fileName)
+      const sourcePath = join(this.getConnLogDir(connId), fileName)
       if (!existsSync(sourcePath)) {
         return { success: false, message: '源日志文件不存在' }
       }

@@ -232,13 +232,7 @@
               </div>
               <el-switch class="terminal-switch" v-model="settings.enableLogStorage" />
             </div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">{{ t('logSettings.logPath') }}</span>
-                <span class="label-desc">{{ t('logSettings.logPathDesc') }}</span>
-              </div>
-              <el-input v-model="settings.logPath" size="small" style="width: 200px" />
-            </div>
+            <template v-if="settings.enableLogStorage">
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('logSettings.logSplitSize') }}</span>
@@ -256,6 +250,46 @@
                 <span class="slider-value">{{ settings.logSplitSize }} MB</span>
               </div>
             </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('logSettings.logPath') }}</span>
+                <span class="label-desc">{{ t('logSettings.logPathDesc') }}</span>
+              </div>
+              <div class="path-input-wrapper">
+                <el-input v-model="settings.logPath" size="small" :placeholder="t('logSettings.logPathPlaceholder')" class="path-input" />
+                <el-button size="small" @click="selectLogDir" class="btn-primary path-btn">{{ t('logSettings.selectDir') }}</el-button>
+              </div>
+            </div>
+            <div class="setting-item filename-hint-item">
+              <div class="filename-hint">
+                <span class="hint-title">{{ t('logSettings.dirNameHint') }}</span>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('logSettings.logFileName') }}</span>
+                <span class="label-desc">{{ t('logSettings.logFileNameDesc') }}</span>
+              </div>
+              <el-input v-model="settings.logFileName" size="small" :placeholder="t('logSettings.logFileNamePlaceholder')" style="width: 280px" />
+            </div>
+            <div class="setting-item filename-hint-item">
+              <div class="filename-hint">
+                <span class="hint-title">{{ t('logSettings.fileNameHint') }}:</span>
+                <div class="hint-grid">
+                  <span class="hint-tag"><code>%C</code> {{ t('logSettings.hintC') }}</span>
+                  <span class="hint-tag"><code>%R</code> {{ t('logSettings.hintR') }}</span>
+                  <span class="hint-tag"><code>%Y</code> {{ t('logSettings.hintY') }}</span>
+                  <span class="hint-tag"><code>%M</code> {{ t('logSettings.hintM') }}</span>
+                  <span class="hint-tag"><code>%D</code> {{ t('logSettings.hintD') }}</span>
+                  <span class="hint-tag"><code>%h</code> {{ t('logSettings.hintH') }}</span>
+                  <span class="hint-tag"><code>%m</code> {{ t('logSettings.hintm') }}</span>
+                  <span class="hint-tag"><code>%s</code> {{ t('logSettings.hints') }}</span>
+                  <span class="hint-tag"><code>%f</code> {{ t('logSettings.hintf') }}</span>
+                </div>
+                <span class="hint-subtitle">{{ t('logSettings.fileNameHintPad') }}: <code>%MM</code> <code>%DD</code> <code>%hh</code> <code>%mm</code> <code>%ss</code> <code>%fff</code></span>
+              </div>
+            </div>
+            </template>
           </div>
         </div>
 
@@ -430,6 +464,7 @@ const allSettingsSections = computed<SearchSection[]>(() => [
     items: [
       { labelKey: 'logSettings.enableLogStorage', descKey: 'logSettings.enableLogStorageDesc', key: 'enableLogStorage' },
       { labelKey: 'logSettings.logPath', descKey: 'logSettings.logPathDesc', key: 'logPath' },
+      { labelKey: 'logSettings.logFileName', descKey: 'logSettings.logFileNameDesc', key: 'logFileName' },
       { labelKey: 'logSettings.logSplitSize', descKey: 'logSettings.logSplitSizeDesc', key: 'logSplitSize' },
     ]
   },
@@ -609,6 +644,20 @@ const confirmAddBaudRate = () => {
   }
   addingBaudRate.value = false
   newBaudRate.value = ''
+}
+
+// 选择日志保存目录
+const selectLogDir = async () => {
+  try {
+    const result = await window.dialogApi.openFileDialog({
+      properties: ['openDirectory']
+    })
+    if (result && !result.canceled && result.filePaths && result.filePaths.length > 0) {
+      settings.value.logPath = result.filePaths[0]
+    }
+  } catch (error) {
+    console.error('选择目录失败:', error)
+  }
 }
 
 onMounted(async () => {
@@ -909,6 +958,75 @@ const handleSettingsUpdated = (event: Event) => {
   font-size: 12px;
   min-width: 50px;
   text-align: right;
+}
+
+.path-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.path-input {
+  width: 240px;
+}
+
+.path-btn {
+  flex-shrink: 0;
+  width: auto !important;
+}
+
+.filename-hint-item {
+  flex-direction: column;
+  align-items: flex-start !important;
+}
+
+.filename-hint {
+  width: 100%;
+  padding: 8px 0 0 0;
+}
+
+.hint-title {
+  color: #808080;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.hint-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0;
+}
+
+.hint-tag {
+  color: #999;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.hint-tag code {
+  background: #3c3c3c;
+  color: #e0c060;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.hint-subtitle {
+  color: #808080;
+  font-size: 11px;
+  display: block;
+  margin-top: 4px;
+}
+
+.hint-subtitle code {
+  background: #3c3c3c;
+  color: #e0c060;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
 }
 
 /* Switch 样式与 TerminalControl 一致 */

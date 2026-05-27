@@ -102,6 +102,14 @@ export default class IpcStorage {
       if (settings.enableLogStorage !== undefined) {
         IpcConnector.getInstance().applySettings({ enableLogStorage: settings.enableLogStorage })
       }
+      // 日志保存路径需实时生效
+      if (settings.logPath !== undefined) {
+        IpcConnector.getInstance().applySettings({ logPath: settings.logPath })
+      }
+      // 日志文件名模板需实时生效
+      if (settings.logFileName !== undefined) {
+        IpcConnector.getInstance().applySettings({ logFileName: settings.logFileName })
+      }
       // 命令历史最大数量变更时裁剪历史记录
       if (settings.commandHistoryMaxCount) {
         commandHistoryStorage.applyMaxCount(settings.commandHistoryMaxCount)

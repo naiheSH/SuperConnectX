@@ -1,5 +1,5 @@
 import TelnetClient from '../protocol/TelnetClient'
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, app } from 'electron'
 import ConnectionInfo from '../protocol/ConnectionInfo'
 import BaseClient from '../protocol/BaseClient'
 import { ipcMain } from 'electron'
@@ -7,6 +7,7 @@ import logger from './IpcAppLogger'
 import ComClient from '../protocol/ComClient'
 import ProtocolLogger from '../utils/ProtocolLogger'
 import SettingsStorage from '../storage/SettingsStorage'
+import path from 'path'
 
 export default class IpcConnector {
   private static sInstance: IpcConnector
@@ -77,17 +78,31 @@ export default class IpcConnector {
       })
     })
 
-    // 根据设置更新日志分片大小和日志存储开关
+    // 根据设置更新日志分片大小、日志存储开关、日志路径和文件名模板
     const settings = this.settingsStorage.getSettings()
     if (settings.logSplitSize) {
       _logger.setLogSplitSize(settings.logSplitSize)
     }
     _logger.setEnableLogStorage(settings.enableLogStorage === true)
 
+    // 首次使用时 logPath 为空，自动设置为 exe 目录下的 logs 目录
+    if (!settings.logPath) {
+      const exePath = app.getPath('exe')
+      const appDir = path.dirname(exePath)
+      const defaultLogPath = path.join(appDir, 'logs')
+      settings.logPath = defaultLogPath
+      this.settingsStorage.saveSettings({ logPath: defaultLogPath })
+    }
+    _logger.setLogDir(settings.logPath)
+
+    if (settings.logFileName) {
+      _logger.setLogFileName(settings.logFileName)
+    }
+
     ipcMain.handle('start-connect', async (_, conn: any) => {
       logger.info(`start connect telnet: ${conn.name}`)
       logger.debug(JSON.stringify(conn))
-      _logger.createConnLogFile(conn.sessionId, conn.name)
+      _logger.createConnLogFile(conn.sessionId, conn.name, conn.remark || '')
 
       // 存储初始的 receiveHex 状态
       const receiveHex = conn.receiveHex === true || conn.receiveHex === 'true'
@@ -209,12 +224,18 @@ export default class IpcConnector {
   }
 
   // 运行时应用设置变更（无需重启）
-  applySettings(settings: { logSplitSize?: number; enableLogStorage?: boolean }): void {
+  applySettings(settings: { logSplitSize?: number; enableLogStorage?: boolean; logPath?: string; logFileName?: string }): void {
     if (settings.logSplitSize && this._logger) {
       this._logger.setLogSplitSize(settings.logSplitSize)
     }
     if (settings.enableLogStorage !== undefined && this._logger) {
       this._logger.setEnableLogStorage(settings.enableLogStorage)
+    }
+    if (settings.logPath !== undefined && this._logger) {
+      this._logger.setLogDir(settings.logPath)
+    }
+    if (settings.logFileName !== undefined && this._logger) {
+      this._logger.setLogFileName(settings.logFileName)
     }
   }
 }
