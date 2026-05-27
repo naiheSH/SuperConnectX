@@ -439,16 +439,18 @@ const handleLogSplit = (data: { connId: string; oldFileName: string; newFileName
   }
 }
 
-const handleTerminalTextCleared = (e: CustomEvent) => {
-  const name = e.detail?.connectionName || ''
+const handleTerminalTextCleared = (e: Event) => {
+  const detail = (e as CustomEvent).detail
+  const name = detail?.connectionName || ''
   notifyContainerRef.value?.add(
     t('notification.textCleared'),
     t('notification.textClearedMessage', { name })
   )
 }
 
-const handleAutoScrollToast = (e: CustomEvent) => {
-  const name = e.detail?.connectionName || ''
+const handleAutoScrollToast = (e: Event) => {
+  const detail = (e as CustomEvent).detail
+  const name = detail?.connectionName || ''
   notifyContainerRef.value?.add(
     t('notification.autoScrollStopped'),
     t('notification.autoScrollStoppedMessage', { name })
