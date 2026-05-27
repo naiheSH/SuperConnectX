@@ -439,10 +439,11 @@ const handleLogSplit = (data: { connId: string; oldFileName: string; newFileName
   }
 }
 
-const handleTerminalTextCleared = () => {
+const handleTerminalTextCleared = (e: CustomEvent) => {
+  const name = e.detail?.connectionName || ''
   notifyContainerRef.value?.add(
     t('notification.textCleared'),
-    t('notification.textClearedMessage')
+    t('notification.textClearedMessage', { name })
   )
 }
 

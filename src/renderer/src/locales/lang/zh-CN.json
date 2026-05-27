@@ -245,7 +245,7 @@
     "logSplit": "日志分片",
     "logSplitMessage": "\"{name}\" 日志已超过分片大小，新日志文件：{file}",
     "textCleared": "文本已清空",
-    "textClearedMessage": "日志超过显示上限，清空当前文本（日志文件保留）",
+    "textClearedMessage": "\"{name}\" 日志超过显示上限，清空当前文本（日志文件保留）",
     "commandSent": "已发送命令：{command}",
     "optionsDeveloping": "选项功能开发中...",
     "pluginsDeveloping": "插件功能开发中...",

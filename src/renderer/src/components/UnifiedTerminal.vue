@@ -471,7 +471,7 @@ const appendToTerminal = (content: string) => {
   rxBytes.value = formatBytes(totalRecvSize)
   if (totalRecvSize > getMaxClearSize()) {
     clearTerminal()
-    window.dispatchEvent(new CustomEvent('terminal-text-cleared'))
+    window.dispatchEvent(new CustomEvent('terminal-text-cleared', { detail: { connectionName: props.connection.name } }))
   }
 }
 
