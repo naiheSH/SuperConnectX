@@ -357,6 +357,10 @@ let editorModel: monaco.editor.ITextModel | null = null
 let totalRecvSize = 0
 let totalTxSize = 0
 let isInternalChange = false // 标记是否由内部触发的 isAutoScroll 变化
+let autoScrollToast = true // 固定滚屏时弹出提示（默认开启）
+let autoScrollOnFocus = true // 获得焦点时固定滚屏（默认开启）
+let autoScrollAfterSend = true // 发送命令后停止滚屏（默认开启）
+let toastDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const presetCommandsRef = ref<InstanceType<typeof PresetCommands>>()
 
@@ -373,6 +377,18 @@ watch(isAutoScroll, (newVal) => {
   if (newVal && !isInternalChange) {
     // 用户打开自动滚动，执行滚动到底部
     scrollToEnd()
+  }
+  // 如果不是内部触发且 autoScrollToast 开启，且新值为 false，则弹出提示
+  if (!isInternalChange && autoScrollToast && !newVal) {
+    // 使用防抖避免短时间内多次触发
+    if (toastDebounceTimer) {
+      clearTimeout(toastDebounceTimer)
+    }
+    toastDebounceTimer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('auto-scroll-toast', {
+        detail: { connectionName: props.connection.name || '' }
+      }))
+    }, 300)
   }
   // 如果是由按钮点击触发的变化，重置标记
   if (isInternalChange) {
@@ -413,7 +429,9 @@ const initEditor = async () => {
   editor.updateOptions({ readOnly: true })
 
   editor.onMouseDown(() => {
-    isAutoScroll.value = false
+    if (autoScrollOnFocus) {
+      isAutoScroll.value = false
+    }
   })
 
   // 在 editor 上监听滚轮事件（用于 Ctrl+滚轮缩放）
@@ -549,6 +567,12 @@ const handleSendCommand = () => {
   // 传递原始输入用于显示（在HEX模式下需要显示原始HEX字符串）
   emit('onSend', sendData, originalInput)
   closeHistoryPopup()
+
+  // 发送命令后停止滚屏
+  if (autoScrollAfterSend) {
+    isInternalChange = true
+    isAutoScroll.value = false
+  }
 }
 
 // 命令历史相关方法
@@ -821,6 +845,9 @@ const loadMaxClearSize = async () => {
   try {
     const settings = await window.storageApi.getSettings()
     maxClearSizeMB.value = settings?.maxDisplayText ?? 30
+    autoScrollToast = settings?.autoScrollToast !== false
+    autoScrollOnFocus = settings?.autoScrollOnFocus !== false
+    autoScrollAfterSend = settings?.autoScrollAfterSend !== false
   } catch (e) {
     // ignore
   }
@@ -875,6 +902,15 @@ const handleSettingsUpdated = async (event: Event) => {
     }
     if ('maxDisplayText' in updatedSettings) {
       maxClearSizeMB.value = updatedSettings.maxDisplayText ?? 30
+    }
+    if ('autoScrollToast' in updatedSettings) {
+      autoScrollToast = updatedSettings.autoScrollToast !== false
+    }
+    if ('autoScrollOnFocus' in updatedSettings) {
+      autoScrollOnFocus = updatedSettings.autoScrollOnFocus !== false
+    }
+    if ('autoScrollAfterSend' in updatedSettings) {
+      autoScrollAfterSend = updatedSettings.autoScrollAfterSend !== false
     }
   }
 }

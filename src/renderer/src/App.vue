@@ -447,6 +447,14 @@ const handleTerminalTextCleared = (e: CustomEvent) => {
   )
 }
 
+const handleAutoScrollToast = (e: CustomEvent) => {
+  const name = e.detail?.connectionName || ''
+  notifyContainerRef.value?.add(
+    t('notification.autoScrollStopped'),
+    t('notification.autoScrollStoppedMessage', { name })
+  )
+}
+
 const searchKeyword = ref('')
 const filterConnection = ref<any[]>([])
 const connections = ref<any[]>([])
@@ -1725,6 +1733,9 @@ onMounted(() => {
   // 监听终端文本清空事件（达到显示上限时触发）
   window.addEventListener('terminal-text-cleared', handleTerminalTextCleared)
 
+  // 监听固定滚屏提示事件
+  window.addEventListener('auto-scroll-toast', handleAutoScrollToast)
+
   // 文档级右键事件处理：点击空白区域关闭菜单
   document.addEventListener('contextmenu', (e: MouseEvent) => {
     const tabEl = (e.target as HTMLElement).closest('.tab-item')
@@ -1785,6 +1796,7 @@ onUnmounted(() => {
   window.removeEventListener('shortcuts-updated', handleShortcutsUpdated)
   window.removeEventListener('settings-updated', handleSettingsUpdated)
   window.removeEventListener('terminal-text-cleared', handleTerminalTextCleared)
+  window.removeEventListener('auto-scroll-toast', handleAutoScrollToast)
 })
 </script>
 

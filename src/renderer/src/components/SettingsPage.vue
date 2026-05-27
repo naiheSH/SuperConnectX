@@ -100,14 +100,7 @@
 
           <!-- 显示 -->
           <div class="group-section">
-            <div class="group-title">{{ t('basicSettings.displayUnimplemented') }}</div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">{{ t('basicSettings.autoScroll') }}</span>
-                <span class="label-desc">{{ t('basicSettings.autoScrollDesc') }}</span>
-              </div>
-              <el-switch class="terminal-switch" v-model="settings.autoScroll" />
-            </div>
+            <div class="group-title">{{ t('basicSettings.display') }}</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('basicSettings.autoScrollToast') }}</span>
@@ -427,9 +420,8 @@ const allSettingsSections = computed<SearchSection[]>(() => [
     ]
   },
   {
-    categoryKey: 'basic', sectionKey: 'basicSettings.displayUnimplemented', sectionKeyI18n: 'basicSettings.displayUnimplemented', sectionTitle: t('basicSettings.displayUnimplemented'),
+    categoryKey: 'basic', sectionKey: 'basicSettings.display', sectionKeyI18n: 'basicSettings.display', sectionTitle: t('basicSettings.display'),
     items: [
-      { labelKey: 'basicSettings.autoScroll', descKey: 'basicSettings.autoScrollDesc', key: 'autoScroll' },
       { labelKey: 'basicSettings.autoScrollToast', descKey: 'basicSettings.autoScrollToastDesc', key: 'autoScrollToast' },
       { labelKey: 'basicSettings.autoScrollOnFocus', descKey: 'basicSettings.autoScrollOnFocusDesc', key: 'autoScrollOnFocus' },
       { labelKey: 'basicSettings.autoScrollAfterSend', descKey: 'basicSettings.autoScrollAfterSendDesc', key: 'autoScrollAfterSend' },
