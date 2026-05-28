@@ -38,7 +38,8 @@
     "log": "日志",
     "syntax": "语法高亮",
     "search": "搜索",
-    "history": "命令历史"
+    "history": "命令历史",
+    "backup": "备份"
   },
   "basicSettings": {
     "title": "基本配置",

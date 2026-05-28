@@ -102,33 +102,6 @@
             </div>
           </div>
 
-          <!-- 备份 -->
-          <div class="group-section">
-            <div class="group-title">{{ t('basicSettings.backup') }}</div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">{{ t('basicSettings.autoBackup') }}</span>
-                <span class="label-desc">{{ t('basicSettings.autoBackupDesc') }}</span>
-              </div>
-              <el-switch class="terminal-switch" v-model="settings.autoBackup" />
-            </div>
-            <div class="setting-item" v-if="settings.autoBackup">
-              <div class="setting-label">
-                <span class="label-text">{{ t('basicSettings.backupInterval') }}</span>
-                <span class="label-desc">{{ t('basicSettings.backupIntervalDesc') }}</span>
-              </div>
-              <el-select v-model="settings.backupInterval" size="small" style="width: 100px">
-                <el-option :label="`1 ${t('basicSettings.day')}`" :value="1" />
-                <el-option :label="`3 ${t('basicSettings.day')}`" :value="3" />
-                <el-option :label="`7 ${t('basicSettings.day')}`" :value="7" />
-                <el-option :label="`15 ${t('basicSettings.day')}`" :value="15" />
-                <el-option :label="`30 ${t('basicSettings.day')}`" :value="30" />
-                <el-option :label="`60 ${t('basicSettings.day')}`" :value="60" />
-                <el-option :label="`180 ${t('basicSettings.day')}`" :value="180" />
-              </el-select>
-            </div>
-          </div>
-
         </div>
 
         <!-- 串口设置 -->
@@ -300,6 +273,35 @@
             </div>
           </div>
         </div>
+
+        <!-- 备份 -->
+        <div v-else-if="activeCategory === 'backup'" class="settings-group">
+          <div class="group-section">
+            <div class="group-title">{{ t('basicSettings.backup') }}</div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('basicSettings.autoBackup') }}</span>
+                <span class="label-desc">{{ t('basicSettings.autoBackupDesc') }}</span>
+              </div>
+              <el-switch class="terminal-switch" v-model="settings.autoBackup" />
+            </div>
+            <div class="setting-item" v-if="settings.autoBackup">
+              <div class="setting-label">
+                <span class="label-text">{{ t('basicSettings.backupInterval') }}</span>
+                <span class="label-desc">{{ t('basicSettings.backupIntervalDesc') }}</span>
+              </div>
+              <el-select v-model="settings.backupInterval" size="small" style="width: 100px">
+                <el-option :label="`1 ${t('basicSettings.day')}`" :value="1" />
+                <el-option :label="`3 ${t('basicSettings.day')}`" :value="3" />
+                <el-option :label="`7 ${t('basicSettings.day')}`" :value="7" />
+                <el-option :label="`15 ${t('basicSettings.day')}`" :value="15" />
+                <el-option :label="`30 ${t('basicSettings.day')}`" :value="30" />
+                <el-option :label="`60 ${t('basicSettings.day')}`" :value="60" />
+                <el-option :label="`180 ${t('basicSettings.day')}`" :value="180" />
+              </el-select>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -321,7 +323,8 @@ const categories = computed(() => [
   { key: 'serial', label: t('settingsNav.serial') },
   { key: 'log', label: t('settingsNav.log') },
   { key: 'syntax', label: t('settingsNav.syntax') },
-  { key: 'history', label: t('settingsNav.history') }
+  { key: 'history', label: t('settingsNav.history') },
+  { key: 'backup', label: t('settingsNav.backup') }
 ])
 
 // 默认配置从后端获取

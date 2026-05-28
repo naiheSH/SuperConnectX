@@ -38,7 +38,8 @@
     "log": "Logs",
     "syntax": "Syntax Highlight",
     "search": "Search",
-    "history": "Command History"
+    "history": "Command History",
+    "backup": "Backup"
   },
   "basicSettings": {
     "title": "General Settings",
