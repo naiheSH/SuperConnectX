@@ -56,7 +56,7 @@
     "autoScrollAfterSend": "发送命令后停止滚屏",
     "autoScrollAfterSendDesc": "发送命令后自动取消固定滚屏",
     "autoScrollOnWheel": "鼠标滚动决策固定",
-    "autoScrollOnWheelDesc": "滚动鼠标时提示是否固定滚屏",
+    "autoScrollOnWheelDesc": "向上滚动鼠标自动固定滚屏，滚动到底部自动恢复",
     "maxDisplayText": "可显示最大文本",
     "maxDisplayTextDesc": "终端文本框达到此大小时自动清空（MB）",
     "backup": "备份",

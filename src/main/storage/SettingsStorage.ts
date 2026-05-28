@@ -53,7 +53,7 @@ const defaultSettings: Settings = {
   autoScrollToast: false,
   autoScrollOnFocus: true,
   autoScrollAfterSend: false,
-  autoScrollOnWheel: false,
+  autoScrollOnWheel: true,
   language: 'zh-CN',
   autoBackup: false,
   backupInterval: 7,
