@@ -104,7 +104,7 @@
 
           <!-- 备份 -->
           <div class="group-section">
-            <div class="group-title">{{ t('basicSettings.backupUnimplemented') }}</div>
+            <div class="group-title">{{ t('basicSettings.backup') }}</div>
             <div class="setting-item">
               <div class="setting-label">
                 <span class="label-text">{{ t('basicSettings.autoBackup') }}</span>

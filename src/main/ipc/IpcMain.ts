@@ -5,6 +5,7 @@ import logger from './IpcAppLogger'
 import { printAppInfo } from '../utils/PrintAppInfo'
 import IpcTray from './IpcTray'
 import SettingsStorage from '../storage/SettingsStorage'
+import BackupManager from '../utils/BackupManager'
 import fs from 'fs'
 import path from 'path'
 
@@ -146,6 +147,8 @@ export default class IpcMain {
       _logger.flush()
       // 真正退出时销毁托盘
       IpcTray.getInstance().destroyTray()
+      // 退出时执行自动备份（用户数据已保存）
+      this.performAutoBackupOnExit()
     })
 
     // 进程信号监听
@@ -209,6 +212,19 @@ export default class IpcMain {
     const settings = this.settingsStorage.getSettings()
     if (settings.preventSleep) {
       this.setPreventSleep(true)
+    }
+  }
+
+  // 退出时执行自动备份（用户数据已保存后）
+  private performAutoBackupOnExit(): void {
+    try {
+      const settings = this.settingsStorage.getSettings()
+      if (settings.autoBackup && settings.backupInterval) {
+        logger.info(`[AutoBackup] performing backup on exit, interval: ${settings.backupInterval} days`)
+        BackupManager.getInstance().performBackup(settings.backupInterval)
+      }
+    } catch (error) {
+      logger.error(`[AutoBackup] backup on exit failed:`, error)
     }
   }
 

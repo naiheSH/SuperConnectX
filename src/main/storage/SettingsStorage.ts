@@ -55,7 +55,7 @@ const defaultSettings: Settings = {
   autoScrollAfterSend: false,
   autoScrollOnWheel: true,
   language: 'zh-CN',
-  autoBackup: false,
+  autoBackup: true,
   backupInterval: 7,
   autoStart: false,
   preventSleep: false,
