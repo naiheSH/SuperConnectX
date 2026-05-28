@@ -14,6 +14,11 @@ interface SidebarState {
 interface AppSettings {
   sidebar?: SidebarState
   terminalFontSize?: number // 全局终端字体大小（用于 Telnet 等）
+  settingsActiveCategory?: string // 设置页面左侧选中的分类
+  // 编辑命令中选中的分组ID，按协议类型存储，如 { telnet: 3, ssh: 1 }
+  commandEditorSelectedGroupId?: Record<string, number | null>
+  // 编辑命令中当前选中的命令ID，按协议类型存储，如 { telnet: 5, ssh: 2 }
+  commandEditorCurrentCommandId?: Record<string, number | null>
   // 可扩展其他全局设置
 }
 

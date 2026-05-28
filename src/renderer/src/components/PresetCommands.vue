@@ -283,6 +283,45 @@ const openCommandEditor = () => {
   emit('openCommandEditor', connType)
 }
 
+// 获取当前连接的协议类型（用于存储 key）
+// COM 协议的命令组实际使用 telnet 类型，所以存储 key 也统一为 telnet
+const getStorageConnType = (): string => {
+  const connType = props.connection?.connectionType || 'telnet'
+  return connType === 'com' ? 'telnet' : connType
+}
+
+// 辅助函数：从 AppSettings 中获取按协议存储的值，兼容旧格式
+const getProtocolValue = (settings: any, key: string): number | null | undefined => {
+  const val = settings?.[key]
+  if (val == null) return undefined
+  // 新格式：Record<string, number | null>
+  if (typeof val === 'object' && !Array.isArray(val)) {
+    return val[getStorageConnType()] ?? undefined
+  }
+  // 旧格式兼容：直接是 number 值
+  if (typeof val === 'number') {
+    return val
+  }
+  return undefined
+}
+
+// 辅助函数：构建按协议存储的 map 并保存
+const saveProtocolValue = async (key: string, value: number | null) => {
+  try {
+    const currentSettings = await window.storageApi.getAppSettings()
+    const map = (currentSettings?.[key] && typeof currentSettings[key] === 'object' && !Array.isArray(currentSettings[key]))
+      ? { ...currentSettings[key] }
+      : {}
+    map[getStorageConnType()] = value
+    await window.storageApi.saveAppSettings({
+      ...currentSettings,
+      [key]: map
+    })
+  } catch {
+    // ignore
+  }
+}
+
 const copyableGroups = computed(() => {
   const connType = props.connection?.connectionType || 'telnet'
   return groups.value.filter(
@@ -366,7 +405,25 @@ const loadGroups = async () => {
     groups.value = Array.isArray(savedGroups) ? savedGroups : []
     filterGroupsByConnectionType()
 
-    if (filteredGroups.value.length > 0 && !selectedGroupId.value) {
+    // 尝试恢复上次选中的分组（按协议类型）
+    let restored = false
+    try {
+      const appSettings = await window.storageApi.getAppSettings()
+      const savedId = getProtocolValue(appSettings, 'commandEditorSelectedGroupId')
+      if (savedId != null && filteredGroups.value.some(g => g.groupId === savedId)) {
+        selectedGroupId.value = savedId
+        const selected = groups.value.find((g) => g.groupId === selectedGroupId.value)
+        if (selected) {
+          selectedGroupName.value = selected.name
+        }
+        restored = true
+        filterCommandsByGroup()
+      }
+    } catch {
+      // ignore
+    }
+    // 如果没有恢复成功，选中第一个分组
+    if (!restored && filteredGroups.value.length > 0 && !selectedGroupId.value) {
       const firstGroup = filteredGroups.value[0]
       selectedGroupId.value = firstGroup.groupId
       selectedGroupName.value = firstGroup.name
@@ -432,7 +489,7 @@ const filterCommandsByGroup = () => {
 }
 
 // 处理组选择
-const handleGroupCommand = (command: string | number) => {
+const handleGroupCommand = async (command: string | number) => {
   if (command === 'new') {
     openAddGroupDialog()
     return
@@ -443,6 +500,8 @@ const handleGroupCommand = (command: string | number) => {
   if (selected) {
     selectedGroupName.value = selected.name
   }
+  // 保存选中的分组到 AppSettings（按协议类型）
+  saveProtocolValue('commandEditorSelectedGroupId', selectedGroupId.value)
   filterCommandsByGroup()
 }
 
@@ -731,8 +790,32 @@ defineExpose({
 
 watch(
   () => props.connection?.connectionType,
-  () => {
+  async () => {
     filterGroupsByConnectionType()
+    // 协议类型变化时，尝试恢复该协议上次选中的分组
+    let restored = false
+    try {
+      const appSettings = await window.storageApi.getAppSettings()
+      const savedId = getProtocolValue(appSettings, 'commandEditorSelectedGroupId')
+      if (savedId != null && filteredGroups.value.some(g => g.groupId === savedId)) {
+        selectedGroupId.value = savedId
+        const selected = groups.value.find((g) => g.groupId === selectedGroupId.value)
+        if (selected) {
+          selectedGroupName.value = selected.name
+        }
+        restored = true
+        filterCommandsByGroup()
+      }
+    } catch {
+      // ignore
+    }
+    // 如果没有恢复成功，选中第一个分组
+    if (!restored && filteredGroups.value.length > 0 && !selectedGroupId.value) {
+      const firstGroup = filteredGroups.value[0]
+      selectedGroupId.value = firstGroup.groupId
+      selectedGroupName.value = firstGroup.name
+      filterCommandsByGroup()
+    }
   }
 )
 

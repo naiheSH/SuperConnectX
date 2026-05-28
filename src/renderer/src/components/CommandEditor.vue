@@ -241,13 +241,59 @@ const filteredGroups = computed(() => {
   return filtered.filter(g => g.name.toLowerCase().includes(keyword))
 })
 
+// 辅助函数：从 AppSettings 中获取按协议存储的值，兼容旧格式
+const getProtocolValue = (settings: any, key: string, connectionType: string): number | null | undefined => {
+  const val = settings?.[key]
+  if (val == null) return undefined
+  // 新格式：Record<string, number | null>，如 { telnet: 3 }
+  if (typeof val === 'object' && !Array.isArray(val)) {
+    return val[connectionType] ?? undefined
+  }
+  // 旧格式兼容：直接是 number 值
+  if (typeof val === 'number') {
+    return val
+  }
+  return undefined
+}
+
+// 辅助函数：构建按协议存储的 map 并保存
+const saveProtocolValue = async (key: string, connectionType: string, value: number | null) => {
+  try {
+    const currentSettings = await window.storageApi.getAppSettings()
+    const map = (currentSettings?.[key] && typeof currentSettings[key] === 'object' && !Array.isArray(currentSettings[key]))
+      ? { ...currentSettings[key] }
+      : {}
+    map[connectionType] = value
+    await window.storageApi.saveAppSettings({
+      ...currentSettings,
+      [key]: map
+    })
+  } catch {
+    // ignore
+  }
+}
+
 const loadGroups = async () => {
   try {
     groups.value = await window.storageApi.getCommandGroups()
-    // 如果没有选中任何分组，自动选中第一个
-    if (!selectedGroupId.value && filteredGroups.value.length > 0) {
+    // 尝试恢复上次选中的分组（按协议类型）
+    let restored = false
+    try {
+      const appSettings = await window.storageApi.getAppSettings()
+      const savedId = getProtocolValue(appSettings, 'commandEditorSelectedGroupId', props.connectionType)
+      if (savedId != null && filteredGroups.value.some(g => g.groupId === savedId)) {
+        selectedGroupId.value = savedId
+        restored = true
+        await loadCommands()
+      }
+    } catch {
+      // ignore
+    }
+    // 如果没有恢复成功，选中第一个分组
+    if (!restored && !selectedGroupId.value && filteredGroups.value.length > 0) {
       selectedGroupId.value = filteredGroups.value[0].groupId
       await loadCommands()
+      saveSelectedGroupId()
     }
   } catch (error) {
     console.error('加载分组失败:', error)
@@ -257,6 +303,7 @@ const loadGroups = async () => {
 const loadCommands = async () => {
   if (!selectedGroupId.value) {
     commands.value = []
+    currentRow.value = null
     return
   }
   try {
@@ -264,6 +311,20 @@ const loadCommands = async () => {
     commands.value = allCommands
       .filter((cmd: any) => cmd.groupId === selectedGroupId.value)
       .sort((a: any, b: any) => (a.seqNum ?? 999) - (b.seqNum ?? 999))
+
+    // 尝试恢复上次选中的命令（按协议类型）
+    try {
+      const appSettings = await window.storageApi.getAppSettings()
+      const savedCmdId = getProtocolValue(appSettings, 'commandEditorCurrentCommandId', props.connectionType)
+      if (savedCmdId != null) {
+        const found = commands.value.find((cmd: any) => cmd.id === savedCmdId)
+        if (found) {
+          currentRow.value = found
+        }
+      }
+    } catch {
+      // ignore
+    }
   } catch (error) {
     console.error('加载命令失败:', error)
   }
@@ -273,8 +334,13 @@ const tableRowClassName = ({ rowIndex }: { rowIndex: number }) => {
   return rowIndex % 2 === 1 ? 'stripe-row' : ''
 }
 
+const saveCurrentCommandId = () => {
+  saveProtocolValue('commandEditorCurrentCommandId', props.connectionType, currentRow.value?.id ?? null)
+}
+
 const handleRowClick = (row: PresetCommand) => {
   currentRow.value = row
+  saveCurrentCommandId()
 }
 
 const updateCommand = async (row: PresetCommand) => {
@@ -294,9 +360,14 @@ const updateCommand = async (row: PresetCommand) => {
   }
 }
 
+const saveSelectedGroupId = () => {
+  saveProtocolValue('commandEditorSelectedGroupId', props.connectionType, selectedGroupId.value)
+}
+
 const selectGroup = (groupId: number) => {
   selectedGroupId.value = groupId
   loadCommands()
+  saveSelectedGroupId()
 }
 
 const saveGroup = async () => {

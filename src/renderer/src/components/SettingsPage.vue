@@ -364,6 +364,31 @@ const { t } = useI18n()
 
 const activeCategory = ref('basic')
 
+// 加载上次选中的设置分类
+const loadActiveCategory = async () => {
+  try {
+    const appSettings = await window.storageApi.getAppSettings()
+    if (appSettings?.settingsActiveCategory) {
+      activeCategory.value = appSettings.settingsActiveCategory
+    }
+  } catch {
+    // ignore
+  }
+}
+
+// 保存选中的设置分类
+const saveActiveCategory = async () => {
+  try {
+    const currentSettings = await window.storageApi.getAppSettings()
+    await window.storageApi.saveAppSettings({
+      ...currentSettings,
+      settingsActiveCategory: activeCategory.value
+    })
+  } catch {
+    // ignore
+  }
+}
+
 const categories = computed(() => [
   { key: 'basic', label: t('settingsNav.basic') },
   { key: 'serial', label: t('settingsNav.serial') },
@@ -570,6 +595,7 @@ watch(activeCategory, (newCat) => {
     refreshBackupList()
     refreshNextBackupDate()
   }
+  saveActiveCategory()
 })
 
 // 监听 autoBackup 开关变化
@@ -580,6 +606,7 @@ watch(() => settings.value?.autoBackup, () => {
 onMounted(async () => {
   await loadDefaultSettings()
   await loadSettings()
+  await loadActiveCategory()
 
   // 监听设置更新事件（ComTerminal 修改波特率列表时刷新显示）
   window.addEventListener('settings-updated', handleSettingsUpdated)
