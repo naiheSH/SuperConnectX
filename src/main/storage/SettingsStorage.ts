@@ -48,10 +48,10 @@ const defaultSettings: Settings = {
   // 基本设置
   minimizeToTray: false,
   logSplit: true,
-  logSplitSize: 10,
+  logSplitSize: 50,
   autoScroll: true,
   autoScrollToast: false,
-  autoScrollOnFocus: false,
+  autoScrollOnFocus: true,
   autoScrollAfterSend: false,
   autoScrollOnWheel: false,
   language: 'zh-CN',
@@ -67,7 +67,7 @@ const defaultSettings: Settings = {
   enableLogStorage: true,
   logPath: '',
   logFileName: '%C-%Y-%M-%D-%hh-%mm-%ss',
-  maxLogSize: 10,
+  maxLogSize: 50,
   logTimestamp: true,
   logHex: false,
   // 语法高亮
