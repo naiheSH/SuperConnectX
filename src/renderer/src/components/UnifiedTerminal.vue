@@ -436,7 +436,7 @@ const initEditor = async () => {
   })
 
   // 监听滚动位置变化（用于检测是否滚动到底部）
-  editor.onDidScrollChange((e) => {
+  editor.onDidScrollChange(() => {
     if (!autoScrollOnWheel || !editor) return
     const scrollTop = editor.getScrollTop()
     const scrollHeight = editor.getScrollHeight()
