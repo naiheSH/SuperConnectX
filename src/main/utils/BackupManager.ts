@@ -169,4 +169,126 @@ export default class BackupManager {
       logger.error(`[BackupManager] backup failed:`, error)
     }
   }
+
+  /**
+   * 获取备份列表：返回 backup 目录下所有日期目录的信息
+   * @returns 备份日期列表（降序），每个包含日期字符串和目录大小
+   */
+  getBackupList(): { date: string; size: number }[] {
+    const backupDir = this.getBackupDir()
+    if (!fs.existsSync(backupDir)) {
+      return []
+    }
+
+    try {
+      const entries = fs.readdirSync(backupDir, { withFileTypes: true })
+      const result: { date: string; size: number }[] = []
+
+      for (const entry of entries) {
+        if (entry.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(entry.name)) {
+          const dirPath = path.join(backupDir, entry.name)
+          const size = this.getDirSize(dirPath)
+          result.push({ date: entry.name, size })
+        }
+      }
+
+      // 按日期降序排列
+      result.sort((a, b) => b.date.localeCompare(a.date))
+      return result
+    } catch (error) {
+      logger.error('[BackupManager] failed to get backup list:', error)
+      return []
+    }
+  }
+
+  /**
+   * 递归计算目录大小（字节）
+   */
+  private getDirSize(dirPath: string): number {
+    let totalSize = 0
+    try {
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true })
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name)
+        if (entry.isDirectory()) {
+          totalSize += this.getDirSize(fullPath)
+        } else {
+          const stat = fs.statSync(fullPath)
+          totalSize += stat.size
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return totalSize
+  }
+
+  /**
+   * 计算下一次备份日期
+   * 扫描 backup 目录下最近的备份日期，结合备份周期计算下次备份日期
+   * @param backupInterval 备份周期（天）
+   * @returns 下一次备份日期字符串 YYYY-MM-DD，如果无法计算则返回 null
+   */
+  getNextBackupDate(backupInterval: number): string | null {
+    if (backupInterval <= 0) return null
+
+    const lastDate = this.getLastBackupDate()
+    const today = this.getTodayStr()
+
+    if (!lastDate) {
+      // 从未备份过，下一次备份就是今天
+      return today
+    }
+
+    const lastDateObj = this.parseDateStr(lastDate)
+    if (!lastDateObj) return null
+
+    // 计算下一次备份日期 = 上次备份日期 + 备份周期
+    const nextDate = new Date(lastDateObj)
+    nextDate.setDate(nextDate.getDate() + backupInterval)
+
+    const y = nextDate.getFullYear()
+    const m = String(nextDate.getMonth() + 1).padStart(2, '0')
+    const d = String(nextDate.getDate()).padStart(2, '0')
+    const nextDateStr = `${y}-${m}-${d}`
+
+    // 如果下一次备份日期已经过去（即今天 >= 下次备份日期），说明已经该备份了
+    // 返回今天作为提示
+    if (nextDateStr <= today) {
+      return today
+    }
+
+    return nextDateStr
+  }
+
+  /**
+   * 恢复备份：将指定日期的备份目录内容拷贝覆盖 userdata 目录
+   * @param dateStr 备份日期字符串，格式 YYYY-MM-DD
+   * @returns 恢复结果
+   */
+  restoreBackup(dateStr: string): { success: boolean; message: string } {
+    const backupDir = this.getBackupDir()
+    const backupPath = path.join(backupDir, dateStr)
+
+    if (!fs.existsSync(backupPath)) {
+      return { success: false, message: `Backup ${dateStr} not found` }
+    }
+
+    try {
+      const userDataPath = this.getUserDataPath()
+
+      // 删除现有 userdata 目录
+      if (fs.existsSync(userDataPath)) {
+        fs.rmSync(userDataPath, { recursive: true, force: true })
+      }
+
+      // 拷贝备份到 userdata
+      this.copyDirSync(backupPath, userDataPath)
+      logger.info(`[BackupManager] restore completed: ${dateStr} -> ${userDataPath}`)
+      return { success: true, message: `Restored from backup ${dateStr}` }
+    } catch (error) {
+      logger.error(`[BackupManager] restore failed:`, error)
+      return { success: false, message: `Restore failed: ${error}` }
+    }
+  }
 }

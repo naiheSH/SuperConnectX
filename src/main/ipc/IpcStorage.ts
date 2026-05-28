@@ -9,6 +9,7 @@ import AppSettingsStorage from '../storage/AppSettingsStorage'
 import SettingsStorage from '../storage/SettingsStorage'
 import CommandHistoryStorage from '../storage/CommandHistoryStorage'
 import IpcConnector from './IpcConnector'
+import BackupManager from '../utils/BackupManager'
 
 export default class IpcStorage {
   private static sInstance: IpcStorage
@@ -140,6 +141,15 @@ export default class IpcStorage {
       return true
     })
     ipcMain.handle('get-shortcut-actions', () => SHORTCUT_ACTIONS)
+
+    /* 备份与恢复 */
+    ipcMain.handle('get-backup-list', () => BackupManager.getInstance().getBackupList())
+    ipcMain.handle('restore-backup', (_, dateStr: string) =>
+      BackupManager.getInstance().restoreBackup(dateStr)
+    )
+    ipcMain.handle('get-next-backup-date', (_, backupInterval: number) =>
+      BackupManager.getInstance().getNextBackupDate(backupInterval)
+    )
 
     logger.info(`init IpcStorage done`)
   }

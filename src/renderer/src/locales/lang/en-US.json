@@ -39,7 +39,7 @@
     "syntax": "Syntax Highlight",
     "search": "Search",
     "history": "Command History",
-    "backup": "Backup"
+    "backup": "Backup & Restore"
   },
   "basicSettings": {
     "title": "General Settings",
@@ -66,10 +66,21 @@
     "autoBackupDesc": "Automatically backup connections and command configurations",
     "backupInterval": "Backup Interval",
     "backupIntervalDesc": "Interval in days for automatic backup",
+    "nextBackupDate": "Next Backup Date",
+    "nextBackupDateToday": "Today",
     "day": "day(s)",
     "system": "System",
     "preventSleep": "Prevent Screen Sleep and System Hibernate",
-    "preventSleepDesc": "Prevent system from entering hibernate or screen from closing"
+    "preventSleepDesc": "Prevent system from entering hibernate or screen from closing",
+    "restore": "Restore",
+    "restoreList": "Available Backups",
+    "restoreListDesc": "Select a backup date and click restore to replace current user data",
+    "restoreBtn": "Restore Backup",
+    "restoreConfirm": "Are you sure you want to restore from backup {date}? All current user data will be replaced!",
+    "restoreSuccess": "Successfully restored from backup {date}, please restart the app to take effect",
+    "restoreFailed": "Restore failed",
+    "noBackups": "No backups available",
+    "backupSize": "Size"
   },
   "serialSettings": {
     "title": "Serial COM Settings",

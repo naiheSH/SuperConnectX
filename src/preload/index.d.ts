@@ -48,6 +48,9 @@ declare global {
       addCommandHistory: (protocolType: string, command: string) => Promise<boolean>
       clearCommandHistory: (protocolType: string) => Promise<boolean>
       removeCommandHistory: (protocolType: string, command: string) => Promise<boolean>
+      getBackupList: () => Promise<{ date: string; size: number }[]>
+      restoreBackup: (dateStr: string) => Promise<{ success: boolean; message: string }>
+      getNextBackupDate: (backupInterval: number) => Promise<string | null>
     }
     connectApi: {
       startConnect: (conn: any) => Promise<any>

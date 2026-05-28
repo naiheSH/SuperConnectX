@@ -48,7 +48,12 @@ contextBridge.exposeInMainWorld('storageApi', {
   getCommandHistory: (protocolType: string) => ipcRenderer.invoke('get-command-history', protocolType),
   addCommandHistory: (protocolType: string, command: string) => ipcRenderer.invoke('add-command-history', protocolType, command),
   clearCommandHistory: (protocolType: string) => ipcRenderer.invoke('clear-command-history', protocolType),
-  removeCommandHistory: (protocolType: string, command: string) => ipcRenderer.invoke('remove-command-history', protocolType, command)
+  removeCommandHistory: (protocolType: string, command: string) => ipcRenderer.invoke('remove-command-history', protocolType, command),
+
+  /* 备份与恢复 */
+  getBackupList: () => ipcRenderer.invoke('get-backup-list'),
+  restoreBackup: (dateStr: string) => ipcRenderer.invoke('restore-backup', dateStr),
+  getNextBackupDate: (backupInterval: number) => ipcRenderer.invoke('get-next-backup-date', backupInterval)
 })
 
 contextBridge.exposeInMainWorld('connectApi', {

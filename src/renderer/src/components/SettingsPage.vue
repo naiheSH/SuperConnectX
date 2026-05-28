@@ -274,7 +274,7 @@
           </div>
         </div>
 
-        <!-- 备份 -->
+        <!-- 备份与恢复 -->
         <div v-else-if="activeCategory === 'backup'" class="settings-group">
           <div class="group-section">
             <div class="group-title">{{ t('basicSettings.backup') }}</div>
@@ -288,9 +288,16 @@
             <div class="setting-item" v-if="settings.autoBackup">
               <div class="setting-label">
                 <span class="label-text">{{ t('basicSettings.backupInterval') }}</span>
-                <span class="label-desc">{{ t('basicSettings.backupIntervalDesc') }}</span>
+                <span class="label-desc">
+                  <template v-if="nextBackupDate">
+                    {{ t('basicSettings.nextBackupDate') }}：
+                    <span class="next-backup-value" :class="{ today: nextBackupDate === todayStr }">
+                      {{ nextBackupDate === todayStr ? t('basicSettings.nextBackupDateToday') : nextBackupDate }}
+                    </span>
+                  </template>
+                </span>
               </div>
-              <el-select v-model="settings.backupInterval" size="small" style="width: 100px">
+              <el-select v-model="settings.backupInterval" size="small" style="width: 100px" @change="refreshNextBackupDate">
                 <el-option :label="`1 ${t('basicSettings.day')}`" :value="1" />
                 <el-option :label="`3 ${t('basicSettings.day')}`" :value="3" />
                 <el-option :label="`7 ${t('basicSettings.day')}`" :value="7" />
@@ -299,6 +306,45 @@
                 <el-option :label="`60 ${t('basicSettings.day')}`" :value="60" />
                 <el-option :label="`180 ${t('basicSettings.day')}`" :value="180" />
               </el-select>
+            </div>
+          </div>
+
+          <!-- 恢复 -->
+          <div class="group-section">
+            <div class="group-title">{{ t('basicSettings.restore') }}</div>
+            <div class="setting-item restore-header-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('basicSettings.restoreList') }}</span>
+                <span class="label-desc">{{ t('basicSettings.restoreListDesc') }}</span>
+              </div>
+              <el-button type="text" icon="Refresh" @click="refreshBackupList" size="small">
+                {{ t('common.refresh') }}
+              </el-button>
+            </div>
+            <div v-if="backupList.length === 0" class="no-backups">
+              {{ t('basicSettings.noBackups') }}
+            </div>
+            <div v-else class="backup-list">
+              <div
+                v-for="item in backupList"
+                :key="item.date"
+                class="backup-item"
+                :class="{ selected: selectedBackup === item.date }"
+                @click="selectedBackup = item.date"
+              >
+                <div class="backup-date">{{ item.date }}</div>
+                <div class="backup-size">{{ formatSize(item.size) }}</div>
+              </div>
+            </div>
+            <div v-if="backupList.length > 0" class="restore-action">
+              <el-button
+                size="small"
+                :disabled="!selectedBackup"
+                @click="handleRestoreBackup"
+                class="btn-primary"
+              >
+                {{ t('basicSettings.restoreBtn') }}
+              </el-button>
             </div>
           </div>
         </div>
@@ -448,6 +494,88 @@ const selectLogDir = async () => {
     console.error('选择目录失败:', error)
   }
 }
+
+// 备份恢复相关
+const backupList = ref<{ date: string; size: number }[]>([])
+const selectedBackup = ref<string | null>(null)
+const nextBackupDate = ref<string | null>(null)
+
+// 今天日期字符串
+const todayStr = (() => {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+})()
+
+const refreshNextBackupDate = async () => {
+  if (!settings.value.autoBackup) {
+    nextBackupDate.value = null
+    return
+  }
+  try {
+    nextBackupDate.value = await window.storageApi.getNextBackupDate(settings.value.backupInterval)
+  } catch (error) {
+    console.error('获取下次备份日期失败:', error)
+  }
+}
+
+const refreshBackupList = async () => {
+  try {
+    backupList.value = await window.storageApi.getBackupList()
+    selectedBackup.value = null
+  } catch (error) {
+    console.error('获取备份列表失败:', error)
+  }
+}
+
+const formatSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+const handleRestoreBackup = async () => {
+  if (!selectedBackup.value) return
+  try {
+    await ElMessageBox.confirm(
+      t('basicSettings.restoreConfirm', { date: selectedBackup.value }),
+      t('basicSettings.restoreBtn'),
+      {
+        confirmButtonText: t('settings.confirm'),
+        cancelButtonText: t('settings.cancel'),
+        type: 'warning',
+        center: true,
+        cancelButtonClass: 'el-button--danger'
+      }
+    )
+    const result = await window.storageApi.restoreBackup(selectedBackup.value)
+    if (result.success) {
+      ElMessage.success(t('basicSettings.restoreSuccess', { date: selectedBackup.value }))
+      selectedBackup.value = null
+    } else {
+      ElMessage.error(result.message || t('basicSettings.restoreFailed'))
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(t('basicSettings.restoreFailed'))
+    }
+  }
+}
+
+// 监听分类切换，进入备份页时自动刷新列表
+watch(activeCategory, (newCat) => {
+  if (newCat === 'backup') {
+    refreshBackupList()
+    refreshNextBackupDate()
+  }
+})
+
+// 监听 autoBackup 开关变化
+watch(() => settings.value?.autoBackup, () => {
+  refreshNextBackupDate()
+})
 
 onMounted(async () => {
   await loadDefaultSettings()
@@ -871,5 +999,92 @@ const handleSettingsUpdated = (event: Event) => {
 
 .settings-panel::-webkit-scrollbar-corner {
   background: #1e1e1e;
+}
+
+/* 备份恢复样式 */
+.restore-header-item {
+  padding-bottom: 4px;
+}
+
+.no-backups {
+  color: #808080;
+  font-size: 13px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.backup-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 0;
+}
+
+.backup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #3c3c3c;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.backup-item:last-child {
+  border-bottom: none;
+}
+
+.backup-item:hover {
+  background: #2a2d2e;
+}
+
+.backup-item.selected {
+  background: #094771;
+}
+
+.backup-date {
+  color: #e0e0e0;
+  font-size: 13px;
+}
+
+.backup-size {
+  color: #808080;
+  font-size: 12px;
+}
+
+.restore-action {
+  padding: 12px 0 0 0;
+  border-top: 1px solid #3c3c3c;
+  margin-top: 8px;
+}
+
+.restore-action .el-button {
+  width: 100%;
+}
+
+.backup-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.backup-list::-webkit-scrollbar-track {
+  background: #252526;
+}
+
+.backup-list::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 3px;
+}
+
+.backup-list::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
+}
+
+.next-backup-value {
+  color: #e0e0e0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.next-backup-value.today {
+  color: #f0a020;
 }
 </style>

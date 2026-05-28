@@ -39,7 +39,7 @@
     "syntax": "语法高亮",
     "search": "搜索",
     "history": "命令历史",
-    "backup": "备份"
+    "backup": "备份与恢复"
   },
   "basicSettings": {
     "title": "基本配置",
@@ -66,10 +66,21 @@
     "autoBackupDesc": "自动备份连接和命令配置",
     "backupInterval": "备份周期",
     "backupIntervalDesc": "自动备份的间隔天数",
+    "nextBackupDate": "下次备份日期",
+    "nextBackupDateToday": "今天",
     "day": "天",
     "system": "系统",
     "preventSleep": "防止屏幕息屏及系统休眠",
-    "preventSleepDesc": "阻止系统进入休眠或屏幕关闭"
+    "preventSleepDesc": "阻止系统进入休眠或屏幕关闭",
+    "restore": "恢复",
+    "restoreList": "可恢复备份列表",
+    "restoreListDesc": "选择一个备份日期，点击恢复将替换当前用户数据",
+    "restoreBtn": "恢复备份",
+    "restoreConfirm": "确定要恢复到 {date} 的备份吗？当前所有用户数据将被替换！",
+    "restoreSuccess": "已成功恢复到 {date} 的备份，请重启应用以生效",
+    "restoreFailed": "恢复失败",
+    "noBackups": "暂无可用备份",
+    "backupSize": "大小"
   },
   "serialSettings": {
     "title": "串口COM设置",
