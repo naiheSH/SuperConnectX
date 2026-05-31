@@ -17,6 +17,16 @@
             "label": "start update server",
             "type": "shell",
             "command": "node scripts/test-update-server.js"
-        }
+        },
+        {
+            "label": "npm run typecheck",
+            "type": "shell",
+            "command": "npm run typecheck"
+        },
+        {
+            "label": "re-create tag and push",
+            "type": "shell",
+            "command": "release.bat"
+        },
     ]
 }
