@@ -844,12 +844,12 @@ const handleSettingsUpdated = (event: Event) => {
 }
 
 .group-title {
-  color: #cccccc;
-  font-size: 14px;
-  font-weight: 600;
+  color: #e8e8e8;
+  font-size: 15px;
+  font-weight: 700;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #3c3c3c;
+  border-bottom: 2px solid #409eff;
 }
 
 .setting-item {
