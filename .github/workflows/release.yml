@@ -10,10 +10,7 @@ permissions:
 
 jobs:
   release:
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
 
     steps:
       - name: Checkout
@@ -28,19 +25,6 @@ jobs:
         run: npm ci
 
       - name: Build and Release (Windows)
-        if: matrix.os == 'windows-latest'
         run: npm run build:win
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and Release (macOS)
-        if: matrix.os == 'macos-latest'
-        run: npm run build:mac
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and Release (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: npm run build:linux
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
