@@ -47,3 +47,15 @@ jobs:
         run: npm run build:win
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Release Description
+        run: |
+          $releaseBody = Get-Content -Path latest.md -Raw -Encoding UTF8
+          $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          $repo = $env:GITHUB_REPOSITORY
+          $release = gh release view $tag --repo $repo --json url | ConvertFrom-Json
+          if ($release) {
+            gh release edit $tag --repo $repo --notes "$releaseBody"
+          }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
