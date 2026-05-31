@@ -27,6 +27,15 @@ jobs:
       - name: Install Python setuptools (for node-gyp)
         run: pip install setuptools
 
+      - name: Remove problematic cpu-features (ssh2 works without it)
+        run: |
+          if (Test-Path node_modules\cpu-features) {
+            Remove-Item -Recurse -Force node_modules\cpu-features
+          }
+          if (Test-Path node_modules\ssh2\node_modules\cpu-features) {
+            Remove-Item -Recurse -Force node_modules\ssh2\node_modules\cpu-features
+          }
+
       - name: Rebuild native modules
         run: npx electron-builder install-app-deps
 
