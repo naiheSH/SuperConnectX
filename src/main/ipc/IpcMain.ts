@@ -202,6 +202,14 @@ export default class IpcMain {
       AppUpdater.getInstance().quitAndInstall()
     })
 
+    ipcMain.handle('cancel-download', () => {
+      AppUpdater.getInstance().cancelDownload()
+    })
+
+    ipcMain.handle('get-cached-update-info', () => {
+      return AppUpdater.getInstance().cachedUpdateInfo
+    })
+
     logger.info(`init IpcMain done`)
   }
 

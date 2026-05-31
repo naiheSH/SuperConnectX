@@ -99,7 +99,9 @@ declare global {
     updateApi: {
       checkForUpdates: () => Promise<void>
       startDownload: () => Promise<void>
+      cancelDownload: () => Promise<void>
       quitAndInstall: () => Promise<void>
+      getCachedUpdateInfo: () => Promise<any>
       onUpdateStatus: (callback: (data: { status: string; data?: any }) => void) => () => void
     }
   }

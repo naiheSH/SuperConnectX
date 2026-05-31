@@ -43,7 +43,8 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://github.com/SuperStudio/SuperConnectX/releases/latest/download
+  provider: github
+  owner: SuperStudio
+  repo: SuperConnectX
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

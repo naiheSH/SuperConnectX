@@ -295,6 +295,7 @@
     "currentVersion": "Current version: {version}",
     "newVersionAvailable": "New version {version} available",
     "releaseNotes": "Release Notes",
+    "releaseDate": "Release Date",
     "startUpdate": "Update Now",
     "downloading": "Downloading update...",
     "downloadingTitle": "Downloading {percent}%",
@@ -302,6 +303,7 @@
     "restartPrompt": "Restart to complete the update",
     "restartNow": "Restart Now",
     "retry": "Retry",
+    "recheck": "Recheck",
     "error": "Update Error",
     "unknownError": "Unknown error"
   }

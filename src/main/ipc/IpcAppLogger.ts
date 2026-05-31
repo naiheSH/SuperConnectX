@@ -5,9 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import { join } from 'path'
 
-const exePath = app.isPackaged ? app.getPath('exe') : process.cwd()
-const appDir = path.dirname(exePath)
-const LOG_DIR = join(appDir, 'app-logs')
+const LOG_DIR = join(path.dirname(app.getPath('exe')), 'app-logs')
 
 // 确保日志目录存在
 if (!fs.existsSync(LOG_DIR)) {

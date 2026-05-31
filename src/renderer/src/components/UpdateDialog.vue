@@ -19,6 +19,7 @@
         <el-icon class="status-icon success" :size="40"><CircleCheck /></el-icon>
         <p class="status-text">{{ t('update.upToDate') }}</p>
         <p class="status-subtext">{{ t('update.currentVersion', { version: currentVersion }) }}</p>
+        <p v-if="updateInfo?.releaseDate" class="status-subtext release-date">{{ t('update.releaseDate') }}: {{ formatDate(updateInfo.releaseDate) }}</p>
       </div>
 
       <!-- 发现新版本 -->
@@ -26,6 +27,7 @@
         <el-icon class="status-icon info" :size="40"><InfoFilled /></el-icon>
         <p class="status-text">{{ t('update.newVersionAvailable', { version: updateInfo?.version }) }}</p>
         <p class="status-subtext">{{ t('update.currentVersion', { version: currentVersion }) }} → <strong>{{ updateInfo?.version }}</strong></p>
+        <p v-if="updateInfo?.releaseDate" class="status-subtext release-date">{{ t('update.releaseDate') }}: {{ formatDate(updateInfo.releaseDate) }}</p>
 
         <!-- 更新日志 -->
         <div v-if="updateInfo?.releaseNotes" class="release-notes">
@@ -68,10 +70,13 @@
 
     <template #footer>
       <div class="update-footer">
-        <el-button v-if="canRetry" class="btn-cancel" @click="handleRetry">
+        <el-button v-if="canRetry" class="btn-primary" style="width: auto !important" @click="handleRetry">
           {{ t('update.retry') }}
         </el-button>
-        <el-button v-if="canClose" class="btn-cancel" @click="handleClose">
+        <el-button v-if="status === 'update-not-available'" class="btn-primary" style="width: auto !important" @click="handleClose">
+          {{ t('common.close') }}
+        </el-button>
+        <el-button v-else-if="canClose" class="btn-cancel" style="width: auto !important" @click="handleClose">
           {{ t('common.cancel') }}
         </el-button>
         <el-button
@@ -80,6 +85,22 @@
           @click="handleStartDownload"
         >
           {{ t('update.startUpdate') }}
+        </el-button>
+        <el-button
+          v-if="status === 'update-available'"
+          icon="Refresh"
+          class="recheck-btn"
+          @click="handleRecheck"
+        >
+          {{ t('update.recheck') }}
+        </el-button>
+        <el-button
+          v-if="status === 'download-progress'"
+          class="btn-cancel"
+          style="width: auto !important"
+          @click="handleCancelDownload"
+        >
+          {{ t('common.cancel') }}
         </el-button>
         <el-button
           v-if="status === 'update-downloaded'"
@@ -114,7 +135,7 @@ const visible = computed({
 })
 
 const status = ref<string>('checking')
-const updateInfo = ref<{ version: string; releaseNotes?: string; files?: Array<{ url: string; size: number }> } | null>(null)
+const updateInfo = ref<{ version: string; releaseDate?: string; releaseNotes?: string; files?: Array<{ url: string; size: number }> } | null>(null)
 const progressInfo = ref<{ percent: number; transferred: number; total: number; bytesPerSecond: number } | null>(null)
 const errorMessage = ref('')
 const currentVersion = ref('')
@@ -147,12 +168,33 @@ const canClose = computed(() =>
 )
 
 const formatReleaseNotes = (notes: string): string => {
+  // 检查是否已经是 HTML 内容
+  if (/<[a-zA-Z]/.test(notes)) {
+    // 已经是 HTML，压缩多余空行后只保留必要的换行
+    return notes
+      .replace(/\n{3,}/g, '\n\n')        // 多个空行压缩为1个
+      .replace(/\n\n/g, '<br><br>')       // 双换行 -> 段落间隔
+      .replace(/\n/g, '')                 // 单换行在 HTML 中无意义，移除
+  }
+  // 纯文本/Markdown 格式，按 Markdown 转换
   return notes
+    // 先转义 HTML
+    .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
+    // 标题
+    .replace(/^### (.+)$/gm, '<h4 style="margin:10px 0 4px;color:#ddd">$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3 style="margin:12px 0 6px;color:#eee">$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2 style="margin:14px 0 8px;color:#fff">$1</h2>')
+    // 粗体
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // 行内代码
+    .replace(/`([^`]+)`/g, '<code style="background:#2a2a2a;padding:1px 4px;border-radius:3px;font-family:monospace">$1</code>')
+    // 无序列表
+    .replace(/^- (.+)$/gm, '<li style="margin:2px 0">$1</li>')
+    .replace(/((?:<li[^>]*>.*<\/li>\n?)+)/g, '<ul style="margin:4px 0;padding-left:18px">$1</ul>')
+    // 换行
     .replace(/\n/g, '<br>')
-    .replace(/(#+\s*)(.*)/g, '<strong>$2</strong>')
-    .replace(/(\*\s+)(.*)/g, '· $2')
 }
 
 const formatSize = (bytes: number): string => {
@@ -167,47 +209,24 @@ const formatSpeed = (bytesPerSecond: number): string => {
   return (bytesPerSecond / (1024 * 1024)).toFixed(1) + ' MB/s'
 }
 
+const formatDate = (dateStr: string): string => {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return d.toLocaleDateString()
+}
+
 let removeListener: (() => void) | null = null
 
-const handleStartDownload = () => {
-  window.updateApi.startDownload()
-}
-
-const handleRestart = () => {
-  window.updateApi.quitAndInstall()
-}
-
-const handleRetry = () => {
-  status.value = 'checking'
-  errorMessage.value = ''
-  window.updateApi.checkForUpdates()
-}
-
-const handleClose = () => {
-  visible.value = false
-}
-
-const open = async () => {
-  visible.value = true
-  status.value = 'checking'
-  updateInfo.value = null
-  progressInfo.value = null
-  errorMessage.value = ''
-
-  // 获取当前版本
-  try {
-    currentVersion.value = await window.windowApi.getAppVersion()
-  } catch {
-    currentVersion.value = 'unknown'
-  }
-
-  // 注册更新状态监听
-  if (removeListener) removeListener()
+const ensureListener = () => {
+  if (removeListener) return
   removeListener = window.updateApi.onUpdateStatus((data) => {
     status.value = data.status
     if (data.data) {
       switch (data.status) {
         case 'update-available':
+          updateInfo.value = data.data
+          break
+        case 'update-not-available':
           updateInfo.value = data.data
           break
         case 'download-progress':
@@ -223,6 +242,70 @@ const open = async () => {
       }
     }
   })
+}
+
+const handleRecheck = () => {
+  status.value = 'checking'
+  errorMessage.value = ''
+  updateInfo.value = null
+  progressInfo.value = null
+  ensureListener()
+  window.updateApi.checkForUpdates()
+}
+
+const handleStartDownload = () => {
+  status.value = 'download-progress'
+  progressInfo.value = { percent: 0, transferred: 0, total: 0, bytesPerSecond: 0 }
+  window.updateApi.startDownload()
+}
+
+const handleCancelDownload = () => {
+  window.updateApi.cancelDownload()
+}
+
+const handleRestart = () => {
+  window.updateApi.quitAndInstall()
+}
+
+const handleRetry = () => {
+  status.value = 'checking'
+  errorMessage.value = ''
+  ensureListener()
+  window.updateApi.checkForUpdates()
+}
+
+const handleClose = () => {
+  if (status.value === 'download-progress') {
+    window.updateApi.cancelDownload()
+  }
+  visible.value = false
+}
+
+const open = async () => {
+  visible.value = true
+  progressInfo.value = null
+  errorMessage.value = ''
+
+  // 获取当前版本
+  try {
+    currentVersion.value = await window.windowApi.getAppVersion()
+  } catch {
+    currentVersion.value = 'unknown'
+  }
+
+  // 检查是否有缓存的更新信息
+  const cached = await window.updateApi.getCachedUpdateInfo()
+  if (cached && cached.version) {
+    status.value = 'update-available'
+    updateInfo.value = cached
+    return
+  }
+
+  status.value = 'checking'
+  updateInfo.value = null
+
+  // 注册更新状态监听
+  ensureListener()
 
   // 触发检查
   try {
@@ -306,6 +389,12 @@ defineExpose({ open })
   overflow-y: auto;
 }
 
+.release-date {
+  color: #777;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 .release-notes-title {
   color: #ccc;
   font-size: 13px;
@@ -332,8 +421,27 @@ defineExpose({ open })
 
 .update-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
   gap: 8px;
+}
+
+.recheck-btn {
+  background-color: transparent !important;
+  border: 1px solid #555 !important;
+  color: #aaa !important;
+}
+
+.recheck-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: #888 !important;
+  color: #ddd !important;
+  transform: translateY(-1px);
+}
+
+.recheck-btn:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
 }
 
 /* 滚动条 */

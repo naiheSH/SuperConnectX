@@ -122,7 +122,9 @@ contextBridge.exposeInMainWorld('dataCheckApi', {
 contextBridge.exposeInMainWorld('updateApi', {
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   startDownload: () => ipcRenderer.invoke('start-download'),
+  cancelDownload: () => ipcRenderer.invoke('cancel-download'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
+  getCachedUpdateInfo: () => ipcRenderer.invoke('get-cached-update-info'),
   onUpdateStatus: (callback: (data: { status: string; data?: any }) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, data: { status: string; data?: any }) => callback(data)
     ipcRenderer.on('update-status', listener)
