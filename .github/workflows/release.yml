@@ -22,7 +22,16 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --ignore-scripts
+
+      - name: Install Python setuptools (for node-gyp)
+        run: pip install setuptools
+
+      - name: Rebuild native modules
+        run: npx electron-builder install-app-deps
+
+
+
 
       - name: Build and Release (Windows)
         run: npm run build:win
