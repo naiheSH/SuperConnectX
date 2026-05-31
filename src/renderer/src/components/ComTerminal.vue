@@ -30,7 +30,7 @@
           />
           <div class="param-item">
             <span class="param-label">{{ t('comTerminal.baudRate') }}</span>
-            <el-select v-model="baudRate" size="small" class="param-select" :popper-append-to-body="false">
+            <el-select v-model="baudRate" size="small" class="param-select-baud" :popper-append-to-body="false">
               <el-option :label="t('serialSettings.addNew') + '...'" value="__add__" />
               <el-option
                 v-for="br in baudRates"
@@ -794,7 +794,7 @@ onUnmounted(() => {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
-  padding: 8px;
+  padding: 8px 8px 8px 0px;
   background-color: #2d2d2d;
   border-bottom: 1px solid #333;
   border-radius: 6px;
@@ -814,7 +814,11 @@ onUnmounted(() => {
 }
 
 .param-select {
-  width: 100px;
+  width: 80px;
+}
+
+.param-select-baud {
+  width: 120px;
 }
 
 :deep(.param-row .el-select.param-select .el-select__wrapper) {
@@ -823,6 +827,15 @@ onUnmounted(() => {
 }
 
 :deep(.param-row .el-select.param-select .el-select__caret) {
+  line-height: 26px !important;
+}
+
+:deep(.param-row .el-select.param-select-baud .el-select__wrapper) {
+  height: 26px !important;
+  min-height: 26px !important;
+}
+
+:deep(.param-row .el-select.param-select-baud .el-select__caret) {
   line-height: 26px !important;
 }
 
