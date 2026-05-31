@@ -1,7 +1,7 @@
 <template>
   <div class="preset-commands">
     <!-- 编辑命令按钮 -->
-    <el-button class="btn-primary edit-commands-btn" @click="openCommandEditor">
+    <el-button class="btn-primary edit-commands-btn" size="small" @click="openCommandEditor">
       <el-icon><Edit /></el-icon>
       编辑命令
     </el-button>
@@ -10,14 +10,15 @@
     <div class="group-actions-buttons">
       <el-tooltip :content="isRunningAll ? '停止循环' : '循环运行'" placement="bottom">
         <el-button
-          :type="isRunningAll ? 'danger' : 'default'"
           size="small"
-          circle
+          :class="isRunningAll ? 'run-btn stop-btn' : 'run-btn'"
           :disabled="!selectedGroupId || filteredCommands.length === 0"
           @click="toggleRunAllCommands"
         >
-          <el-icon v-if="!isRunningAll"><VideoPlay /></el-icon>
-          <el-icon v-else><VideoPause /></el-icon>
+          <svg v-if="!isRunningAll" class="play-icon" viewBox="0 0 16 16" width="16" height="16">
+            <path d="M4.5 2.5 L12.5 7.5 L4.5 12.5 Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+          </svg>
+          <span v-else class="stop-icon"></span>
         </el-button>
       </el-tooltip>
     </div>
@@ -205,7 +206,7 @@
 import { ref, nextTick, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { ElMessage, ElForm, ElInput, ElMessageBox } from 'element-plus'
 import { ElSelect, ElDropdown, ElDropdownMenu, ElDropdownItem, ElIcon } from 'element-plus'
-import { Plus, Edit, Delete, ArrowDown, VideoPlay, VideoPause } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, ArrowDown, VideoPlay, VideoPause, VideoCameraFilled } from '@element-plus/icons-vue'
 import FormUtils from '../utils/FormUtils'
 import eventBus from '../utils/EventBus'
 
@@ -363,7 +364,6 @@ const toggleRunAllCommands = () => {
     }
     isRunningAll.value = false
     runAllCommandIndex.value = 0
-    ElMessage.success('已停止循环运行')
   } else {
     // 开始运行
     if (filteredCommands.value.length === 0) {
@@ -946,6 +946,10 @@ const handlePresetCommandsChanged = (connectionType: string) => {
   padding: 5px 11px !important;
 }
 
+.edit-commands-btn :deep(.el-icon) {
+  margin-right: 4px;
+}
+
 .edit-commands-btn:hover {
   transform: translateY(-1px);
 }
@@ -1028,23 +1032,56 @@ const handlePresetCommandsChanged = (connectionType: string) => {
   margin-left: 4px;
 }
 
-.group-actions-buttons .el-button {
-  background-color: #3a3a3a;
-  border-color: #444;
-  color: #e0e0e0;
+/* 运行按钮：去掉背景，绿色三角 */
+.run-btn {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #99E699 !important;
+  box-shadow: none !important;
+  width: 28px !important;
+  height: 28px !important;
 }
 
-.group-actions-buttons .el-button:hover:not(:disabled) {
-  background-color: #4a4a4a;
+.run-btn:hover:not(:disabled) {
+  background-color: rgba(153, 230, 153, 0.15) !important;
+  color: #99E699 !important;
 }
 
-.group-actions-buttons .el-button--danger {
-  background-color: #c45656 !important;
-  border-color: #c45656 !important;
+.run-btn:disabled {
+  color: #555 !important;
 }
 
-.group-actions-buttons .el-button--danger:hover:not(:disabled) {
-  background-color: #d66a6a !important;
+/* 运行按钮的圆角三角形图标 */
+.play-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* 运行按钮的图标更大 */
+.run-btn:not(.stop-btn) :deep(.el-icon) {
+  font-size: 16px;
+}
+
+/* 停止按钮：无背景，红色正方形图标 */
+.run-btn.stop-btn {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #c45656 !important;
+  box-shadow: none !important;
+}
+
+.run-btn.stop-btn:hover:not(:disabled) {
+  background-color: rgba(196, 86, 86, 0.15) !important;
+  color: #c45656 !important;
+}
+
+/* 正方形图标 */
+.stop-icon {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: #c45656;
+  border-radius: 2px;
 }
 
 .preset-btn {
