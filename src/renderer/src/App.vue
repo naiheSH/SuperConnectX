@@ -74,7 +74,7 @@
                       <el-button
                         v-else
                         type="text"
-                        class="el-button--danger serial-port-btn"
+                        class="serial-port-btn disconnect-btn"
                         icon="Close"
                         @click="disconnectSerialPort(port.path)"
                       >{{ t('common.disconnect') }}</el-button>
@@ -1634,12 +1634,8 @@ const connectToSerialPort = async (port: SerialPortInfo) => {
 const disconnectSerialPort = async (path: string) => {
   const tab = connectionTabs.value.find((t) => t.comName === path && t.connectionType === 'com')
   if (tab) {
-    await window.connectApi.stopConnect({
-      connectionType: 'com',
-      comName: tab.comName,
-      sessionId: tab.sessionId
-    })
-    delete connectedSerialPorts[path]
+    comTerminalRefs[tab.id]?.preventAutoReconnect?.()
+    comTerminalRefs[tab.id]?.disconnect?.()
   }
 }
 
@@ -1976,6 +1972,14 @@ onUnmounted(() => {
 .serial-port-btn {
   padding: 4px 8px !important;
   font-size: 12px !important;
+}
+
+.disconnect-btn {
+  color: #f56c6c !important;
+}
+
+.disconnect-btn:hover {
+  color: #f78989 !important;
 }
 
 .serial-port-card:hover {
