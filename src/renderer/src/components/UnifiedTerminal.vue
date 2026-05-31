@@ -1,13 +1,26 @@
 <template>
-  <div class="unified-terminal">
+  <div :class="['unified-terminal']">
+
     <!-- 终端输出区域 -->
-    <div ref="editorContainer" class="terminal-output">
+    <div ref="editorContainer" class="terminal-output" :style="terminalOutputStyle">
       <!-- 滚动按钮 -->
       <div class="scroll-wrapper">
         <el-button icon="ArrowUp" size="mini" circle @click="handleScrollToTop" class="scroll-btn up-btn" />
         <el-button icon="ArrowDown" size="mini" circle @click="handleScrollToBottom" class="scroll-btn down-btn" />
       </div>
     </div>
+
+    <!-- 垂直分隔条 -->
+    <div
+      class="vertical-splitter"
+      @mousedown="startVerticalSplit"
+    >
+      <div class="splitter-handle"></div>
+    </div>
+
+    <!-- 底部控件包裹容器（拖拽后不撑开） -->
+    <div class="bottom-controls">
+
 
     <!-- 基础操作按钮 -->
     <TerminalControl
@@ -69,20 +82,20 @@
             :disabled="!isConnected"
           />
         </div>
-        <span class="prompt">></span>
         <div class="input-wrapper" @click="commandInput?.focus()">
-          <input
+          <textarea
             v-model="currentCommand"
             @keydown="handleInputKeydown"
             :placeholder="isConnected ? (hexMode ? '输入HEX数据 (如: 01 02 03)' : placeholder) : '连接后可发送命令'"
             ref="commandInput"
             class="command-input"
-            :class="{ 'not-connected': !isConnected, 'hex-mode': hexMode }"
+            :class="{ 'not-connected': !isConnected }"
             :disabled="!isConnected"
             @input="onInputChange"
             @focus="onInputFocus"
             @blur="onInputBlur"
-          />
+            rows="1"
+          ></textarea>
           <!-- 历史命令弹窗 -->
           <div v-if="showHistoryPopup && filteredHistory.length > 0" class="history-popup">
             <div
@@ -114,7 +127,7 @@
         <div class="crc-btn-wrapper" ref="crcBtnRef">
           <el-button
             size="small"
-            class="btn-crc"
+            class="btn-primary btn-crc"
             @click="showCrcMenu = !showCrcMenu"
           >
             {{ t('comTerminal.crc') }}
@@ -148,6 +161,9 @@
         </template>
       </div>
     </div>
+
+    </div> <!-- bottom-controls -->
+
   </div>
 </template>
 
@@ -199,12 +215,21 @@ const emit = defineEmits<{
 const currentCommand = ref('')
 const rxBytes = ref('0 B')
 const txBytes = ref('0 B')
-const commandInput = ref<HTMLInputElement | null>(null)
+const commandInput = ref<HTMLTextAreaElement | null>(null)
 const isConnected = ref(props.isConnected)
 const isConnecting = ref(props.isConnecting)
 const isAutoScroll = ref(true)
 const isShowLog = ref(true)
 const editorContainer = ref<HTMLElement | null>(null)
+const terminalOutputHeight = ref<number | null>(null) // null 表示自动撑满
+const isSplitting = ref(false)
+
+const terminalOutputStyle = computed(() => {
+  if (terminalOutputHeight.value !== null) {
+    return { height: terminalOutputHeight.value + 'px', flex: '0 0 auto' }
+  }
+  return { flex: '1 1 auto' }
+})
 const autoNewline = ref(true) // 是否自动添加回车换行
 const hexMode = ref(false) // 是否为HEX发送模式
 const hexDisplayMode = ref(false) // 是否为HEX显示模式（接收端）
@@ -695,7 +720,12 @@ const handleInputKeydown = (e: KeyboardEvent) => {
       e.preventDefault()
       return
     }
-    handleSendCommand()
+    // Ctrl+Enter 发送，Enter 换行
+    if (e.ctrlKey) {
+      handleSendCommand()
+      return
+    }
+    // 普通 Enter 换行，不做任何处理
     return
   }
 
@@ -890,6 +920,35 @@ onMounted(async () => {
   document.addEventListener('click', handleClickOutsideCrc)
 })
 
+// 垂直分隔条拖拽逻辑
+const startVerticalSplit = (e: MouseEvent) => {
+  isSplitting.value = true
+  const container = (e.currentTarget as HTMLElement).parentElement
+  if (!container) return
+  const containerRect = container.getBoundingClientRect()
+  const maxHeight = containerRect.height - 6
+  const minHeight = 60
+
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    const newHeight = moveEvent.clientY - containerRect.top
+    if (newHeight >= maxHeight || newHeight <= minHeight) return
+    terminalOutputHeight.value = newHeight
+  }
+
+  const onMouseUp = () => {
+    isSplitting.value = false
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+
+  document.body.style.cursor = 'ns-resize'
+  document.body.style.userSelect = 'none'
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+}
+
 onUnmounted(() => {
   if (editorModel) {
     editorModel.dispose()
@@ -953,7 +1012,8 @@ const handleSettingsUpdated = async (event: Event) => {
 }
 
 .terminal-output {
-  flex: 1;
+  flex: 0 0 auto;
+  min-height: 60px;
   overflow-y: auto;
   padding: 15px;
   white-space: pre-wrap;
@@ -962,6 +1022,41 @@ const handleSettingsUpdated = async (event: Event) => {
   position: relative;
   border: 1px solid transparent;
   transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.bottom-controls {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.vertical-splitter {
+  height: 6px;
+  background-color: #2a2a2a;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.vertical-splitter:hover {
+  background-color: #409eff;
+}
+
+.splitter-handle {
+  width: 30px;
+  height: 3px;
+  border-radius: 2px;
+  background-color: #555;
+  transition: background-color 0.2s;
+}
+
+.vertical-splitter:hover .splitter-handle {
+  background-color: #fff;
 }
 
 .terminal-output:focus-within {
@@ -978,25 +1073,22 @@ const handleSettingsUpdated = async (event: Event) => {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  background-color: #333;
   margin: 8px 8px 8px 8px;
-  border: 1px solid transparent;
   border-radius: 6px;
-  transition: border-color 0.2s;
+  flex: 1 1 auto;
+  min-height: 46px;
+  background: transparent;
 }
 
 .terminal-input:focus-within {
   border-color: var(--focus-border-color);
 }
 
-.terminal-input.has-crc {
-  /* CRC 栏打开时自动高度 */
-}
-
 .input-row {
   display: flex;
-  align-items: center;
-  height: 38px;
+  align-items: stretch;
+  min-height: 60px;
+  flex: 1;
 }
 
 .prompt {
@@ -1005,17 +1097,27 @@ const handleSettingsUpdated = async (event: Event) => {
   white-space: nowrap;
   margin-left: 10px;
   user-select: none;
+  padding-top: 10px;
 }
 
 .command-input {
-  flex: 1;
-  background: transparent;
-  border: none;
+  width: 100%;
+  height: 100%;
+  background: #2a2a2a;
+  border: 1px solid transparent;
+  border-radius: 4px;
   color: #fff;
   outline: none;
   font-family: monospace;
   font-size: 14px;
-  padding: 0 8px;
+  padding: 10px 8px;
+  resize: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.command-input:focus {
+  border-color: #409eff;
 }
 
 .command-input::placeholder {
@@ -1030,10 +1132,12 @@ const handleSettingsUpdated = async (event: Event) => {
 
 .input-controls {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 6px;
   margin-right: 8px;
-  margin-left: 8px;
+  margin-left: 0;
+  margin-top: 10px;
 }
 
 .terminal-switch {
@@ -1041,7 +1145,7 @@ const handleSettingsUpdated = async (event: Event) => {
   align-items: center;
   gap: 12px;
   margin-right: 8px;
-  margin-left: 8px;
+  margin-left: 0;
 }
 
 .terminal-switch :deep(.el-switch) {
@@ -1072,13 +1176,13 @@ const handleSettingsUpdated = async (event: Event) => {
 
 .send-btn {
   margin-right: 10px;
+  margin-left: 12px;
   width: auto !important;
+  align-self: flex-end;
+  margin-bottom: 2px;
 }
 
-.command-input.hex-mode {
-  font-family: monospace;
-  letter-spacing: 1px;
-}
+
 
 .send-btn:disabled {
   opacity: 0.5;
@@ -1140,6 +1244,8 @@ const handleSettingsUpdated = async (event: Event) => {
   flex: 1;
   min-width: 0;
   position: relative;
+  display: flex;
+  align-items: stretch;
 }
 
 .history-popup {
@@ -1240,17 +1346,8 @@ const handleSettingsUpdated = async (event: Event) => {
   font-size: 12px !important;
   padding: 4px 12px !important;
   height: 26px !important;
-  background: #3a3a3d !important;
-  border: 1px solid #555 !important;
-  color: #ccc !important;
-  transition: all 0.2s;
   flex-shrink: 0;
-}
-
-.btn-crc:hover {
-  background: #4a4a4d !important;
-  border-color: var(--focus-border-color) !important;
-  color: #fff !important;
+  width: auto !important;
 }
 
 /* CRC按钮容器（相对定位基准） */
@@ -1322,7 +1419,8 @@ const handleSettingsUpdated = async (event: Event) => {
 .crc-bar {
   display: flex;
   align-items: center;
-  padding: 4px 8px;
+  padding: 4px 8px 4px 0;
+  margin-top: 4px;
   border-top: 1px solid #3c3c3c;
   gap: 8px;
   flex-wrap: wrap;
