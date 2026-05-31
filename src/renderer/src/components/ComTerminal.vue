@@ -481,7 +481,7 @@ const notifyLogTimestampToBackend = async (showTs: boolean) => {
       { logTimestamp: showTs }
     )
   } catch (error) {
-    console.error('更新日志时间戳配置失败:', error)
+    console.error('Failed to update log timestamp config:', error)
   }
 }
 

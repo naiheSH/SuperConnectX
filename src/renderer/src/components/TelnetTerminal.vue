@@ -81,7 +81,7 @@ const loadFontSettings = async () => {
       }
     }
   } catch (error) {
-    console.error('加载字体设置失败:', error)
+    console.error('Failed to load font settings:', error)
   }
 }
 
@@ -97,7 +97,7 @@ const saveFontSettings = async () => {
       })
     }
   } catch (error) {
-    console.error('保存字体设置失败:', error)
+    console.error('Failed to save font settings:', error)
   }
 }
 
@@ -132,7 +132,7 @@ const handleClose = async () => {
       sessionId: props.connection.sessionId
     })
   } catch (error) {
-    console.error('关闭连接失败:', error)
+    console.error('Failed to close connection:', error)
   }
   isConnected.value = false
 }
@@ -270,7 +270,7 @@ const handleSend = async (command: string, _originalInput?: string) => {
     })
   } catch (error) {
     ElMessage.error('命令发送失败')
-    console.error('发送失败:', error)
+    console.error('Failed to send:', error)
   }
 }
 

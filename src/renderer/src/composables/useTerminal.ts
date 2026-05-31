@@ -125,7 +125,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
         : { connectionType: 'com', comName: conn.comName, sessionId: conn.sessionId }
       await window.connectApi.updateConnect(connObj, { logTimestamp: showTs })
     } catch (error) {
-      console.error('更新日志时间戳配置失败:', error)
+      console.error('Failed to update log timestamp config:', error)
     }
   }
 
@@ -174,7 +174,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
       await window.connectApi.stopConnect(connObj)
       unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
     } catch (error) {
-      console.error('关闭连接失败:', error)
+      console.error('Failed to close connection:', error)
     }
     isConnected.value = false
   }
@@ -202,7 +202,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
         })
       } catch (error) {
         ElMessage.error('命令发送失败')
-        console.error('发送失败:', error)
+        console.error('Failed to send:', error)
       }
     }
   }
@@ -251,7 +251,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
         ? { ...conn, sessionId: conn.sessionId }
         : { connectionType: 'com', comName: conn.comName, sessionId: conn.sessionId }
       window.connectApi.stopConnect(connObj).catch((err: Error) => {
-        console.error('卸载时断开失败:', err)
+        console.error('Failed to disconnect on unmount:', err)
       })
     }
   })

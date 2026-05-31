@@ -179,7 +179,7 @@ export default class ProtocolLogger {
         const stats = statSync(logFile)
         currentSize = stats.size
       } catch (err) {
-        console.error(`获取日志文件大小失败:`, err)
+        console.error(`Failed to get log file size:`, err)
       }
     }
 
@@ -234,7 +234,7 @@ export default class ProtocolLogger {
         } else {
           // 正常运行时异步写入
           appendFile(logFile, logData, 'utf-8', (err) => {
-            if (err) console.error(`异步写入日志失败[connId:${connId}]:`, err)
+            if (err) console.error(`Async write log failed [connId:${connId}]:`, err)
             else {
               // 异步写入成功后更新文件大小
               try {
@@ -246,7 +246,7 @@ export default class ProtocolLogger {
         }
         this.logCache.set(connId, []) // 清空缓存
       } catch (err) {
-        console.error(`写入日志失败[connId:${connId}]:`, err)
+        console.error(`Write log failed [connId:${connId}]:`, err)
       }
     })
   }
@@ -365,7 +365,7 @@ export default class ProtocolLogger {
         try {
           appendFileSync(logFile, logData, 'utf-8') // 同步写入
         } catch (err) {
-          console.error(`关闭连接时刷日志失败:`, err)
+          console.error(`Flush log on disconnect failed:`, err)
         }
       }
     }
@@ -387,19 +387,19 @@ export default class ProtocolLogger {
     try {
       // 未启用日志存储时，直接提示
       if (!this.enableLogStorage) {
-        return { success: false, message: '未启用日志存储，请在设置中开启' }
+        return { success: false, message: 'Log storage is not enabled, please enable it in settings' }
       }
 
       this.flushAllLogs(false)
 
       const fileName = this.connLogFiles.get(connId)
       if (!fileName) {
-        return { success: false, message: '未找到连接日志' }
+        return { success: false, message: 'Connection log not found' }
       }
 
       const logFilePath = join(this.getConnLogDir(connId), fileName)
       if (!existsSync(logFilePath)) {
-        return { success: false, message: '日志文件不存在' }
+        return { success: false, message: 'Log file does not exist' }
       }
 
       if (shell && !(app as any).isQuitting) {
@@ -407,10 +407,10 @@ export default class ProtocolLogger {
       }
       return { success: true, message: '' }
     } catch (error) {
-      console.error('打开日志失败:', error)
+      console.error('Failed to open log:', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : '打开日志文件失败'
+        message: error instanceof Error ? error.message : 'Failed to open log file'
       }
     }
   }
@@ -420,7 +420,7 @@ export default class ProtocolLogger {
       this.flushAllLogs(false)
 
       if (!existsSync(this.logDir)) {
-        return { success: false, message: '日志目录不存在' }
+        return { success: false, message: 'Log directory does not exist' }
       }
 
       if (shell && !(app as any).isQuitting) {
@@ -428,10 +428,10 @@ export default class ProtocolLogger {
       }
       return { success: true, message: '' }
     } catch (error) {
-      console.error('打开日志目录失败:', error)
+      console.error('Failed to open log directory:', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : '打开日志目录失败'
+        message: error instanceof Error ? error.message : 'Failed to open log directory'
       }
     }
   }
@@ -442,7 +442,7 @@ export default class ProtocolLogger {
 
       const fileName = this.connLogFiles.get(connId)
       if (!fileName) {
-        return { success: false, message: '未找到日志文件' }
+        return { success: false, message: 'Log file not found' }
       }
 
       const logFilePath = join(this.getConnLogDir(connId), fileName)
@@ -461,21 +461,21 @@ export default class ProtocolLogger {
 
       const fileName = this.connLogFiles.get(connId)
       if (!fileName) {
-        return { success: false, message: '未找到日志文件' }
+        return { success: false, message: 'Log file not found' }
       }
 
       const sourcePath = join(this.getConnLogDir(connId), fileName)
       if (!existsSync(sourcePath)) {
-        return { success: false, message: '源日志文件不存在' }
+        return { success: false, message: 'Source log file does not exist' }
       }
 
       await fs.copyFile(sourcePath, destPath)
       return { success: true }
     } catch (error) {
-      console.error('复制日志文件失败:', error)
+      console.error('Failed to copy log file:', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : '复制日志文件失败'
+        message: error instanceof Error ? error.message : 'Failed to copy log file'
       }
     }
   }

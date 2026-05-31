@@ -123,7 +123,7 @@ const loadShortcutActions = async () => {
       shortcutActions.value = actions as unknown as Record<string, string>
     }
   } catch (error) {
-    console.error('加载快捷键命令映射失败:', error)
+    console.error('Failed to load shortcut command mappings:', error)
   }
 }
 
@@ -373,7 +373,7 @@ const confirmShortcut = async () => {
     // 通知其他组件快捷键已更新
     window.dispatchEvent(new CustomEvent('shortcuts-updated'))
   } catch (error) {
-    console.error('保存快捷键失败:', error)
+    console.error('Failed to save shortcuts:', error)
   }
   
   dialogVisible.value = false
@@ -413,7 +413,7 @@ const loadShortcuts = async () => {
       shortcuts.value = data
     }
   } catch (error) {
-    console.error('加载快捷键失败:', error)
+    console.error('Failed to load shortcuts:', error)
   }
 }
 
@@ -440,7 +440,7 @@ const restoreDefaults = async () => {
   } catch (error: any) {
     // 用户取消操作时不显示错误
     if (error !== 'cancel') {
-      console.error('恢复默认设置失败:', error)
+      console.error('Failed to restore default settings:', error)
       ElMessage.error('恢复默认设置失败')
     }
   }

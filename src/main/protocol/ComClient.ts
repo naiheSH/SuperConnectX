@@ -89,7 +89,7 @@ export default class ComClient extends BaseClient {
     const sessionId = info.sessionId
 
     if (!comName) {
-      return { success: false, message: '串口名不能为空' }
+      return { success: false, message: 'COM port name cannot be empty' }
     }
 
     try {
@@ -183,7 +183,7 @@ export default class ComClient extends BaseClient {
             logger.error(`serial port error: ${err.message}`)
           })
 
-          resolve({ success: true, message: '连接成功', connId: sessionId })
+          resolve({ success: true, message: 'Connected successfully', connId: sessionId })
         })
 
         port.once('error', (err: Error) => {
@@ -210,7 +210,7 @@ export default class ComClient extends BaseClient {
   async send(connId: string, command: string, onComplete: any): Promise<object> {
     const connection = this.serialConnections.get(connId)
     if (!connection) {
-      return { success: false, message: '连接不存在' }
+      return { success: false, message: 'Connection does not exist' }
     }
 
     try {
@@ -280,14 +280,14 @@ export default class ComClient extends BaseClient {
       if (connection) {
         connection.receiveHex = config.receiveHex
         logger.info(`update serial receiveHex: ${config.receiveHex}, sessionId: ${connId}`)
-        return { success: true, message: '更新成功' }
+        return { success: true, message: 'Updated successfully' }
       }
-      return { success: false, message: '连接不存在' }
+      return { success: false, message: 'Connection does not exist' }
     }
 
     const connection = this.serialConnections.get(connId)
     if (!connection) {
-      return { success: false, message: '连接不存在' }
+      return { success: false, message: 'Connection does not exist' }
     }
 
     const port = connection.port
@@ -383,7 +383,7 @@ export default class ComClient extends BaseClient {
             logger.error(`serial port error after update: ${err.message}`)
           })
 
-          resolve({ success: true, message: '配置更新成功' })
+          resolve({ success: true, message: 'Configuration updated successfully' })
         })
 
         newPort.once('error', (err: Error) => {

@@ -516,7 +516,7 @@ const selectLogDir = async () => {
       settings.value.logPath = result.filePaths[0]
     }
   } catch (error) {
-    console.error('选择目录失败:', error)
+    console.error('Failed to select directory:', error)
   }
 }
 
@@ -542,7 +542,7 @@ const refreshNextBackupDate = async () => {
   try {
     nextBackupDate.value = await window.storageApi.getNextBackupDate(settings.value.backupInterval)
   } catch (error) {
-    console.error('获取下次备份日期失败:', error)
+    console.error('Failed to get next backup date:', error)
   }
 }
 
@@ -551,7 +551,7 @@ const refreshBackupList = async () => {
     backupList.value = await window.storageApi.getBackupList()
     selectedBackup.value = null
   } catch (error) {
-    console.error('获取备份列表失败:', error)
+    console.error('Failed to get backup list:', error)
   }
 }
 

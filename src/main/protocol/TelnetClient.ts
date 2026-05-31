@@ -143,7 +143,7 @@ export default class TelnetClient extends BaseClient {
       })
 
       logger.info(`connect ok`)
-      return { success: true, message: '连接成功', connId: sessionId }
+      return { success: true, message: 'Connected successfully', connId: sessionId }
     } catch (error) {
       logger.error('telnet connect failed', { host, port, sessionId, error })
       return {
@@ -156,7 +156,7 @@ export default class TelnetClient extends BaseClient {
   async send(connId: string, command: string, onComplete: any): Promise<object> {
     const connection = this.telnetConnections.get(connId)
     if (!connection) {
-      return { success: false, message: '连接不存在' }
+      return { success: false, message: 'Connection does not exist' }
     }
 
     try {

@@ -16,7 +16,7 @@ class IpcDataCheck {
   }
 
   init(): void {
-    logger.info('[IpcDataCheck] 初始化数据校验模块 (JS引擎)')
+    logger.info('[IpcDataCheck] Initialize data check module (JS engine)')
 
     // 获取所有可用校验算法
     ipcMain.handle('datacheck:getPlugins', async (): Promise<PluginInfo[]> => {

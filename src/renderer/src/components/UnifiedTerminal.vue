@@ -609,7 +609,7 @@ const loadHistory = async () => {
     const settings = await window.storageApi.getSettings()
     showCommandHistory = settings?.showCommandHistory !== false
   } catch (error) {
-    console.error('加载命令历史失败:', error)
+    console.error('Failed to load command history:', error)
   }
 }
 
@@ -627,7 +627,7 @@ const addToHistory = async (command: string) => {
       commandHistory.value = commandHistory.value.slice(0, maxCount)
     }
   } catch (error) {
-    console.error('保存命令历史失败:', error)
+    console.error('Failed to save command history:', error)
   }
 }
 
@@ -682,7 +682,7 @@ const deleteHistoryItem = async (item: string) => {
       historySelectedIndex.value = filteredHistory.value.length - 1
     }
   } catch (error) {
-    console.error('删除命令历史失败:', error)
+    console.error('Failed to delete command history:', error)
   }
 }
 
@@ -748,7 +748,7 @@ const parseHexString = (hex: string): string | null => {
     const cleaned = hex.replace(/[\s\n\r]+/g, '')
     // 验证是否为有效的HEX字符串
     if (!/^[0-9A-Fa-f]*$/.test(cleaned) || cleaned.length % 2 !== 0) {
-      console.error('无效的HEX格式')
+      console.error('Invalid HEX format')
       return null
     }
     // 转换为二进制字符串
@@ -758,7 +758,7 @@ const parseHexString = (hex: string): string | null => {
     }
     return result
   } catch (error) {
-    console.error('HEX解析错误:', error)
+    console.error('HEX parse error:', error)
     return null
   }
 }

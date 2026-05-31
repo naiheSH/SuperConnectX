@@ -181,7 +181,7 @@ export default class IpcConnector {
         // 通知 ComClient 更新 receiveHex 状态，以便 onLog 也使用正确的格式
         this.CONNECT_TYPE_DATA.get(conn.connectionType)?.setReceiveHex(conn.sessionId, isHex)
         logger.info(`update receiveHex: ${isHex} for sessionId: ${conn.sessionId}`)
-        return { success: true, message: '更新成功' }
+        return { success: true, message: 'Updated successfully' }
       }
 
       // 如果是动态切换 logTimestamp，更新日志时间戳配置
@@ -189,7 +189,7 @@ export default class IpcConnector {
         const showTimestamp = config.logTimestamp === true || config.logTimestamp === 'true'
         this.logTimestampMap.set(conn.sessionId, showTimestamp)
         logger.info(`update logTimestamp: ${showTimestamp} for sessionId: ${conn.sessionId}`)
-        return { success: true, message: '更新成功' }
+        return { success: true, message: 'Updated successfully' }
       }
 
       return await this.CONNECT_TYPE_DATA.get(conn.connectionType)?.updateConfig(conn.sessionId, config)

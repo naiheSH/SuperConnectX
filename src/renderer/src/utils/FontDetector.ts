@@ -66,7 +66,7 @@ export const getSystemFonts = async (): Promise<string[]> => {
     const fontNames = [...new Set<string>(localFonts.map((font: any) => font.family))]
     return [...new Set<string>([...fontNames, ...defaultFonts])].sort()
   } catch (error) {
-    console.error('获取系统字体失败：', error)
+    console.error('Failed to get system fonts:', error)
     return defaultFonts
   }
 }

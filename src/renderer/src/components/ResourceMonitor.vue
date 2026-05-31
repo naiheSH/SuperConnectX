@@ -43,7 +43,7 @@ const fetchResourceData = async () => {
     memoryUsage.value = data.memory
     memRate.value = 1
   } catch (error) {
-    console.error('获取资源数据失败：', error)
+    console.error('Failed to get resource data:', error)
   }
 }
 

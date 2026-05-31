@@ -430,7 +430,7 @@ const loadGroups = async () => {
       filterCommandsByGroup() // 同步加载该组的命令
     }
   } catch (error) {
-    console.error('加载命令组失败:', error)
+    console.error('Failed to load command groups:', error)
     ElMessage.error('加载命令组失败')
   }
 }
@@ -474,7 +474,7 @@ const loadPresetCommands = async () => {
     presetCommands.value = Array.isArray(savedCommands) ? savedCommands : []
     filterCommandsByGroup()
   } catch (error) {
-    console.error('加载预设命令失败:', error)
+    console.error('Failed to load preset commands:', error)
     ElMessage.error('加载预设命令失败')
   }
 }
@@ -558,7 +558,7 @@ const deleteGroup = async (group: any) => {
       selectedGroupName.value = ''
     }
   } catch (error) {
-    console.error('删除命令组失败:', error)
+    console.error('Failed to delete command group:', error)
     ElMessage.error('删除命令组失败')
   }
 }
@@ -629,7 +629,7 @@ const saveGroup = async () => {
     loadPresetCommands()
     isGroupDialogOpen.value = false
   } catch (error) {
-    console.error('保存命令组失败:', error)
+    console.error('Failed to save command group:', error)
     ElMessage.error('保存命令组失败')
   }
 }
@@ -657,7 +657,7 @@ const editPresetCommand = (cmd: any) => {
   contextMenuVisible.value = false
   isEditing.value = true
   currentEditingCmd.value = cmd
-  console.log('编辑命令 seqNum:', cmd.seqNum, '类型:', typeof cmd.seqNum)
+  console.log('Edit command seqNum:', cmd.seqNum, 'type:', typeof cmd.seqNum)
   presetForm.value.name = cmd.name
   presetForm.value.command = cmd.command
   presetForm.value.delay = cmd.delay ?? 0
@@ -675,8 +675,8 @@ const savePresetCommand = async () => {
   try {
     await presetFormRef.value.validate()
 
-    console.log('保存命令 - presetForm:', presetForm.value)
-    console.log('保存命令 - seqNum 值:', presetForm.value.seqNum, '类型:', typeof presetForm.value.seqNum)
+    console.log('Save command - presetForm:', presetForm.value)
+    console.log('Save command - seqNum value:', presetForm.value.seqNum, 'type:', typeof presetForm.value.seqNum)
 
     const pureFormData = {
       name: presetForm.value.name.trim(),
@@ -686,18 +686,18 @@ const savePresetCommand = async () => {
       groupId: selectedGroupId.value
     }
 
-    console.log('保存命令 - pureFormData:', pureFormData)
+    console.log('Save command - pureFormData:', pureFormData)
 
     if (isEditing.value && currentEditingCmd.value) {
       const updatedCmd = {
         id: currentEditingCmd.value.id,
         ...pureFormData
       }
-      console.log('更新命令 - updatedCmd:', updatedCmd)
+      console.log('Update command - updatedCmd:', updatedCmd)
       await window.storageApi.updatePresetCommand(JSON.parse(JSON.stringify(updatedCmd)))
       ElMessage.success('命令已更新')
     } else {
-      console.log('新增命令 - pureFormData:', pureFormData)
+      console.log('Add command - pureFormData:', pureFormData)
       await window.storageApi.addPresetCommand(JSON.parse(JSON.stringify(pureFormData)))
       ElMessage.success('命令已添加')
     }
@@ -705,7 +705,7 @@ const savePresetCommand = async () => {
     loadPresetCommands()
     isPresetDialogOpen.value = false
   } catch (error) {
-    console.error('保存命令失败:', error)
+    console.error('Failed to save command:', error)
     ElMessage.error('保存失败：' + (error as Error).message)
   }
 }
@@ -717,7 +717,7 @@ const deletePresetCommand = async (id: number) => {
     ElMessage.success('命令已删除')
     loadPresetCommands()
   } catch (error) {
-    console.error('删除命令失败:', error)
+    console.error('Failed to delete command:', error)
     ElMessage.error('删除命令失败')
   }
 }
@@ -764,18 +764,18 @@ const sendPresetCommand = async (cmd: any) => {
     emit('commandSent', cmd.name.trim())
     emit('commandSentContent', cmd.command)
     const conn = getCurrentConnect()
-    console.log('发送命令 - 连接信息:', JSON.stringify(conn), '命令:', cmd.command.trim())
+    console.log('Send command - connection info:', JSON.stringify(conn), 'command:', cmd.command.trim())
     const result = await window.connectApi.sendData({
       conn: conn,
       command: cmd.command.trim()
     })
-    console.log('发送结果:', JSON.stringify(result))
+    console.log('Send result:', JSON.stringify(result))
     if (!result.success) {
       ElMessage.error(result.message || '命令发送失败')
     }
   } catch (error) {
     ElMessage.error('命令发送失败')
-    console.error('发送失败:', error)
+    console.error('Failed to send:', error)
   }
 }
 

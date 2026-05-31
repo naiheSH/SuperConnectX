@@ -296,7 +296,7 @@ const loadGroups = async () => {
       saveSelectedGroupId()
     }
   } catch (error) {
-    console.error('加载分组失败:', error)
+    console.error('Failed to load groups:', error)
   }
 }
 
@@ -326,7 +326,7 @@ const loadCommands = async () => {
       // ignore
     }
   } catch (error) {
-    console.error('加载命令失败:', error)
+    console.error('Failed to load commands:', error)
   }
 }
 
@@ -356,7 +356,7 @@ const updateCommand = async (row: PresetCommand) => {
     // 通知其他组件刷新命令列表
     eventBus.emit('presetCommandsChanged', props.connectionType)
   } catch (error) {
-    console.error('更新命令失败:', error)
+    console.error('Failed to update command:', error)
   }
 }
 
