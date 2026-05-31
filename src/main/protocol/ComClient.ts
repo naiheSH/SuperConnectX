@@ -9,6 +9,7 @@ const DEFAULT_STOP_BITS = 1
 const DEFAULT_PARITY = 'none' as const
 const DEFAULT_ENCODING = 'utf8'
 const READ_INTERVAL_MS = 10 // 固定10ms读取间隔
+const COMMAND_LINE_TERMINATOR = '\r\n'
 
 interface SerialConnection {
   port: SerialPort
@@ -214,7 +215,7 @@ export default class ComClient extends BaseClient {
 
     try {
       const dataStr = `[${new Date().toISOString()}] SEND >>>>>>>>>> ${command}`
-      const commandWithNewline = command.endsWith('\n') ? command : command + '\n'
+      const commandWithNewline = command.endsWith(COMMAND_LINE_TERMINATOR) ? command : (command.endsWith('\n') ? command.replace(/\n$/, COMMAND_LINE_TERMINATOR) : command + COMMAND_LINE_TERMINATOR)
       connection.port.write(commandWithNewline, connection.encoding as BufferEncoding, (err: Error | null | undefined) => {
         if (err) {
           logger.error(`serial write error: ${err.message}`)
