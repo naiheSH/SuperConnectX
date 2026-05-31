@@ -1,9 +1,6 @@
 <template>
   <div class="terminal-control">
     <div class="header-left">
-      <span class="connection-status" :class="isConnected ? 'connected' : 'disconnected'">
-        {{ isConnected ? '已连接' : '已断开' }}
-      </span>
       <el-button
         v-if="isConnected"
         icon="Close"
@@ -21,13 +18,7 @@
         @click="emit('onReconnect')"
         :disabled="isConnecting"
       >
-        {{ isConnecting ? '连接中...' : '重连' }}
-      </el-button>
-      <el-button icon="Document" size="small" class="btn-primary log-btn" @click="emit('onOpenLog')">
-        打开日志
-      </el-button>
-      <el-button icon="DocumentAdd" size="small" class="btn-primary log-btn" @click="emit('onSaveLog')">
-        日志另存为
+        {{ isConnecting ? '连接中...' : '连接' }}
       </el-button>
       <el-button
         icon="Delete"
@@ -35,7 +26,13 @@
         class="btn-cancel clear-btn"
         @click="emit('onClearTerminal')"
       >
-        清空屏幕
+        清空
+      </el-button>
+      <el-button icon="Document" size="small" class="btn-primary log-btn" @click="emit('onOpenLog')">
+        打开日志
+      </el-button>
+      <el-button icon="DocumentAdd" size="small" class="btn-primary log-btn" @click="emit('onSaveLog')">
+        日志另存为
       </el-button>
       <el-switch
         v-model="autoScroll"
@@ -134,8 +131,27 @@ const showTimestamp = computed({
   color: #888888;
 }
 
-.close-btn,
-.clear-btn,
+.close-btn {
+  width: 90px !important;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+  margin-left: 0 !important;
+  background-color: #FF0000 !important;
+  border-color: #FF0000 !important;
+}
+
+.clear-btn {
+  width: 72px !important;
+  height: 34px !important;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+  margin-left: 0 !important;
+  background-color: #c45656 !important;
+  border-color: #c45656 !important;
+}
+
 .add-preset-btn {
   width: 90px !important;
   padding: 6px 12px !important;
@@ -160,9 +176,15 @@ const showTimestamp = computed({
 
 
 
-.close-btn,
+.close-btn {
+  width: 72px !important;
+  height: 34px !important;
+  padding: 6px 12px !important;
+}
+
 .reconnect-btn {
-  width: 90px !important;
+  width: 72px !important;
+  height: 34px !important;
   padding: 6px 12px !important;
 }
 
