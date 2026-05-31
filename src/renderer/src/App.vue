@@ -34,7 +34,7 @@
                   <el-icon class="expand-icon" :class="{ collapsed: !serialPortExpanded }"><ArrowRight /></el-icon>
                   COM ({{ filteredSerialPorts.length }})
                 </span>
-                <el-button type="text" icon="Refresh" @click.stop="loadSerialPorts" size="small"
+                <el-button type="text" icon="Refresh" @click.stop="loadSerialPorts" size="small" class="icon-text-button"
                   >{{ t('common.refresh') }}</el-button
                 >
               </div>
@@ -67,14 +67,14 @@
                       <el-button
                         v-if="!isSerialPortConnected(port.path)"
                         type="text"
-                        class="el-button--primary serial-port-btn"
+                        class="icon-text-button serial-port-btn"
                         icon="Link"
                         @click="connectToSerialPort(port)"
                       >{{ t('common.connect') }}</el-button>
                       <el-button
                         v-else
                         type="text"
-                        class="serial-port-btn disconnect-btn"
+                        class="icon-text-button serial-port-btn disconnect-btn"
                         icon="Close"
                         @click="disconnectSerialPort(port.path)"
                       >{{ t('common.disconnect') }}</el-button>
@@ -119,7 +119,7 @@
                     <div class="connection-btn">
                       <el-button
                         type="text"
-                        class="el-button--primary"
+                        class="icon-text-button"
                         icon="Link"
                         @click="connectToServer(conn)"
                         >{{ t('common.connect') }}</el-button
@@ -127,7 +127,7 @@
                     </div>
                     <div class="connection-btn">
                       <el-button
-                        class="el-button--primary"
+                        class="icon-text-button"
                         type="text"
                         style="color: #cccccc"
                         icon="edit"
@@ -138,7 +138,7 @@
                     <div class="connection-btn">
                       <el-button
                         type="text"
-                        class="el-button--primary"
+                        class="icon-text-button"
                         icon="Delete"
                         @click="deleteConnection(conn)"
                         style="color: #b23f3f"

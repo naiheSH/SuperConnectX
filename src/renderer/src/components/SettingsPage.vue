@@ -317,7 +317,7 @@
                 <span class="label-text">{{ t('basicSettings.restoreList') }}</span>
                 <span class="label-desc">{{ t('basicSettings.restoreListDesc') }}</span>
               </div>
-              <el-button type="text" icon="Refresh" @click="refreshBackupList" size="small">
+              <el-button type="text" icon="Refresh" @click="refreshBackupList" size="small" class="icon-text-button">
                 {{ t('common.refresh') }}
               </el-button>
             </div>

@@ -548,6 +548,19 @@ input[type="number"] {
 }
 
 /* ==============================
+   Icon Text 按钮样式
+   ============================== */
+.icon-text-button {
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  color: #409eff !important;
+}
+
+.icon-text-button:hover {
+  color: #66b1ff !important;
+}
+
+/* ==============================
    Switch 开关样式
    ============================== */
 .terminal-switch {
