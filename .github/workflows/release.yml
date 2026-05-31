@@ -51,8 +51,18 @@ jobs:
       - name: Create Release and Upload Assets
         run: |
           $releaseBody = Get-Content -Path latest.md -Raw -Encoding UTF8
-          $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
           $repo = $env:GITHUB_REPOSITORY
+
+          # Determine tag: from GITHUB_REF (tag push) or from package.json (manual dispatch)
+          $ref = $env:GITHUB_REF
+          if ($ref -match '^refs/tags/(v.+)$') {
+            $tag = $matches[1]
+          } else {
+            $version = (Get-Content package.json -Encoding UTF8 | ConvertFrom-Json).version
+            $tag = "v$version"
+          }
+
+          Write-Host "Tag: $tag (ref: $ref)"
 
           # Collect built assets
           $assets = Get-ChildItem -Path release\*.exe,release\*.yml,release\*.blockmap | ForEach-Object { $_.FullName }
@@ -62,10 +72,9 @@ jobs:
             exit 1
           }
 
-          Write-Host "Tag: $tag"
           Write-Host "Assets found: $($assets.Count) file(s)"
 
-          # Delete existing release/draft if any
+          # Delete existing release/draft if any (ignore errors)
           gh release delete $tag --repo $repo --cleanup-tag 2>$null
 
           # Create release with notes and upload all assets
