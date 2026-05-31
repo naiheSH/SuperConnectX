@@ -40,7 +40,7 @@ export interface UseTerminalReturn {
   totalTxSize: number
 
   // 方法
-  openLogFile: () => Promise<void>
+  openLogFolder: () => Promise<void>
   saveLogFile: () => Promise<void>
   handleClose: () => Promise<void>
   handleSend: (command: string, originalInput?: string) => Promise<void>
@@ -129,15 +129,15 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     }
   }
 
-  // 打开日志文件
-  const openLogFile = async () => {
+  // 打开日志所在文件夹
+  const openLogFolder = async () => {
     try {
       const result = await window.connectApi.openConnectLog(conn.sessionId)
       if (!result.success) {
-        ElMessage.error(`打开日志失败：${result.message}`)
+        ElMessage.error(`打开日志文件夹失败：${result.message}`)
       }
     } catch (error) {
-      ElMessage.error('打开日志失败：' + (error instanceof Error ? error.message : '未知错误'))
+      ElMessage.error('打开日志文件夹失败：' + (error instanceof Error ? error.message : '未知错误'))
     }
   }
 
@@ -262,7 +262,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     showTimestamp,
     totalRxSize,
     totalTxSize,
-    openLogFile,
+    openLogFolder,
     saveLogFile,
     handleClose,
     handleSend,

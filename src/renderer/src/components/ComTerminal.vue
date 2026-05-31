@@ -10,7 +10,7 @@
       session-id-prefix="com"
       @on-close="handleClose"
       @on-reconnect="reconnect"
-      @on-open-log="openLogFolder"
+      @on-open-log-folder="openLogFolder"
       @on-save-log="saveLog"
       @on-send="handleSendCommand"
       @on-command-sent="handleCommandSent"
@@ -251,7 +251,7 @@ const terminal = useTerminal({
   sendDisplaySuffix: 'SEND>>>>>>>>>>>>>'
 })
 
-const { openLogFile, saveLogFile, cleanup: terminalCleanup } = terminal
+const { openLogFolder, saveLogFile, cleanup: terminalCleanup } = terminal
 
 // 监听波特率变化
 watch(baudRate, (newVal) => {
@@ -675,9 +675,6 @@ const handleSendCommand = async (command: string, originalInput?: string) => {
   }
 }
 
-const openLogFolder = async () => {
-  await openLogFile()
-}
 
 const saveLog = async () => {
   await saveLogFile()

@@ -37,7 +37,7 @@
       @on-close="emit('onClose')"
       @on-reconnect="emit('onReconnect')"
       @on-clear-terminal="clearTerminal"
-      @on-open-log="emit('onOpenLog')"
+      @on-open-log-folder="emit('onOpenLogFolder')"
       @on-save-log="emit('onSaveLog')"
       @update:is-auto-scroll="isAutoScroll = $event"
       @update:is-show-log="isShowLog = $event"
@@ -206,7 +206,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   onClose: []
   onReconnect: []
-  onOpenLog: []
+  onOpenLogFolder: []
   onSaveLog: []
   onSend: [command: string, originalInput?: string]
   onCommandSent: [cmdName: string]

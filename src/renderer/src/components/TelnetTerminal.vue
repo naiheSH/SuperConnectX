@@ -10,7 +10,7 @@
       session-id-prefix="telnet"
       @on-close="handleClose"
       @on-reconnect="handleReconnect"
-      @on-open-log="openLogFile"
+      @on-open-log-folder="openLogFolder"
       @on-save-log="saveLogFile"
       @on-send="handleSend"
       @on-command-sent="handleCommandSent"
@@ -112,7 +112,7 @@ const terminal = useTerminal({
   saveFontSettings
 })
 
-const { openLogFile, saveLogFile, cleanup: terminalCleanup } = terminal
+const { openLogFolder, saveLogFile, cleanup: terminalCleanup } = terminal
 
 const handleClose = async () => {
   stopRetry.value = true

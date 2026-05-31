@@ -42,8 +42,8 @@
       <el-button
         size="small"
         class="icon-action-btn"
-        @click="emit('onOpenLog')"
-        title="打开日志"
+        @click="emit('onOpenLogFolder')"
+        title="打开日志所在文件夹"
       >
         <el-icon :size="14"><Folder /></el-icon>
       </el-button>
@@ -82,7 +82,7 @@ const emit = defineEmits<{
   onClose: []
   onReconnect: []
   onClearTerminal: []
-  onOpenLog: []
+  onOpenLogFolder: []
   onSaveLog: []
   'update:isAutoScroll': [value: boolean]
   'update:isShowLog': [value: boolean]
