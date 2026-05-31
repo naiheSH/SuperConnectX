@@ -162,7 +162,8 @@
     "doc": "Documentation",
     "about": "About",
     "feedback": "Feedback",
-    "develop": "Contribute"
+    "develop": "Contribute",
+    "checkUpdate": "Check for Updates"
   },
   "sidebar": {
     "newConnection": "New Connection",
@@ -286,5 +287,22 @@
     "importFailed": "Import failed",
     "exportSuccess": "Successfully exported {count} commands",
     "exportFailed": "Export failed"
+  },
+  "update": {
+    "checkUpdate": "Check for Updates",
+    "checking": "Checking for updates...",
+    "upToDate": "You're up to date",
+    "currentVersion": "Current version: {version}",
+    "newVersionAvailable": "New version {version} available",
+    "releaseNotes": "Release Notes",
+    "startUpdate": "Update Now",
+    "downloading": "Downloading update...",
+    "downloadingTitle": "Downloading {percent}%",
+    "downloadComplete": "Update downloaded",
+    "restartPrompt": "Restart to complete the update",
+    "restartNow": "Restart Now",
+    "retry": "Retry",
+    "error": "Update Error",
+    "unknownError": "Unknown error"
   }
 }

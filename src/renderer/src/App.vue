@@ -374,6 +374,9 @@
     <!-- 关于弹窗 -->
     <AboutDialog v-model:modelValue="isAboutDialogOpen" />
 
+    <!-- 更新弹窗 -->
+    <UpdateDialog ref="updateDialogRef" v-model:modelValue="isUpdateDialogOpen" />
+
     <!-- 串口备注编辑弹窗 -->
     <el-dialog
       v-model="showRemarkDialog"
@@ -414,6 +417,7 @@ import ResourceMonitor from './components/ResourceMonitor.vue'
 import AboutDialog from './components/AboutDialog.vue'
 import ShortcutsPage from './components/ShortcutsPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
+import UpdateDialog from './components/UpdateDialog.vue'
 import CommandEditor from './components/CommandEditor.vue'
 import TelnetInfo from './entity/protocol/TelnetInfo'
 import logoImage from './assets/icon.png'
@@ -462,6 +466,8 @@ const filterConnection = ref<any[]>([])
 const connections = ref<any[]>([])
 const isCreateDialogOpen = ref(false)
 const isAboutDialogOpen = ref(false)
+const isUpdateDialogOpen = ref(false)
+const updateDialogRef = ref<InstanceType<typeof UpdateDialog> | null>(null)
 
 // 快捷键配置
 const shortcuts = ref<Array<{ action: string; keys: string[] }>>([])
@@ -495,7 +501,7 @@ const handleSidebarMenuCommand = async (command: string) => {
       ElMessage.info(t('notification.pluginsDeveloping'))
       break
     case 'checkUpdate':
-      ElMessage.info(t('notification.alreadyLatest'))
+      updateDialogRef.value?.open()
       break
     case 'shortcuts':
       openShortcutsTab()

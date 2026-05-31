@@ -96,6 +96,12 @@ declare global {
         details: { resultName: string; resultValue: string; resultType: string }[]
       }>
     }
+    updateApi: {
+      checkForUpdates: () => Promise<void>
+      startDownload: () => Promise<void>
+      quitAndInstall: () => Promise<void>
+      onUpdateStatus: (callback: (data: { status: string; data?: any }) => void) => () => void
+    }
   }
 }
 

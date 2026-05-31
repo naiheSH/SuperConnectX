@@ -6,6 +6,7 @@ import { printAppInfo } from '../utils/PrintAppInfo'
 import IpcTray from './IpcTray'
 import SettingsStorage from '../storage/SettingsStorage'
 import BackupManager from '../utils/BackupManager'
+import AppUpdater from '../updater/AppUpdater'
 import fs from 'fs'
 import path from 'path'
 
@@ -186,6 +187,19 @@ export default class IpcMain {
         return await dialog.showSaveDialog(mainWindow, options)
       }
       return { filePath: null }
+    })
+
+    // ========== 自动更新 IPC ==========
+    ipcMain.handle('check-for-updates', async () => {
+      await AppUpdater.getInstance().checkForUpdates()
+    })
+
+    ipcMain.handle('start-download', async () => {
+      await AppUpdater.getInstance().startDownload()
+    })
+
+    ipcMain.handle('quit-and-install', () => {
+      AppUpdater.getInstance().quitAndInstall()
     })
 
     logger.info(`init IpcMain done`)

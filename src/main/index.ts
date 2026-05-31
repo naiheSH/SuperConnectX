@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, app } from 'electron'
 import ProtocolLogger from './utils/ProtocolLogger'
 import IpcStorage from './ipc/IpcStorage'
 import IpcConnector from './ipc/IpcConnector'
@@ -7,6 +7,7 @@ import IpcTools from './ipc/IpcTools'
 import IpcSerialPort from './ipc/IpcSerialPort'
 import IpcMain from './ipc/IpcMain'
 import IpcDataCheck from './ipc/IpcDataCheck'
+import AppUpdater from './updater/AppUpdater'
 import logger from './ipc/IpcAppLogger'
 
 const protocolLogger = new ProtocolLogger()
@@ -21,4 +22,15 @@ IpcTools.getInstance().init(windows)
 IpcSerialPort.getInstance().init(protocolLogger, windows)
 IpcMain.getInstance().init(protocolLogger, windows)
 IpcDataCheck.getInstance().init()
+
+// 初始化自动更新（窗口创建后）
+if (!app.isPackaged || process.env.NODE_ENV !== 'development') {
+  app.whenReady().then(() => {
+    if (windows.mainWindow) {
+      AppUpdater.getInstance().init(windows.mainWindow)
+      logger.info('[Updater] Auto-updater module initialized')
+    }
+  })
+}
+
 logger.info(`======== start superconnect-x ok ========`)

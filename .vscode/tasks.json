@@ -12,6 +12,11 @@
             "label": "npm run dev",
             "type": "shell",
             "command": "npm run dev"
+        },
+        {
+            "label": "start update server",
+            "type": "shell",
+            "command": "node scripts/test-update-server.js"
         }
     ]
 }

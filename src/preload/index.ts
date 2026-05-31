@@ -118,3 +118,14 @@ contextBridge.exposeInMainWorld('dataCheckApi', {
   getPlugins: () => ipcRenderer.invoke('datacheck:getPlugins'),
   checkData: (pluginName: string, hexData: string) => ipcRenderer.invoke('datacheck:checkData', pluginName, hexData)
 })
+
+contextBridge.exposeInMainWorld('updateApi', {
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  startDownload: () => ipcRenderer.invoke('start-download'),
+  quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
+  onUpdateStatus: (callback: (data: { status: string; data?: any }) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: { status: string; data?: any }) => callback(data)
+    ipcRenderer.on('update-status', listener)
+    return () => ipcRenderer.removeListener('update-status', listener)
+  }
+})

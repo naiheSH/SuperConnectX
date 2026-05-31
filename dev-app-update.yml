@@ -1,0 +1,3 @@
+provider: generic
+url: https://github.com/SuperStudio/SuperConnectX/releases/latest/download/
+channel: latest
