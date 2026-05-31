@@ -56,10 +56,6 @@
         active-text="时间戳"
       />
     </div>
-    <div class="rx-tx-info">
-      <span class="rx">RX: {{ rxBytes }}</span>
-      <span class="tx">TX: {{ txBytes }}</span>
-    </div>
   </div>
 </template>
 
@@ -72,8 +68,6 @@ const props = defineProps<{
   isAutoScroll: boolean
   isShowLog: boolean
   isShowTimestamp: boolean
-  rxBytes: string
-  txBytes: string
 }>()
 
 const emit = defineEmits<{
@@ -121,21 +115,6 @@ const showTimestamp = computed({
   gap: 6px;
   flex-wrap: wrap;
   flex: 1;
-}
-
-.rx-tx-info {
-  display: flex;
-  gap: 12px;
-  font-size: 12px;
-  margin-left: auto;
-}
-
-.rx-tx-info .rx {
-  color: #4ade80;
-}
-
-.rx-tx-info .tx {
-  color: #60a5fa;
 }
 
 .connection-status {

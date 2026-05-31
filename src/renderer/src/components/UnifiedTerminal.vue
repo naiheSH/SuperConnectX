@@ -8,6 +8,11 @@
         <el-button icon="ArrowUp" size="mini" circle @click="handleScrollToTop" class="scroll-btn up-btn" />
         <el-button icon="ArrowDown" size="mini" circle @click="handleScrollToBottom" class="scroll-btn down-btn" />
       </div>
+      <!-- RX/TX 信息 -->
+      <div class="rx-tx-overlay">
+        <span class="rx">RX: {{ rxBytes }}</span>
+        <span class="tx">TX: {{ txBytes }}</span>
+      </div>
     </div>
 
     <!-- 垂直分隔条 -->
@@ -29,8 +34,6 @@
       :is-auto-scroll="isAutoScroll"
       :is-show-log="isShowLog"
       :is-show-timestamp="showTimestamp"
-      :rx-bytes="rxBytes"
-      :tx-bytes="txBytes"
       @on-close="emit('onClose')"
       @on-reconnect="emit('onReconnect')"
       @on-clear-terminal="clearTerminal"
@@ -1023,6 +1026,26 @@ const handleSettingsUpdated = async (event: Event) => {
   border: 1px solid transparent;
   transition: border-color 0.2s;
   box-sizing: border-box;
+}
+
+.rx-tx-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.rx-tx-overlay .rx {
+  color: #4ade80;
+}
+
+.rx-tx-overlay .tx {
+  color: #60a5fa;
 }
 
 .bottom-controls {
