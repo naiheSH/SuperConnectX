@@ -575,8 +575,11 @@ const focusInput = () => {
 }
 
 // 保存组
+let isSavingGroup = false
+
 const saveGroup = async () => {
-  if (!groupFormRef.value) return
+  if (!groupFormRef.value || isSavingGroup) return
+  isSavingGroup = true
 
   try {
     await groupFormRef.value.validate()
@@ -622,7 +625,6 @@ const saveGroup = async () => {
       // 自动选中新创建的组
       selectedGroupId.value = newGroup.groupId
       selectedGroupName.value = newGroup.name
-      ElMessage.success('命令组已添加')
     }
 
     loadGroups()
@@ -631,6 +633,8 @@ const saveGroup = async () => {
   } catch (error) {
     console.error('Failed to save command group:', error)
     ElMessage.error('保存命令组失败')
+  } finally {
+    isSavingGroup = false
   }
 }
 
