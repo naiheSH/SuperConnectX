@@ -119,7 +119,7 @@
                     <div class="connection-btn">
                       <el-button
                         type="text"
-                        class="icon-text-button"
+                        class="el-button--primary"
                         icon="Link"
                         @click="connectToServer(conn)"
                         >{{ t('common.connect') }}</el-button
@@ -127,7 +127,7 @@
                     </div>
                     <div class="connection-btn">
                       <el-button
-                        class="icon-text-button"
+                        class="el-button--primary"
                         type="text"
                         style="color: #cccccc"
                         icon="edit"
@@ -138,7 +138,7 @@
                     <div class="connection-btn">
                       <el-button
                         type="text"
-                        class="icon-text-button"
+                        class="el-button--primary"
                         icon="Delete"
                         @click="deleteConnection(conn)"
                         style="color: #b23f3f"
