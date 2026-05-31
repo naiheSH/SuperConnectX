@@ -193,7 +193,8 @@ export default class AppUpdater {
 
       logger.info('[Updater] Starting download')
       this.downloadCancellation = new CancellationToken()
-      await autoUpdater.downloadUpdate(this.downloadCancellation)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await autoUpdater.downloadUpdate(this.downloadCancellation as any)
     } catch (err: any) {
       if (this.downloadCancellation?.cancelled) {
         logger.info('[Updater] Download cancelled by user')
