@@ -74,28 +74,6 @@
               <el-option label="1.5" :value="1.5" />
               <el-option label="2" :value="2" />
             </el-select>
-          </div>
-
-          <div class="param-item">
-            <span class="param-label">{{ t('comTerminal.encoding') }}</span>
-            <el-select v-model="encoding" size="small" class="param-select-encoding">
-              <el-option label="UTF-8" value="utf8" />
-              <el-option label="GB2312" value="gb2312" />
-              <el-option label="GBK" value="gbk" />
-              <el-option label="GB18030" value="gb18030" />
-              <el-option label="BIG5" value="big5" />
-              <el-option label="Shift-JIS" value="shift-jis" />
-              <el-option label="EUC-KR" value="euc-kr" />
-              <el-option label="ASCII" value="ascii" />
-              <el-option label="ISO-8859-1" value="latin1" />
-              <el-option label="ISO-8859-2" value="latin2" />
-              <el-option label="KOI8-R" value="koi8-r" />
-              <el-option label="windows-1251" value="windows-1251" />
-              <el-option label="windows-1252" value="windows-1252" />
-              <el-option label="ISO-8859-5" value="iso-8859-5" />
-              <el-option label="UTF-16LE" value="utf16le" />
-              <el-option label="UTF-16BE" value="utf16be" />
-            </el-select>
             <el-button icon="More" size="small" class="btn-primary more-btn" @click="showMoreDialog = true">
               {{ t('comTerminal.more') }}
             </el-button>
@@ -105,6 +83,26 @@
         <!-- 更多设置对话框 -->
         <el-dialog v-model="showMoreDialog" :title="t('comTerminal.advancedSettings')" width="400px">
           <el-form label-width="100px" @submit.prevent>
+            <el-form-item :label="t('comTerminal.encoding')">
+              <el-select v-model="encoding" size="small" class="full-width">
+                <el-option label="UTF-8" value="utf8" />
+                <el-option label="GB2312" value="gb2312" />
+                <el-option label="GBK" value="gbk" />
+                <el-option label="GB18030" value="gb18030" />
+                <el-option label="BIG5" value="big5" />
+                <el-option label="Shift-JIS" value="shift-jis" />
+                <el-option label="EUC-KR" value="euc-kr" />
+                <el-option label="ASCII" value="ascii" />
+                <el-option label="ISO-8859-1" value="latin1" />
+                <el-option label="ISO-8859-2" value="latin2" />
+                <el-option label="KOI8-R" value="koi8-r" />
+                <el-option label="windows-1251" value="windows-1251" />
+                <el-option label="windows-1252" value="windows-1252" />
+                <el-option label="ISO-8859-5" value="iso-8859-5" />
+                <el-option label="UTF-16LE" value="utf16le" />
+                <el-option label="UTF-16BE" value="utf16be" />
+              </el-select>
+            </el-form-item>
             <el-form-item :label="t('comTerminal.openTimeout')">
               <div class="input-with-unit">
                 <el-input-number v-model="readTimeout" :min="0" :step="100" size="small" class="full-width" :controls="false" placeholder="ms" />
