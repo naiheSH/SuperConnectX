@@ -28,18 +28,23 @@
       >
         清空
       </el-button>
+      <el-button
+        size="small"
+        class="auto-scroll-btn"
+        :class="{ 'auto-scroll-active': !autoScroll }"
+        @click="autoScroll = !autoScroll"
+        :title="autoScroll ? '取消自动滚动' : '自动滚动'"
+      >
+        <svg class="pin-icon-svg" viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor">
+          <path d="M963.925333 326.997333L697.002667 60.074667a25.6 25.6 0 0 0-43.52 21.845333l14.506666 99.498667-273.066666 151.381333c-91.477333-45.738667-170.666667-36.693333-234.496 27.306667a25.941333 25.941333 0 0 0 0 36.352L327.68 563.2 57.685333 930.645333a25.6 25.6 0 0 0 35.84 35.669334l366.250667-270.677334 167.765333 167.936a25.941333 25.941333 0 0 0 36.352 0c79.530667-79.701333 58.538667-165.546667 26.965334-233.813333l152.064-273.066667 99.157333 14.165334a25.6 25.6 0 0 0 26.624-13.824 25.941333 25.941333 0 0 0-4.778667-30.037334z"/>
+        </svg>
+      </el-button>
       <el-button icon="Document" size="small" class="btn-primary log-btn" @click="emit('onOpenLog')">
         打开日志
       </el-button>
       <el-button icon="DocumentAdd" size="small" class="btn-primary log-btn" @click="emit('onSaveLog')">
         日志另存为
       </el-button>
-      <el-switch
-        v-model="autoScroll"
-        size="small"
-        class="terminal-switch"
-        active-text="自动滚动"
-      />
       <el-switch
         v-model="showLog"
         size="small"
@@ -198,6 +203,38 @@ const showTimestamp = computed({
 
 .reconnect-btn:disabled {
   cursor: not-allowed !important;
+}
+
+.auto-scroll-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  color: #aaa !important;
+  transition: all 0.2s ease !important;
+  margin-left: -2px !important;
+}
+
+.auto-scroll-btn:hover {
+  background-color: rgba(128, 128, 128, 0.2) !important;
+  color: #e0e0e0 !important;
+}
+
+.auto-scroll-active {
+  background-color: #326BF1 !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.auto-scroll-active:hover {
+  background-color: #326BF1 !important;
+  color: #fff !important;
 }
 
 :deep(.el-switch) {
