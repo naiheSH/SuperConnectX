@@ -8,7 +8,7 @@
             class="progress cpu-progress"
             :style="{ width: `${cpuUsage}%`, backgroundColor: getProgressColor(cpuUsage) }"
           >
-            <span class="progress-text">{{ cpuUsage }}%</span>
+            <span class="progress-text">CPU {{ cpuUsage }}%</span>
           </div>
         </div>
       </div>
@@ -18,7 +18,7 @@
             class="progress mem-progress"
             :style="{ width: `${memRate}%`, backgroundColor: getProgressColor(memRate) }"
           >
-            <span class="progress-text">{{ memRate }}% {{ memoryUsage }} MB</span>
+            <span class="progress-text">内存 {{ memRate }}%</span>
           </div>
         </div>
       </div>
@@ -38,10 +38,7 @@ const fetchResourceData = async () => {
   try {
     const data = await window.toolApi.getAppResource()
     cpuUsage.value = data.cpu
-    // memoryUsage.value = data.memory
-    // memRate.value = data.memRate
-    memoryUsage.value = data.memory
-    memRate.value = 1
+    memRate.value = data.memRate
   } catch (error) {
     console.error('Failed to get resource data:', error)
   }

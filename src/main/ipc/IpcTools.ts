@@ -10,6 +10,9 @@ const MEM_FLOAT_FIXED_SIZE = 2
 const BYTE_VALUE_SIZE = 1024
 const FLOAT_TO_PERCENT = 100
 
+// 缓存上一次的 CPU 时间，用于计算差值
+let prevCpuTimes: { idle: number; total: number }[] | null = null
+
 export default class IpcTools {
   private static sInstance: IpcTools
 
@@ -31,19 +34,34 @@ export default class IpcTools {
     )
 
     ipcMain.handle('get-app-resource', async () => {
-      const cpuInfo = process.getCPUUsage()
-      const cpuRate = Math.max(0, Math.min(MAX_CPU_VALUE, cpuInfo.percentCPUUsage)).toFixed(
-        CPU_FLOAT_FIXED_SIZE
-      )
-      const memoryInfo = await process.getProcessMemoryInfo()
-      const usedMemory = memoryInfo.residentSet
-      const totalMemGB = os.totalmem()
-      const memRate = ((usedMemory / (totalMemGB / BYTE_VALUE_SIZE)) * FLOAT_TO_PERCENT).toFixed(
-        MEM_FLOAT_FIXED_SIZE
-      )
+      // 系统总 CPU 占用率（通过两次采样差值计算，和任务管理器一致）
+      const cpus = os.cpus()
+      const curCpuTimes = cpus.map((cpu) => {
+        const total = Object.values(cpu.times).reduce((a, b) => a + b, 0)
+        return { idle: cpu.times.idle, total }
+      })
+
+      let cpuRate = '0.00'
+      if (prevCpuTimes && prevCpuTimes.length === curCpuTimes.length) {
+        const totalDelta = curCpuTimes.reduce((sum, cur, i) => {
+          const prev = prevCpuTimes[i]
+          const idleDelta = cur.idle - prev.idle
+          const totalDelta = cur.total - prev.total
+          return sum + (totalDelta > 0 ? ((totalDelta - idleDelta) / totalDelta) * 100 : 0)
+        }, 0)
+        cpuRate = (totalDelta / cpus.length).toFixed(CPU_FLOAT_FIXED_SIZE)
+      }
+      prevCpuTimes = curCpuTimes
+
+      // 系统总内存占用率
+      const totalMem = os.totalmem()
+      const freeMem = os.freemem()
+      const usedMem = totalMem - freeMem
+      const memRate = ((usedMem / totalMem) * FLOAT_TO_PERCENT).toFixed(MEM_FLOAT_FIXED_SIZE)
+
       return {
         cpu: cpuRate,
-        memory: (usedMemory / BYTE_VALUE_SIZE).toFixed(MEM_FLOAT_FIXED_SIZE),
+        memory: (usedMem / BYTE_VALUE_SIZE / BYTE_VALUE_SIZE / BYTE_VALUE_SIZE).toFixed(MEM_FLOAT_FIXED_SIZE),
         memRate: memRate
       }
     })
