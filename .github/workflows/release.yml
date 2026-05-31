@@ -43,35 +43,32 @@ jobs:
 
 
 
-      - name: Build and Release (Windows)
+      - name: Build (Windows)
         run: npm run build:win
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Release Description
+      - name: Create Release and Upload Assets
         run: |
           $releaseBody = Get-Content -Path latest.md -Raw -Encoding UTF8
           $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
           $repo = $env:GITHUB_REPOSITORY
 
-          # Wait for electron-builder's release to be fully created (retry up to 6 times)
-          $found = $false
-          for ($i = 0; $i -lt 6; $i++) {
-            $output = gh release view $tag --repo $repo --json url 2>&1
-            if ($LASTEXITCODE -eq 0) {
-              $found = $true
-              break
-            }
-            Write-Host "Waiting for release to appear... ($($i+1)/6)"
-            Start-Sleep -Seconds 10
+          # Collect built assets
+          $assets = Get-ChildItem -Path release\*.exe,release\*.yml,release\*.blockmap | ForEach-Object { $_.FullName }
+
+          if ($assets.Count -eq 0) {
+            Write-Error "No build artifacts found in release/"
+            exit 1
           }
 
-          if ($found) {
-            gh release edit $tag --repo $repo --notes "$releaseBody"
-            Write-Host "Release description updated from latest.md"
-          } else {
-            Write-Host "Release not found, creating with notes..."
-            gh release create $tag --repo $repo --notes "$releaseBody" --title $tag
-          }
+          Write-Host "Tag: $tag"
+          Write-Host "Assets found: $($assets.Count) file(s)"
+
+          # Delete existing release/draft if any
+          gh release delete $tag --repo $repo --cleanup-tag 2>$null
+
+          # Create release with notes and upload all assets
+          gh release create $tag --repo $repo --title $tag --notes "$releaseBody" $assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
