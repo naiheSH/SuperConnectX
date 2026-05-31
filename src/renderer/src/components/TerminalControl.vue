@@ -45,7 +45,7 @@
         @click="emit('onOpenLogFolder')"
         title="打开日志所在文件夹"
       >
-        <el-icon :size="14"><Folder /></el-icon>
+        <el-icon :size="14"><FolderOpened /></el-icon>
       </el-button>
       <el-button
         size="small"
@@ -76,7 +76,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Folder, Document } from '@element-plus/icons-vue'
+import { FolderOpened, Document } from '@element-plus/icons-vue'
 
 const props = defineProps<{
   isConnected: boolean
@@ -188,7 +188,7 @@ const showTimestamp = computed({
   padding: 6px 12px !important;
   border-radius: 4px !important;
   transition: all 0.2s ease !important;
-  margin-left: 0 !important;
+  margin-left: 10px !important;
 }
 
 .log-btn:hover {
@@ -232,7 +232,7 @@ const showTimestamp = computed({
   justify-content: center !important;
   background-color: transparent !important;
   border: 1px solid transparent !important;
-  color: #aaa !important;
+  color: #fff !important;
   transition: all 0.2s ease !important;
   margin-left: 0px !important;
   margin-right: 0px !important;
@@ -240,7 +240,7 @@ const showTimestamp = computed({
 
 .auto-scroll-btn:hover {
   background-color: rgba(128, 128, 128, 0.2) !important;
-  color: #e0e0e0 !important;
+  color: #fff !important;
 }
 
 .auto-scroll-active {
@@ -265,15 +265,15 @@ const showTimestamp = computed({
   justify-content: center !important;
   background-color: transparent !important;
   border: 1px solid transparent !important;
-  color: #aaa !important;
+  color: #fff !important;
   transition: all 0.2s ease !important;
   margin-left: 0px !important;
-  margin-right: 4px !important;
+  margin-right: 2px !important;
 }
 
 .icon-action-btn:hover {
   background-color: rgba(128, 128, 128, 0.2) !important;
-  color: #e0e0e0 !important;
+  color: #fff !important;
 }
 
 :deep(.el-switch) {
