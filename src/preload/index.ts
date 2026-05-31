@@ -79,7 +79,7 @@ contextBridge.exposeInMainWorld('connectApi', {
     ipcRenderer.on('on-log-split', listener)
     return () => ipcRenderer.removeListener('on-log-split', listener)
   },
-  openConnectLog: (sessionId: string) => ipcRenderer.invoke('open-connect-log', sessionId),
+  openConnectLog: (sessionId: string, mode: 'folder' | 'file' = 'folder') => ipcRenderer.invoke('open-connect-log', sessionId, mode),
   getLogFilePath: (sessionId: string) => ipcRenderer.invoke('get-log-file-path', sessionId),
   copyLogFile: (sessionId: string, destPath: string) => ipcRenderer.invoke('copy-log-file', { sessionId, destPath }),
   listSerialPorts: () => ipcRenderer.invoke('list-serial-ports'),

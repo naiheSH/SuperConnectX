@@ -38,6 +38,7 @@
       @on-reconnect="emit('onReconnect')"
       @on-clear-terminal="clearTerminal"
       @on-open-log-folder="emit('onOpenLogFolder')"
+      @on-open-log-file="emit('onOpenLogFile')"
       @on-save-log="emit('onSaveLog')"
       @update:is-auto-scroll="isAutoScroll = $event"
       @update:is-show-log="isShowLog = $event"
@@ -207,6 +208,7 @@ const emit = defineEmits<{
   onClose: []
   onReconnect: []
   onOpenLogFolder: []
+  onOpenLogFile: []
   onSaveLog: []
   onSend: [command: string, originalInput?: string]
   onCommandSent: [cmdName: string]

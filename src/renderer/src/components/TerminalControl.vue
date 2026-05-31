@@ -47,6 +47,14 @@
       >
         <el-icon :size="14"><Folder /></el-icon>
       </el-button>
+      <el-button
+        size="small"
+        class="icon-action-btn"
+        @click="emit('onOpenLogFile')"
+        title="打开日志文件"
+      >
+        <el-icon :size="14"><Document /></el-icon>
+      </el-button>
       <el-switch
         v-model="showTimestamp"
         size="small"
@@ -68,7 +76,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Folder } from '@element-plus/icons-vue'
+import { Folder, Document } from '@element-plus/icons-vue'
 
 const props = defineProps<{
   isConnected: boolean
@@ -83,6 +91,7 @@ const emit = defineEmits<{
   onReconnect: []
   onClearTerminal: []
   onOpenLogFolder: []
+  onOpenLogFile: []
   onSaveLog: []
   'update:isAutoScroll': [value: boolean]
   'update:isShowLog': [value: boolean]

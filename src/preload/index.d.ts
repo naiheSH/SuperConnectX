@@ -60,7 +60,7 @@ declare global {
       onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
       onConnectClose: (callback: (connId: number) => void) => () => void
       onLogSplit: (callback: (data: { connId: string; oldFileName: string; newFileName: string }) => void) => () => void
-      openConnectLog: (sessionId: string) => Promise<{ success: boolean; message?: string; filePath?: string }>
+      openConnectLog: (sessionId: string, mode?: 'folder' | 'file') => Promise<{ success: boolean; message?: string; filePath?: string }>
       getLogFilePath: (sessionId: string) => Promise<{ success: boolean; filePath?: string; message?: string }>
       copyLogFile: (sessionId: string, destPath: string) => Promise<{ success: boolean; message?: string }>
       listSerialPorts: () => Promise<SerialPortInfo[]>

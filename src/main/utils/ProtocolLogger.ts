@@ -383,7 +383,7 @@ export default class ProtocolLogger {
     this.currentFileSizes.delete(connId)
   }
 
-  async openConnLog(connId: string): Promise<{ success: boolean; message: string } | null> {
+  async openConnLog(connId: string, mode: 'folder' | 'file' = 'folder'): Promise<{ success: boolean; message: string } | null> {
     try {
       // 未启用日志存储时，直接提示
       if (!this.enableLogStorage) {
@@ -403,7 +403,11 @@ export default class ProtocolLogger {
       }
 
       if (shell && !(app as any).isQuitting) {
-        await shell.showItemInFolder(logFilePath)
+        if (mode === 'file') {
+          await shell.openPath(logFilePath)
+        } else {
+          await shell.showItemInFolder(logFilePath)
+        }
       }
       return { success: true, message: '' }
     } catch (error) {

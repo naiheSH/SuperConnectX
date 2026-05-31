@@ -11,6 +11,7 @@
       @on-close="handleClose"
       @on-reconnect="reconnect"
       @on-open-log-folder="openLogFolder"
+      @on-open-log-file="openLogFile"
       @on-save-log="saveLog"
       @on-send="handleSendCommand"
       @on-command-sent="handleCommandSent"
@@ -251,7 +252,7 @@ const terminal = useTerminal({
   sendDisplaySuffix: 'SEND>>>>>>>>>>>>>'
 })
 
-const { openLogFolder, saveLogFile, cleanup: terminalCleanup } = terminal
+const { openLogFolder, openLogFile, saveLogFile, cleanup: terminalCleanup } = terminal
 
 // 监听波特率变化
 watch(baudRate, (newVal) => {

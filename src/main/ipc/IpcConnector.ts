@@ -194,11 +194,11 @@ export default class IpcConnector {
 
       return await this.CONNECT_TYPE_DATA.get(conn.connectionType)?.updateConfig(conn.sessionId, config)
     })
-    // 新增：IPC 监听「打开日志所在文件夹」请求
-    ipcMain.handle('open-connect-log', async (_, sessionId: string) => {
-      logger.info(`open log folder: ${sessionId}`)
+    // 新增：IPC 监听「打开日志」请求
+    ipcMain.handle('open-connect-log', async (_, sessionId: string, mode: 'folder' | 'file' = 'folder') => {
+      logger.info(`open log (mode=${mode}): ${sessionId}`)
       if (sessionId) {
-        return await _logger.openConnLog(sessionId)
+        return await _logger.openConnLog(sessionId, mode)
       } else {
         return await _logger.openLogDir()
       }
