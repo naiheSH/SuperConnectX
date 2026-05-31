@@ -53,9 +53,25 @@ jobs:
           $releaseBody = Get-Content -Path latest.md -Raw -Encoding UTF8
           $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
           $repo = $env:GITHUB_REPOSITORY
-          $release = gh release view $tag --repo $repo --json url | ConvertFrom-Json
-          if ($release) {
+
+          # Wait for electron-builder's release to be fully created (retry up to 6 times)
+          $found = $false
+          for ($i = 0; $i -lt 6; $i++) {
+            $output = gh release view $tag --repo $repo --json url 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              $found = $true
+              break
+            }
+            Write-Host "Waiting for release to appear... ($($i+1)/6)"
+            Start-Sleep -Seconds 10
+          }
+
+          if ($found) {
             gh release edit $tag --repo $repo --notes "$releaseBody"
+            Write-Host "Release description updated from latest.md"
+          } else {
+            Write-Host "Release not found, creating with notes..."
+            gh release create $tag --repo $repo --notes "$releaseBody" --title $tag
           }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
