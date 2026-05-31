@@ -26,13 +26,13 @@
 
       <div
         class="menu-button"
-        @mouseenter="((showFileMenu = true), (showEditMenu = false), (showHelpMenu = false))"
+        @mouseenter="((showFileMenu = true), (showEditMenu = false), (showToolsMenu = false), (showHelpMenu = false))"
       >
         <button class="menu-btn">{{ t('titlebar.file') }}</button>
         <div
           class="dropdown-menu"
           v-if="showFileMenu"
-          @mouseenter="((showFileMenu = true), (showEditMenu = false), (showHelpMenu = false))"
+          @mouseenter="((showFileMenu = true), (showEditMenu = false), (showToolsMenu = false), (showHelpMenu = false))"
           @mouseleave="hideFileMenu"
         >
           <div class="menu-item" @click="importCmd">{{ t('titlebar.importCmd') }}</div>
@@ -76,13 +76,32 @@
 
       <div
         class="menu-button"
-        @mouseenter="((showFileMenu = false), (showEditMenu = false), (showHelpMenu = true))"
+        @mouseenter="((showFileMenu = false), (showEditMenu = false), (showToolsMenu = true), (showHelpMenu = false))"
+      >
+        <button class="menu-btn">{{ t('titlebar.tools') }}</button>
+        <div
+          class="dropdown-menu"
+          v-if="showToolsMenu"
+          @mouseenter="((showFileMenu = false), (showEditMenu = false), (showToolsMenu = true), (showHelpMenu = false))"
+          @mouseleave="hideToolsMenu"
+        >
+          <div class="menu-item" @click="handleSettings">{{ t('sidebar.settings') }}</div>
+          <div class="menu-item" @click="handleShortcuts">{{ t('sidebar.shortcuts') }}</div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleCheckUpdate">{{ t('sidebar.checkUpdate') }}</div>
+          <div class="menu-item" @click="handlePlugins">{{ t('sidebar.plugins') }}</div>
+        </div>
+      </div>
+
+      <div
+        class="menu-button"
+        @mouseenter="((showFileMenu = false), (showEditMenu = false), (showToolsMenu = false), (showHelpMenu = true))"
       >
         <button class="menu-btn">{{ t('titlebar.help') }}</button>
         <div
           class="dropdown-menu"
           v-if="showHelpMenu"
-          @mouseenter="((showFileMenu = false), (showEditMenu = false), (showHelpMenu = true))"
+          @mouseenter="((showFileMenu = false), (showEditMenu = false), (showToolsMenu = false), (showHelpMenu = true))"
           @mouseleave="hideHelpMenu"
         >
           <div class="menu-item" @click="handleDoc">{{ t('titlebar.doc') }}</div>
@@ -169,6 +188,7 @@ const { t } = useI18n()
 const isMaximized = ref(false)
 const showFileMenu = ref(false)
 const showEditMenu = ref(false)
+const showToolsMenu = ref(false)
 const showHelpMenu = ref(false)
 // 字体子菜单状态
 const showFontSubmenu = ref(false)
@@ -180,7 +200,11 @@ const emit = defineEmits([
   'refreshCommands',
   'change-font',
   'change-font-size',
-  'open-about'
+  'open-about',
+  'open-settings',
+  'open-shortcuts',
+  'check-update',
+  'open-plugins'
 ])
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = defineProps({
@@ -210,6 +234,12 @@ const hideFileMenu = () => {
 const hideHelpMenu = () => {
   setTimeout(() => {
     showHelpMenu.value = false
+  }, 200)
+}
+
+const hideToolsMenu = () => {
+  setTimeout(() => {
+    showToolsMenu.value = false
   }, 200)
 }
 
@@ -290,9 +320,30 @@ const handleDoc = () => {
   showHelpMenu.value = false
 }
 
+const handleSettings = () => {
+  showToolsMenu.value = false
+  emit('open-settings')
+}
+
+const handleShortcuts = () => {
+  showToolsMenu.value = false
+  emit('open-shortcuts')
+}
+
+const handleCheckUpdate = () => {
+  showToolsMenu.value = false
+  emit('check-update')
+}
+
+const handlePlugins = () => {
+  showToolsMenu.value = false
+  emit('open-plugins')
+}
+
 const handleMenuMouseEnter = async (menuType) => {
   showFileMenu.value = false
   showEditMenu.value = false
+  showToolsMenu.value = false
   showHelpMenu.value = false
   showFontSubmenu.value = false
 
@@ -303,6 +354,7 @@ const handleMenuMouseEnter = async (menuType) => {
 
   if (menuType === 'file') showFileMenu.value = true
   if (menuType === 'edit') showEditMenu.value = true
+  if (menuType === 'tools') showToolsMenu.value = true
   if (menuType === 'help') showHelpMenu.value = true
 }
 
@@ -310,6 +362,7 @@ const handleMenuMouseLeave = (menuType) => {
   setTimeout(() => {
     if (menuType === 'file' && !showFontSubmenu.value) showFileMenu.value = false
     if (menuType === 'edit' && !showFontSubmenu.value) showEditMenu.value = false
+    if (menuType === 'tools' && !showFontSubmenu.value) showToolsMenu.value = false
     if (menuType === 'help' && !showFontSubmenu.value) showHelpMenu.value = false
   }, 200)
 }
@@ -358,6 +411,7 @@ const handleClickOutside = (event: MouseEvent) => {
   if (!target.closest('.menu-button') && !target.closest('.dropdown-menu')) {
     showFileMenu.value = false
     showEditMenu.value = false
+    showToolsMenu.value = false
     showHelpMenu.value = false
     showFontSubmenu.value = false
   }

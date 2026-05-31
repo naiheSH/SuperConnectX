@@ -153,6 +153,7 @@
   "titlebar": {
     "file": "File",
     "edit": "Edit",
+    "tools": "Tools",
     "help": "Help",
     "font": "Font",
     "importCmd": "Import Commands",

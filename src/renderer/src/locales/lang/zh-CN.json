@@ -153,6 +153,7 @@
   "titlebar": {
     "file": "文件",
     "edit": "编辑",
+    "tools": "工具",
     "help": "帮助",
     "font": "字体",
     "importCmd": "导入命令",

@@ -6,6 +6,10 @@
       @change-font="handleFontChange"
       @change-font-size="handleFontSizeChange"
       @open-about="isAboutDialogOpen = true"
+      @open-settings="openSettingsTab"
+      @open-shortcuts="openShortcutsTab"
+      @check-update="updateDialogRef?.open()"
+      @open-plugins="handlePlugins"
       :show-connection-list="showConnectionList"
       :current-font="currentFont"
     />
@@ -498,7 +502,7 @@ const handleSidebarMenuCommand = async (command: string) => {
       ElMessage.info(t('notification.optionsDeveloping'))
       break
     case 'plugins':
-      ElMessage.info(t('notification.pluginsDeveloping'))
+      handlePlugins()
       break
     case 'checkUpdate':
       updateDialogRef.value?.open()
@@ -513,6 +517,11 @@ const handleSidebarMenuCommand = async (command: string) => {
       isAboutDialogOpen.value = true
       break
   }
+}
+
+// 插件功能（复用原有逻辑）
+const handlePlugins = () => {
+  ElMessage.info(t('notification.pluginsDeveloping'))
 }
 
 const connFormRef = ref<InstanceType<typeof ElForm> | null>(null)
