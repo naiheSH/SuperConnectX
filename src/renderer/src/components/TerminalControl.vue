@@ -158,7 +158,8 @@ const showTimestamp = computed({
   padding: 6px 12px !important;
   border-radius: 4px !important;
   transition: all 0.2s ease !important;
-  margin-left: 0 !important;
+  margin-left: 4px !important;
+  margin-right: 4px !important;
   background-color: #c45656 !important;
   border-color: #c45656 !important;
 }
@@ -224,7 +225,8 @@ const showTimestamp = computed({
   border: 1px solid transparent !important;
   color: #aaa !important;
   transition: all 0.2s ease !important;
-  margin-left: -2px !important;
+  margin-left: 0px !important;
+  margin-right: 0px !important;
 }
 
 .auto-scroll-btn:hover {
@@ -256,7 +258,8 @@ const showTimestamp = computed({
   border: 1px solid transparent !important;
   color: #aaa !important;
   transition: all 0.2s ease !important;
-  margin-left: -2px !important;
+  margin-left: 0px !important;
+  margin-right: 4px !important;
 }
 
 .icon-action-btn:hover {
