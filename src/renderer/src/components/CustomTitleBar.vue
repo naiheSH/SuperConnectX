@@ -56,7 +56,8 @@
             @mouseenter="handleFontSubmenuMouseEnter"
             @mouseleave="handleFontSubmenuMouseLeave"
           >
-            {{ t('titlebar.font') }}
+            <span class="checkbox-mark"></span>
+            <span>{{ t('titlebar.font') }}</span>
             <div class="dropdown-submenu" v-if="showFontSubmenu">
               <div
                 class="menu-item"
@@ -70,6 +71,19 @@
                 {{ formatFontName(font) }}
               </div>
             </div>
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item checkbox-item" @click.stop="toggleWordWrap">
+            <span class="checkbox-mark">{{ wordWrap ? '✓' : '' }}</span>
+            <span>{{ t('titlebar.wordWrap') }}</span>
+          </div>
+          <div class="menu-item checkbox-item" @click.stop="toggleLineNumbers">
+            <span class="checkbox-mark">{{ lineNumbers ? '✓' : '' }}</span>
+            <span>{{ t('titlebar.lineNumbers') }}</span>
+          </div>
+          <div class="menu-item checkbox-item" @click.stop="toggleLogEditable">
+            <span class="checkbox-mark">{{ logEditable ? '✓' : '' }}</span>
+            <span>{{ t('titlebar.logEditable') }}</span>
           </div>
         </div>
       </div>
@@ -204,7 +218,10 @@ const emit = defineEmits([
   'open-settings',
   'open-shortcuts',
   'check-update',
-  'open-plugins'
+  'open-plugins',
+  'toggle-word-wrap',
+  'toggle-line-numbers',
+  'toggle-log-editable'
 ])
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = defineProps({
@@ -215,6 +232,18 @@ const props = defineProps({
   currentFont: {
     type: String,
     default: 'Fira Code'
+  },
+  wordWrap: {
+    type: Boolean,
+    default: false
+  },
+  lineNumbers: {
+    type: Boolean,
+    default: true
+  },
+  logEditable: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -375,6 +404,18 @@ const handleFontSubmenuMouseLeave = () => {
   setTimeout(() => {
     showFontSubmenu.value = false
   }, 200)
+}
+
+const toggleWordWrap = () => {
+  emit('toggle-word-wrap')
+}
+
+const toggleLineNumbers = () => {
+  emit('toggle-line-numbers')
+}
+
+const toggleLogEditable = () => {
+  emit('toggle-log-editable')
 }
 
 const changeFont = (fontFamily) => {
@@ -593,11 +634,38 @@ const handleClickOutside = (event: MouseEvent) => {
   width: 16px;
 }
 
+/* 复选框菜单项 */
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.checkbox-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 11px;
+  color: #409eff;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
 /* 当前选中字体项高亮 */
 .font-item-active {
   background-color: rgba(64, 158, 255, 0.15) !important;
   color: #409eff !important;
   font-weight: 600;
+}
+
+/* 子菜单触发器 */
+.submenu-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* 子菜单触发器箭头 */

@@ -297,7 +297,10 @@ defineExpose({
     const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()
     return unifiedFont || terminal.fontFamily.value
   },
-  clearTerminal: () => unifiedTerminalRef.value?.clearTerminal?.()
+  clearTerminal: () => unifiedTerminalRef.value?.clearTerminal?.(),
+  setWordWrap: (val: boolean) => unifiedTerminalRef.value?.setWordWrap?.(val),
+  setLineNumbers: (val: boolean) => unifiedTerminalRef.value?.setLineNumbers?.(val),
+  setLogEditable: (val: boolean) => unifiedTerminalRef.value?.setLogEditable?.(val)
 })
 
 onMounted(() => {

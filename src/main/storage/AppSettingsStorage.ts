@@ -19,6 +19,10 @@ interface AppSettings {
   commandEditorSelectedGroupId?: Record<string, number | null>
   // 编辑命令中当前选中的命令ID，按协议类型存储，如 { telnet: 5, ssh: 2 }
   commandEditorCurrentCommandId?: Record<string, number | null>
+  // 终端显示选项
+  terminalWordWrap?: boolean // 自动换行
+  terminalLineNumbers?: boolean // 显示行号
+  terminalLogEditable?: boolean // 日志可编辑
   // 可扩展其他全局设置
 }
 

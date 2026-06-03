@@ -173,6 +173,12 @@ const showTimestamp = computed({
   border-color: #c45656 !important;
 }
 
+.clear-btn:hover {
+  transform: translateY(-1px);
+  background-color: #d46060 !important;
+  border-color: #d46060 !important;
+}
+
 .add-preset-btn {
   width: 90px !important;
   padding: 6px 12px !important;

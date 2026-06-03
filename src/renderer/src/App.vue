@@ -10,8 +10,14 @@
       @open-shortcuts="openShortcutsTab"
       @check-update="updateDialogRef?.open()"
       @open-plugins="handlePlugins"
+      @toggle-word-wrap="handleToggleWordWrap"
+      @toggle-line-numbers="handleToggleLineNumbers"
+      @toggle-log-editable="handleToggleLogEditable"
       :show-connection-list="showConnectionList"
       :current-font="currentFont"
+      :word-wrap="terminalWordWrap"
+      :line-numbers="terminalLineNumbers"
+      :log-editable="terminalLogEditable"
     />
     <!-- 通用通知组件 -->
     <NotifyContainer ref="notifyContainerRef" />
@@ -538,6 +544,11 @@ const comTerminalRefs = reactive<Record<string, any>>({})
 const activeTabId = ref('')
 const currentFont = ref('Fira Code') // 当前活动的字体
 
+// 终端显示选项（从 AppSettings 加载）
+const terminalWordWrap = ref(false)
+const terminalLineNumbers = ref(true)
+const terminalLogEditable = ref(false)
+
 // 右键菜单相关状态
 const showTabMenu = ref(false)
 const tabMenuPosition = ref({ x: 0, y: 0 })
@@ -645,11 +656,12 @@ const updateCurrentFont = (tabId: string, retries = 5) => {
   setTimeout(retry, 100)
 }
 
-// 监听 activeTabId 变化，更新当前字体
+// 监听 activeTabId 变化，更新当前字体和应用终端显示设置
 watch(activeTabId, (newTabId, oldTabId) => {
   if (newTabId && newTabId !== oldTabId) {
     nextTick(() => {
       updateCurrentFont(newTabId)
+      applyTerminalDisplaySettingsToTab(newTabId)
     })
   }
 })
@@ -1346,6 +1358,79 @@ const handleFontSizeChange = (action: string) => {
   }
 }
 
+const handleToggleWordWrap = async () => {
+  terminalWordWrap.value = !terminalWordWrap.value
+  applyToAllTerminals('setWordWrap', terminalWordWrap.value)
+  await saveTerminalDisplaySettings()
+}
+
+const handleToggleLineNumbers = async () => {
+  terminalLineNumbers.value = !terminalLineNumbers.value
+  applyToAllTerminals('setLineNumbers', terminalLineNumbers.value)
+  await saveTerminalDisplaySettings()
+}
+
+const handleToggleLogEditable = async () => {
+  terminalLogEditable.value = !terminalLogEditable.value
+  applyToAllTerminals('setLogEditable', terminalLogEditable.value)
+  await saveTerminalDisplaySettings()
+}
+
+// 对所有已打开的终端应用设置
+const applyToAllTerminals = (method: string, value: boolean) => {
+  for (const tab of connectionTabs.value) {
+    const tabId = tab.id.toString()
+    if (comTerminalRefs[tabId]) {
+      comTerminalRefs[tabId]?.[method]?.(value)
+    } else if (telnetTerminalRefs[tabId]) {
+      telnetTerminalRefs[tabId]?.[method]?.(value)
+    }
+  }
+}
+
+// 对单个终端标签页应用当前的显示设置
+const applyTerminalDisplaySettingsToTab = (tabId: string) => {
+  const ref = comTerminalRefs[tabId] || telnetTerminalRefs[tabId]
+  if (ref) {
+    ref.setWordWrap?.(terminalWordWrap.value)
+    ref.setLineNumbers?.(terminalLineNumbers.value)
+    ref.setLogEditable?.(terminalLogEditable.value)
+  }
+}
+
+// 保存终端显示设置到 AppSettings
+const saveTerminalDisplaySettings = async () => {
+  try {
+    const currentSettings = await window.storageApi.getAppSettings()
+    await window.storageApi.saveAppSettings({
+      ...currentSettings,
+      terminalWordWrap: terminalWordWrap.value,
+      terminalLineNumbers: terminalLineNumbers.value,
+      terminalLogEditable: terminalLogEditable.value
+    })
+  } catch {
+    // ignore
+  }
+}
+
+// 加载终端显示设置
+const loadTerminalDisplaySettings = async () => {
+  try {
+    const appSettings = await window.storageApi.getAppSettings()
+    if (appSettings?.terminalWordWrap !== undefined) {
+      terminalWordWrap.value = appSettings.terminalWordWrap
+    }
+    if (appSettings?.terminalLineNumbers !== undefined) {
+      terminalLineNumbers.value = appSettings.terminalLineNumbers
+    }
+    if (appSettings?.terminalLogEditable !== undefined) {
+      terminalLogEditable.value = appSettings.terminalLogEditable
+    }
+  } catch {
+    // ignore
+  }
+}
+
 // 加载快捷键命令映射
 const loadShortcutActions = async () => {
   try {
@@ -1724,6 +1809,7 @@ onMounted(() => {
   loadSerialPorts()
   loadShortcutActions()
   loadShortcuts()
+  loadTerminalDisplaySettings()
 
   // 首次打开时，如果已有选项卡，需要更新字体
   if (activeTabId.value) {

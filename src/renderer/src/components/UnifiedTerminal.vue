@@ -895,7 +895,16 @@ defineExpose({
     fontFamily.value = val
     editor?.updateOptions({ fontFamily: val })
   },
-  getFontFamily: () => fontFamily.value
+  getFontFamily: () => fontFamily.value,
+  setWordWrap: (val: boolean) => {
+    editor?.updateOptions({ wordWrap: val ? 'on' : 'off' })
+  },
+  setLineNumbers: (val: boolean) => {
+    editor?.updateOptions({ lineNumbers: val ? 'on' : 'off' })
+  },
+  setLogEditable: (val: boolean) => {
+    editor?.updateOptions({ readOnly: !val })
+  }
 })
 
 const getMaxClearSize = () => {
