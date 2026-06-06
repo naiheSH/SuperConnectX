@@ -197,4 +197,119 @@ export default class PreSetCommandStorage extends BaseStorage {
       return { success: false, message: err.message }
     }
   }
+
+  // 从 SuperCom 配置文件导入（advanced_send 格式）
+  importFromSuperCom(commandGroupStorage: CommandGroupStorage, filePath: string) {
+    try {
+      if (!fs.existsSync(filePath)) {
+        logger.warn(`SuperCom import file not found: ${filePath}`)
+        return { success: false, message: 'file not exists' }
+      }
+
+      const content = fs.readFileSync(filePath, 'utf8')
+      // 去除 UTF-8 BOM（部分编辑器保存的 JSON 文件会在开头有 BOM 字符）
+      const cleanContent = content.charCodeAt(0) === 0xfeff ? content.slice(1) : content
+      const superComData = JSON.parse(cleanContent)
+
+      if (!superComData.advanced_send || !Array.isArray(superComData.advanced_send)) {
+        logger.warn(`SuperCom import file has no advanced_send: ${filePath}`)
+        return { success: false, message: 'not have advanced_send data' }
+      }
+
+      const connectionType = 'com'
+      let importedCount = 0
+      let skippedCount = 0
+      let createdGroups = 0
+
+      for (const project of superComData.advanced_send) {
+        const projectName = project.ProjectName?.trim()
+        if (!projectName) {
+          logger.warn('SuperCom import: skipping project with no ProjectName')
+          continue
+        }
+
+        // 解析 Commands 字段（它是 JSON 字符串）
+        let commands: any[] = []
+        if (project.Commands) {
+          try {
+            commands = JSON.parse(project.Commands)
+          } catch {
+            logger.warn(`SuperCom import: failed to parse Commands for project "${projectName}"`)
+            continue
+          }
+        }
+
+        if (!Array.isArray(commands) || commands.length === 0) {
+          logger.warn(`SuperCom import: no commands in project "${projectName}"`)
+          continue
+        }
+
+        // 查找或创建组（按 name + connectionType 匹配）
+        const existingGroups = commandGroupStorage.getAll()
+        let targetGroup = existingGroups.find(
+          (g) => g.name === projectName && g.connectionType === connectionType
+        )
+
+        if (!targetGroup) {
+          const newGroup = commandGroupStorage.add({
+            name: projectName,
+            connectionType: connectionType
+          })
+          if (!newGroup) {
+            logger.error(`SuperCom import: failed to create group "${projectName}"`)
+            continue
+          }
+          targetGroup = newGroup
+          createdGroups++
+        }
+
+        const existingCommands = this.getAll()
+
+        // 按 Order 排序
+        commands.sort((a, b) => (a.Order || 0) - (b.Order || 0))
+
+        for (let i = 0; i < commands.length; i++) {
+          const cmd = commands[i]
+          const cmdName = cmd.Name || `命令${i + 1}`
+          const cmdCommand = cmd.Command || ''
+          const cmdDelay = Number(cmd.Delay) || 0
+
+          // 检查命令是否已存在（同名同组同命令内容）
+          const commandExists = existingCommands.some(
+            (c) =>
+              c.name === cmdName &&
+              c.groupId === targetGroup!.groupId &&
+              c.command === cmdCommand
+          )
+
+          if (commandExists) {
+            skippedCount++
+            continue
+          }
+
+          this.add({
+            name: cmdName,
+            command: cmdCommand,
+            delay: cmdDelay,
+            seqNum: i + 1,
+            groupId: targetGroup!.groupId
+          })
+
+          importedCount++
+        }
+      }
+
+      logger.info(`SuperCom import complete: ${importedCount} imported, ${skippedCount} skipped, ${createdGroups} groups created`)
+      return {
+        success: true,
+        imported: importedCount,
+        skipped: skippedCount,
+        groups: createdGroups
+      }
+    } catch (error) {
+      const err = error as Error
+      logger.error(`SuperCom import error: ${err.message}`)
+      return { success: false, message: err.message }
+    }
+  }
 }

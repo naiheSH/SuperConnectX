@@ -37,6 +37,7 @@
         >
           <div class="menu-item" @click="importCmd">{{ t('titlebar.importCmd') }}</div>
           <div class="menu-item" @click="exportCmd">{{ t('titlebar.exportCmd') }}</div>
+          <div class="menu-item" @click="importFromSuperCom">{{ t('titlebar.importFromSuperCom') }}</div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="openAppDir">{{ t('titlebar.openAppDir') }}</div>
           <div class="menu-separator"></div>
@@ -273,6 +274,7 @@ const hideToolsMenu = () => {
 }
 
 const importCmd = async () => {
+  showFileMenu.value = false
   try {
     const result = await window.dialogApi.openFileDialog({
       title: t('titlebar.importCmd'),
@@ -301,6 +303,7 @@ const importCmd = async () => {
 
 // 导出命令
 const exportCmd = async () => {
+  showFileMenu.value = false
   try {
     const result = await window.dialogApi.saveFileDialog({
       title: t('titlebar.exportCmd'),
@@ -319,6 +322,35 @@ const exportCmd = async () => {
   } catch (error) {
     console.error(t('notification.exportFailed'), error)
     ElMessage.error(t('notification.exportFailed'))
+  }
+}
+
+// 从 SuperCom 导入
+const importFromSuperCom = async () => {
+  showFileMenu.value = false
+  try {
+    const result = await window.dialogApi.openFileDialog({
+      title: t('titlebar.importFromSuperCom'),
+      filters: [
+        { name: 'SuperCom 配置文件', extensions: ['json'] },
+        { name: '所有文件', extensions: ['*'] }
+      ]
+    })
+
+    if (result.filePaths && result.filePaths.length > 0) {
+      const importResult = await window.storageApi.importFromSuperCom(result.filePaths[0])
+      if (importResult.success) {
+        ElMessage.success(
+          t('notification.importFromSuperComSuccess', { imported: importResult.imported, skipped: importResult.skipped, groups: importResult.groups })
+        )
+        emit('refreshCommands')
+      } else {
+        ElMessage.error(`${t('notification.importFromSuperComFailed')}: ${importResult.message}`)
+      }
+    }
+  } catch (error) {
+    console.error(t('notification.importFromSuperComFailed'), error)
+    ElMessage.error(t('notification.importFromSuperComFailed'))
   }
 }
 

@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('storageApi', {
   deleteCommandGroup: (groupId: number) => ipcRenderer.invoke('delete-command-group', groupId),
   exportCommands: (filePath: string) => ipcRenderer.invoke('export-commands', filePath),
   importCommands: (filePath: string) => ipcRenderer.invoke('import-commands', filePath),
+  importFromSuperCom: (filePath: string) => ipcRenderer.invoke('import-from-supercom', filePath),
 
   /* COM 串口设置 */
   getComSettings: (comName: string) => ipcRenderer.invoke('get-com-settings', comName),

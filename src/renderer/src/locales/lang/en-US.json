@@ -158,6 +158,7 @@
     "font": "Font",
     "importCmd": "Import Commands",
     "exportCmd": "Export Commands",
+    "importFromSuperCom": "Import from SuperCom",
     "openAppDir": "Open App Directory",
     "exit": "Exit",
     "doc": "Documentation",
@@ -290,7 +291,9 @@
     "importSuccess": "Successfully imported {imported} commands, skipped {skipped} duplicates",
     "importFailed": "Import failed",
     "exportSuccess": "Successfully exported {count} commands",
-    "exportFailed": "Export failed"
+    "exportFailed": "Export failed",
+    "importFromSuperComSuccess": "Successfully imported {imported} commands ({groups} groups) from SuperCom, skipped {skipped} duplicates",
+    "importFromSuperComFailed": "Import from SuperCom failed"
   },
   "update": {
     "checkUpdate": "Check for Updates",
