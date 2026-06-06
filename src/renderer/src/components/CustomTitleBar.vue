@@ -192,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getSystemFonts, formatFontName } from '../utils/FontDetector'
@@ -396,8 +396,17 @@ const handleMenuMouseLeave = (menuType) => {
   }, 200)
 }
 
-const handleFontSubmenuMouseEnter = () => {
+const handleFontSubmenuMouseEnter = (e: MouseEvent) => {
   showFontSubmenu.value = true
+  // 滚动到当前选中的字体
+  nextTick(() => {
+    const submenu = (e.currentTarget as HTMLElement)?.querySelector('.dropdown-submenu') as HTMLElement | null
+    if (!submenu) return
+    const activeItem = submenu.querySelector('.font-item-active') as HTMLElement | null
+    if (activeItem) {
+      submenu.scrollTop = activeItem.offsetTop - submenu.clientHeight / 2 + activeItem.clientHeight / 2
+    }
+  })
 }
 
 const handleFontSubmenuMouseLeave = () => {

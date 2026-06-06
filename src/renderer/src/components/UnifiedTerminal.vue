@@ -241,7 +241,7 @@ const hexMode = ref(false) // 是否为HEX发送模式
 const hexDisplayMode = ref(false) // 是否为HEX显示模式（接收端）
 const showTimestamp = ref(true) // 是否显示时间戳
 const fontSize = ref(14) // 终端字体大小
-const fontFamily = ref('Fira Code') // 终端字体系列
+const fontFamily = ref('Consolas') // 终端字体系列
 const MIN_FONT_SIZE = 8
 const MAX_FONT_SIZE = 30
 
