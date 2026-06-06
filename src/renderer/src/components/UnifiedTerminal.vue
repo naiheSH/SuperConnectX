@@ -34,15 +34,18 @@
       :is-auto-scroll="isAutoScroll"
       :is-show-log="isShowLog"
       :is-show-timestamp="showTimestamp"
+      :active-syntax-group-id="activeSyntaxGroupId"
       @on-close="emit('onClose')"
       @on-reconnect="emit('onReconnect')"
       @on-clear-terminal="clearTerminal"
       @on-open-log-folder="emit('onOpenLogFolder')"
       @on-open-log-file="emit('onOpenLogFile')"
       @on-save-log="emit('onSaveLog')"
+      @on-edit-syntax-rules="emit('onEditSyntaxRules')"
       @update:is-auto-scroll="isAutoScroll = $event"
       @update:is-show-log="isShowLog = $event"
       @update:is-show-timestamp="showTimestamp = $event"
+      @update:active-syntax-group-id="activeSyntaxGroupId = $event"
     />
 
     <!-- 插槽：用于放置额外内容（如 Com 的波特率设置） -->
@@ -215,6 +218,7 @@ const emit = defineEmits<{
   onDataReceived: [data: string]
   'update:isConnected': [value: boolean]
   onOpenCommandEditor: [connectionType: string]
+  onEditSyntaxRules: []
 }>()
 
 const currentCommand = ref('')
@@ -225,6 +229,20 @@ const isConnected = ref(props.isConnected)
 const isConnecting = ref(props.isConnecting)
 const isAutoScroll = ref(true)
 const isShowLog = ref(true)
+const activeSyntaxGroupId = ref<number | undefined>(undefined)
+
+// 为每个连接生成唯一标识键，用于持久化语法高亮组选择
+// 使用稳定不变的标识：COM用端口路径，Telnet等用原始连接ID（数据库中的id）
+const connectionKey = computed(() => {
+  if (props.connection.connectionType === 'com') {
+    return `com:${props.connection.comName || props.connection.sessionId}`
+  }
+  // Telnet/SSH/FTP: tab.id 格式为 `${conn.id}-${sessionId}`，取原始连接ID
+  const connId = typeof props.connection.id === 'string'
+    ? parseInt((props.connection.id as string).split('-')[0], 10)
+    : props.connection.id
+  return `${props.connection.connectionType}:${connId}`
+})
 const editorContainer = ref<HTMLElement | null>(null)
 const terminalOutputHeight = ref<number | null>(null) // null 表示自动撑满
 const isSplitting = ref(false)
@@ -385,6 +403,9 @@ let historyFilterInput = '' // 导航时的过滤基准，避免选中改变输�
 let showCommandHistory = true // 是否显示历史命令弹窗
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 let editorModel: monaco.editor.ITextModel | null = null
+let syntaxDecorations: monaco.editor.IEditorDecorationsCollection | null = null
+let enableSyntaxHighlight = true
+let syntaxRuleGroups: SyntaxRuleGroup[] = []
 let totalRecvSize = 0
 let totalTxSize = 0
 let isInternalChange = false // 标记是否由内部触发的 isAutoScroll 变化
@@ -456,6 +477,9 @@ const initEditor = async () => {
     fontSize: fontSize.value,
     fontFamily: fontFamily.value
   })
+
+  // 创建语法高亮装饰器集合
+  syntaxDecorations = editor.createDecorationsCollection()
 
   editor.layout()
   editor.updateOptions({ readOnly: true })
@@ -541,6 +565,110 @@ const appendToTerminal = (content: string) => {
     clearTerminal()
     window.dispatchEvent(new CustomEvent('terminal-text-cleared', { detail: { connectionName: props.connection.name } }))
   }
+
+  // 应用语法高亮
+  applySyntaxWithClasses()
+}
+
+// 将关键词模式转为正则（支持逗号分隔的多个关键词）
+const buildRegexFromRule = (rule: SyntaxSubRule): RegExp | null => {
+  try {
+    if (rule.matchType === 'keyword') {
+      const keywords = rule.pattern.split(',').map(k => k.trim()).filter(k => k)
+      if (keywords.length === 0) return null
+      const escaped = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      return new RegExp(escaped.join('|'), rule.caseSensitive ? 'g' : 'gi')
+    } else {
+      // 空 pattern 会创建空正则导致死循环
+      if (!rule.pattern) return null
+      return new RegExp(rule.pattern, rule.caseSensitive ? 'g' : 'gi')
+    }
+  } catch {
+    return null
+  }
+}
+
+let syntaxClassCounter = 0
+const syntaxClassMap = new Map<string, string>()
+// 每个实例的唯一标识，避免多选项卡之间的样式冲突
+const syntaxInstanceId = `syntax-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+const applySyntaxWithClasses = () => {
+  if (!editor || !editorModel || !syntaxDecorations) return
+
+  if (!enableSyntaxHighlight || !syntaxRuleGroups || syntaxRuleGroups.length === 0) {
+    syntaxDecorations.clear()
+    return
+  }
+
+  const text = editorModel.getValue()
+  const decorations: monaco.editor.IModelDeltaDecoration[] = []
+
+  // Clear old style elements (only for this instance)
+  const oldStyles = document.querySelectorAll(`style[data-syntax-instance="${syntaxInstanceId}"]`)
+  oldStyles.forEach(s => s.remove())
+  syntaxClassMap.clear()
+
+  let styleContent = ''
+
+  // activeSyntaxGroupId === undefined 表示"清除选择"，不应用任何高亮
+  if (activeSyntaxGroupId.value === undefined) {
+    syntaxDecorations.clear()
+    return
+  }
+  const groupsToApply = syntaxRuleGroups.filter(g => g.id === activeSyntaxGroupId.value)
+
+  for (const group of groupsToApply) {
+    if (!group.enabled || !group.subRules) continue
+    for (const rule of group.subRules) {
+      const regex = buildRegexFromRule(rule)
+      if (!regex) continue
+
+      // Generate unique class name for this style combination
+      const styleKey = `${rule.foreground}|${rule.background}|${rule.bold}|${rule.italic}|${rule.underline}`
+      let className = syntaxClassMap.get(styleKey)
+      if (!className) {
+        className = `syntax-hl-${syntaxClassCounter++}`
+        syntaxClassMap.set(styleKey, className)
+
+        const cssParts: string[] = []
+        if (rule.foreground) cssParts.push(`color: ${rule.foreground} !important`)
+        if (rule.background) cssParts.push(`background-color: ${rule.background} !important`)
+        if (rule.bold) cssParts.push('font-weight: bold !important')
+        if (rule.italic) cssParts.push('font-style: italic !important')
+        if (rule.underline) cssParts.push('text-decoration: underline !important')
+
+        if (cssParts.length > 0) {
+          styleContent += `.${className} { ${cssParts.join('; ')} }\n`
+        }
+      }
+
+      // Reset regex lastIndex
+      regex.lastIndex = 0
+      let match: RegExpExecArray | null
+      while ((match = regex.exec(text)) !== null) {
+        const matchStr = match[0]
+        if (!matchStr) continue
+        const startPos = editorModel.getPositionAt(match.index)
+        const endPos = editorModel.getPositionAt(match.index + matchStr.length)
+
+        decorations.push({
+          range: new monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
+          options: { inlineClassName: className }
+        })
+      }
+    }
+  }
+
+  // Inject CSS
+  if (styleContent) {
+    const styleEl = document.createElement('style')
+    styleEl.setAttribute('data-syntax-instance', syntaxInstanceId)
+    styleEl.textContent = styleContent
+    document.head.appendChild(styleEl)
+  }
+
+  syntaxDecorations.set(decorations)
 }
 
 const scrollToEnd = () => {
@@ -918,10 +1046,32 @@ const loadMaxClearSize = async () => {
   }
 }
 
+const loadSyntaxSettings = async () => {
+  try {
+    const settings = await window.storageApi.getSettings()
+    enableSyntaxHighlight = settings?.enableSyntaxHighlight !== false
+    syntaxRuleGroups = settings?.syntaxRuleGroups || []
+  } catch (e) {
+    // ignore
+  }
+}
+
 onMounted(async () => {
   initEditor()
   loadHistory()
   await loadMaxClearSize()
+  await loadSyntaxSettings()
+
+  // 恢复当前连接的高亮组选择
+  try {
+    const appSettings = await window.storageApi.getAppSettings()
+    const map = appSettings?.terminalSyntaxGroupId || {}
+    if (map[connectionKey.value] !== undefined) {
+      activeSyntaxGroupId.value = map[connectionKey.value]
+    }
+  } catch (e) {
+    // ignore
+  }
 
   // 加载数据校验算法列表
   try {
@@ -930,8 +1080,12 @@ onMounted(async () => {
     console.error('Failed to load CRC plugins:', e)
   }
 
+  // 初始化完成后，应用一次语法高亮（此时规则和 activeSyntaxGroupId 都已就绪）
+  applySyntaxWithClasses()
+
   // 监听设置更新事件（历史最大数量变化时刷新）
   window.addEventListener('settings-updated', handleSettingsUpdated)
+  window.addEventListener('syntax-rules-updated', handleSyntaxRulesUpdated)
   // 点击外部关闭CRC菜单
   document.addEventListener('click', handleClickOutsideCrc)
 })
@@ -977,7 +1131,12 @@ onUnmounted(() => {
   }
 
   window.removeEventListener('settings-updated', handleSettingsUpdated)
+  window.removeEventListener('syntax-rules-updated', handleSyntaxRulesUpdated)
   document.removeEventListener('click', handleClickOutsideCrc)
+
+  // Clean up syntax highlight styles (only for this instance)
+  const oldStyles = document.querySelectorAll(`style[data-syntax-instance="${syntaxInstanceId}"]`)
+  oldStyles.forEach(s => s.remove())
 })
 
 // 设置更新处理
@@ -1009,8 +1168,43 @@ const handleSettingsUpdated = async (event: Event) => {
     if ('autoScrollOnWheel' in updatedSettings) {
       autoScrollOnWheel = updatedSettings.autoScrollOnWheel === true
     }
+    if ('enableSyntaxHighlight' in updatedSettings) {
+      enableSyntaxHighlight = updatedSettings.enableSyntaxHighlight !== false
+      applySyntaxWithClasses()
+    }
+    if ('syntaxRuleGroups' in updatedSettings) {
+      syntaxRuleGroups = updatedSettings.syntaxRuleGroups || []
+      applySyntaxWithClasses()
+    }
   }
 }
+
+// 监听语法高亮规则更新（从SettingsPage直接触发）
+const handleSyntaxRulesUpdated = (event: Event) => {
+  const groups = (event as CustomEvent).detail
+  if (groups && Array.isArray(groups)) {
+    syntaxRuleGroups = groups
+    applySyntaxWithClasses()
+  }
+}
+
+// 监听 activeSyntaxGroupId 变化，重新应用语法高亮，并持久化到连接配置
+watch(activeSyntaxGroupId, async () => {
+  applySyntaxWithClasses()
+  // 持久化当前连接的高亮组选择
+  try {
+    const appSettings = await window.storageApi.getAppSettings()
+    const map = appSettings?.terminalSyntaxGroupId || {}
+    if (activeSyntaxGroupId.value !== undefined) {
+      map[connectionKey.value] = activeSyntaxGroupId.value
+    } else {
+      delete map[connectionKey.value]
+    }
+    await window.storageApi.saveAppSettings({ ...appSettings, terminalSyntaxGroupId: map })
+  } catch (e) {
+    // ignore
+  }
+})
 </script>
 
 <style scoped>

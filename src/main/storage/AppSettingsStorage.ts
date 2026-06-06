@@ -23,6 +23,8 @@ interface AppSettings {
   terminalWordWrap?: boolean // 自动换行
   terminalLineNumbers?: boolean // 显示行号
   terminalLogEditable?: boolean // 日志可编辑
+  // 每个连接的语法高亮组选择，key为连接标识，value为语法组ID
+  terminalSyntaxGroupId?: Record<string, number | undefined>
   // 可扩展其他全局设置
 }
 

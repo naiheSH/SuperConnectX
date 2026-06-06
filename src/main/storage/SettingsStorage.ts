@@ -6,6 +6,25 @@ import logger from '../ipc/IpcAppLogger'
 
 const SAVE_DIR_NAME = 'userdata'
 
+interface SyntaxSubRule {
+  id: number
+  matchType: 'regex' | 'keyword'
+  pattern: string
+  caseSensitive: boolean
+  foreground: string
+  background: string
+  bold: boolean
+  italic: boolean
+  underline: boolean
+}
+
+interface SyntaxRuleGroup {
+  id: number
+  name: string
+  enabled: boolean
+  subRules: SyntaxSubRule[]
+}
+
 interface Settings {
   // 基本设置
   minimizeToTray?: boolean
@@ -34,7 +53,7 @@ interface Settings {
   logHex?: boolean
   // 语法高亮
   enableSyntaxHighlight?: boolean
-  syntaxTheme?: string
+  syntaxRuleGroups?: SyntaxRuleGroup[]
   // 搜索
   searchCaseSensitive?: boolean
   searchRegex?: boolean
@@ -72,7 +91,26 @@ const defaultSettings: Settings = {
   logHex: false,
   // 语法高亮
   enableSyntaxHighlight: true,
-  syntaxTheme: 'dark',
+  syntaxRuleGroups: [
+    {
+      id: 1,
+      name: '错误/警告/成功',
+      enabled: true,
+      subRules: [
+        { id: 1, matchType: 'regex', pattern: '(ERROR|FAIL|异常|失败|error|fail)', caseSensitive: false, foreground: '#FF4444', background: '', bold: true, italic: false, underline: false },
+        { id: 2, matchType: 'regex', pattern: '(WARN|WARNING|警告|warn)', caseSensitive: false, foreground: '#E6A23C', background: '', bold: false, italic: false, underline: false },
+        { id: 3, matchType: 'regex', pattern: '(SUCCESS|成功|OK|ok)', caseSensitive: false, foreground: '#67C23A', background: '', bold: true, italic: false, underline: false }
+      ]
+    },
+    {
+      id: 2,
+      name: 'IP地址高亮',
+      enabled: true,
+      subRules: [
+        { id: 4, matchType: 'regex', pattern: '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}', caseSensitive: false, foreground: '#409EFF', background: '', bold: false, italic: false, underline: true }
+      ]
+    }
+  ] as SyntaxRuleGroup[],
   // 搜索
   searchCaseSensitive: false,
   searchRegex: false,

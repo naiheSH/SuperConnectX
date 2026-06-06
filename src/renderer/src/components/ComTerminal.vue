@@ -16,6 +16,7 @@
       @on-send="handleSendCommand"
       @on-command-sent="handleCommandSent"
       @on-open-command-editor="emit('openCommandEditor', connection.connectionType)"
+      @on-edit-syntax-rules="emit('openSyntaxHighlight')"
     >
       <!-- 波特率等设置放到下面 -->
       <template #extra>
@@ -173,7 +174,7 @@ import { useTerminal } from '../composables/useTerminal'
 
 const { t } = useI18n()
 
-const emit = defineEmits(['onClose', 'commandSent', 'onConnect', 'onDisconnect', 'openCommandEditor', 'remarkUpdated', 'fontLoaded'])
+const emit = defineEmits(['onClose', 'commandSent', 'onConnect', 'onDisconnect', 'openCommandEditor', 'remarkUpdated', 'fontLoaded', 'openSyntaxHighlight'])
 const props = withDefaults(defineProps<{
   connection: {
     id: number

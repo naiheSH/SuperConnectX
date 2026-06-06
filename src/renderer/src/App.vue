@@ -274,6 +274,7 @@
                 @onConnect="(_sessionId: any) => { if (tab.comName) connectedSerialPorts[tab.comName] = true }"
                 @onDisconnect="(_sessionId: any) => { if (tab.comName) delete connectedSerialPorts[tab.comName] }"
                 @openCommandEditor="openCommandEditorTab"
+                @openSyntaxHighlight="openSettingsAndSwitchToSyntax"
                 @remarkUpdated="(data: any) => { if (data.comName) serialRemarks[data.comName] = data.remark }"
                 @fontLoaded="(font: string) => { currentFont = font }"
                 class="telnet-terminal"
@@ -286,6 +287,7 @@
                 @onClose="handleTerminalClose(tab.id)"
                 @commandSent="handleCommandSent"
                 @openCommandEditor="openCommandEditorTab"
+                @openSyntaxHighlight="openSettingsAndSwitchToSyntax"
                 @fontLoaded="(font: string) => { currentFont = font }"
                 class="telnet-terminal"
               />
@@ -1800,6 +1802,23 @@ const openSettingsTab = () => {
 
   connectionTabs.value.push(newTab)
   activeTabId.value = newTabId
+}
+
+// 打开设置页并切换到语法高亮分类
+const openSettingsAndSwitchToSyntax = () => {
+  const existingTab = connectionTabs.value.find((t) => t.connectionType === 'settings')
+  openSettingsTab()
+  if (existingTab) {
+    // 设置页已存在，直接发事件
+    window.dispatchEvent(new CustomEvent('open-syntax-highlight-page'))
+  } else {
+    // 新创建的设置页，等 SettingsPage mounted 后再发
+    nextTick(() => {
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('open-syntax-highlight-page'))
+      }, 100)
+    })
+  }
 }
 
 onMounted(() => {

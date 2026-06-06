@@ -210,27 +210,8 @@
         </div>
 
         <!-- 语法高亮 -->
-        <div v-else-if="activeCategory === 'syntax'" class="settings-group">
-          <div class="group-section">
-            <div class="group-title">{{ t('syntaxSettings.title') }}</div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">{{ t('syntaxSettings.enableSyntaxHighlight') }}</span>
-                <span class="label-desc">{{ t('syntaxSettings.enableSyntaxHighlightDesc') }}</span>
-              </div>
-              <el-switch class="terminal-switch" v-model="settings.enableSyntaxHighlight" />
-            </div>
-            <div class="setting-item">
-              <div class="setting-label">
-                <span class="label-text">{{ t('syntaxSettings.syntaxTheme') }}</span>
-                <span class="label-desc">{{ t('syntaxSettings.syntaxThemeDesc') }}</span>
-              </div>
-              <el-select v-model="settings.syntaxTheme" size="small" style="width: 120px">
-                <el-option :label="t('syntaxSettings.dark')" value="dark" />
-                <el-option :label="t('syntaxSettings.light')" value="light" />
-              </el-select>
-            </div>
-          </div>
+        <div v-else-if="activeCategory === 'syntax'" class="settings-group syntax-embed-group">
+          <SyntaxHighlightPage />
         </div>
 
         <!-- 命令历史 -->
@@ -340,6 +321,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -348,6 +330,7 @@ import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { setLocale } from '../locales'
+import SyntaxHighlightPage from './SyntaxHighlightPage.vue'
 
 const { t } = useI18n()
 
@@ -599,11 +582,20 @@ onMounted(async () => {
 
   // 监听设置更新事件（ComTerminal 修改波特率列表时刷新显示）
   window.addEventListener('settings-updated', handleSettingsUpdated)
+  // 监听切换到语法高亮分类的事件
+  window.addEventListener('open-syntax-highlight-page', switchToSyntaxCategory)
 })
 
 onUnmounted(() => {
   window.removeEventListener('settings-updated', handleSettingsUpdated)
+  window.removeEventListener('open-syntax-highlight-page', switchToSyntaxCategory)
 })
+
+// 切换到语法高亮分类
+const switchToSyntaxCategory = () => {
+  activeCategory.value = 'syntax'
+  saveActiveCategory()
+}
 
 // 设置更新处理
 const handleSettingsUpdated = (event: Event) => {
@@ -721,8 +713,34 @@ const handleSettingsUpdated = (event: Event) => {
   padding: 16px;
 }
 
+.settings-panel:has(.syntax-embed-group) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-panel:has(.syntax-embed-group) > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .settings-group {
   max-width: 700px;
+}
+
+.syntax-embed-group {
+  max-width: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.syntax-embed-group :deep(.syntax-page) {
+  height: 100%;
+  background: transparent;
 }
 
 .group-section {
@@ -1103,4 +1121,6 @@ const handleSettingsUpdated = (event: Event) => {
 .next-backup-value.today {
   color: #f0a020;
 }
+
+
 </style>

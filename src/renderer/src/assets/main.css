@@ -215,13 +215,15 @@ body {
 }
 
 /* 消息弹窗取消按钮（统一样式，匹配 btn-cancel） */
-.el-message-box__btns .el-button--danger {
+.el-message-box__btns .el-button--danger,
+.el-message-box__btns .el-button:not(.el-button--primary) {
   background-color: #c45656 !important;
   border-color: #c45656 !important;
   color: #ffffff !important;
 }
 
-.el-message-box__btns .el-button--danger:hover {
+.el-message-box__btns .el-button--danger:hover,
+.el-message-box__btns .el-button:not(.el-button--primary):hover {
   background-color: #d66a6a !important;
   border-color: #d66a6a !important;
 }

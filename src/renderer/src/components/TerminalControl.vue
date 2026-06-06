@@ -70,13 +70,42 @@
       <el-button icon="DocumentAdd" size="small" class="btn-primary log-btn" @click="emit('onSaveLog')">
         日志另存为
       </el-button>
+      <el-select
+        v-model="selectedSyntaxGroupId"
+        size="small"
+        class="syntax-group-select"
+        placeholder="语法高亮"
+        clearable
+        @change="handleSyntaxGroupChange"
+      >
+        <el-option
+          v-for="group in syntaxGroups"
+          :key="group.id"
+          :label="group.name"
+          :value="group.id"
+        />
+      </el-select>
+      <el-button
+        size="small"
+        class="icon-action-btn"
+        title="编辑高亮规则"
+        @click="emit('onEditSyntaxRules')"
+      >
+        <el-icon :size="14"><Edit /></el-icon>
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { FolderOpened, Document } from '@element-plus/icons-vue'
+import { ref, computed, onMounted } from 'vue'
+import { FolderOpened, Document, Edit } from '@element-plus/icons-vue'
+
+interface SyntaxGroupInfo {
+  id: number
+  name: string
+  enabled: boolean
+}
 
 const props = defineProps<{
   isConnected: boolean
@@ -84,6 +113,7 @@ const props = defineProps<{
   isAutoScroll: boolean
   isShowLog: boolean
   isShowTimestamp: boolean
+  activeSyntaxGroupId?: number
 }>()
 
 const emit = defineEmits<{
@@ -93,10 +123,34 @@ const emit = defineEmits<{
   onOpenLogFolder: []
   onOpenLogFile: []
   onSaveLog: []
+  onEditSyntaxRules: []
   'update:isAutoScroll': [value: boolean]
   'update:isShowLog': [value: boolean]
   'update:isShowTimestamp': [value: boolean]
+  'update:activeSyntaxGroupId': [value: number | undefined]
 }>()
+
+const syntaxGroups = ref<SyntaxGroupInfo[]>([])
+
+const selectedSyntaxGroupId = computed({
+  get: () => props.activeSyntaxGroupId,
+  set: (val: number | undefined) => emit('update:activeSyntaxGroupId', val)
+})
+
+const loadSyntaxGroups = async () => {
+  try {
+    const data = await window.storageApi.getSyntaxRuleGroups()
+    if (data && Array.isArray(data)) {
+      syntaxGroups.value = data.map((g: any) => ({ id: g.id, name: g.name, enabled: g.enabled }))
+    }
+  } catch (e) {
+    console.error('Failed to load syntax groups:', e)
+  }
+}
+
+const handleSyntaxGroupChange = () => {
+  // 选中改变时触发
+}
 
 const autoScroll = computed({
   get: () => props.isAutoScroll,
@@ -111,6 +165,11 @@ const showLog = computed({
 const showTimestamp = computed({
   get: () => props.isShowTimestamp,
   set: (val: boolean) => emit('update:isShowTimestamp', val)
+})
+
+onMounted(() => {
+  loadSyntaxGroups()
+  window.addEventListener('syntax-rules-updated', loadSyntaxGroups)
 })
 </script>
 
@@ -199,6 +258,24 @@ const showTimestamp = computed({
 
 .log-btn:hover {
   transform: translateY(-1px);
+}
+
+.syntax-group-select {
+  width: 130px !important;
+  margin-left: 4px !important;
+}
+
+.syntax-group-select :deep(.el-select__wrapper) {
+  border-color: transparent !important;
+  box-shadow: none !important;
+  background-color: #3a3a3a !important;
+}
+
+.syntax-group-select :deep(.el-select__wrapper:hover),
+.syntax-group-select :deep(.el-select .is-focused .el-select__wrapper),
+.syntax-group-select :deep(.el-select.is-focused .el-select__wrapper) {
+  border-color: var(--focus-border-color) !important;
+  box-shadow: 0 0 0 1px var(--focus-border-color) inset !important;
 }
 
 

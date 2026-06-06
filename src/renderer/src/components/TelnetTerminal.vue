@@ -16,6 +16,7 @@
       @on-send="handleSend"
       @on-command-sent="handleCommandSent"
       @on-open-command-editor="emit('openCommandEditor', connection.connectionType)"
+      @on-edit-syntax-rules="emit('openSyntaxHighlight')"
     />
   </div>
 </template>
@@ -30,7 +31,7 @@ import { useTerminal } from '../composables/useTerminal'
 const MAX_RETRY_COUNT = 1000
 const RETRY_INTERVAL_MS = 3000
 
-const emit = defineEmits(['onClose', 'commandSent', 'openCommandEditor', 'fontLoaded'])
+const emit = defineEmits(['onClose', 'commandSent', 'openCommandEditor', 'fontLoaded', 'openSyntaxHighlight'])
 const props = defineProps<{
   connection: {
     id: number

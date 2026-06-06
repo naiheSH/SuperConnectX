@@ -122,6 +122,16 @@ export default class IpcStorage {
       return true
     })
 
+    /* 语法高亮规则组 */
+    ipcMain.handle('get-syntax-rule-groups', () => {
+      const settings = settingsStorage.getSettings()
+      return settings.syntaxRuleGroups || []
+    })
+    ipcMain.handle('save-syntax-rule-groups', (_, groups: any[]) => {
+      settingsStorage.saveSettings({ syntaxRuleGroups: groups } as any)
+      return true
+    })
+
     ipcMain.handle('get-command-history', (_, protocolType: string) => commandHistoryStorage.getHistory(protocolType))
     ipcMain.handle('add-command-history', (_, protocolType: string, command: string) => {
       commandHistoryStorage.addCommand(protocolType, command)

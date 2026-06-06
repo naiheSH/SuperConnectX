@@ -51,6 +51,10 @@ contextBridge.exposeInMainWorld('storageApi', {
   clearCommandHistory: (protocolType: string) => ipcRenderer.invoke('clear-command-history', protocolType),
   removeCommandHistory: (protocolType: string, command: string) => ipcRenderer.invoke('remove-command-history', protocolType, command),
 
+  /* 语法高亮规则组 */
+  getSyntaxRuleGroups: () => ipcRenderer.invoke('get-syntax-rule-groups'),
+  saveSyntaxRuleGroups: (groups: any[]) => ipcRenderer.invoke('save-syntax-rule-groups', groups),
+
   /* 备份与恢复 */
   getBackupList: () => ipcRenderer.invoke('get-backup-list'),
   restoreBackup: (dateStr: string) => ipcRenderer.invoke('restore-backup', dateStr),

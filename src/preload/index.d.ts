@@ -1,16 +1,35 @@
-interface SerialPortInfo {
-  path: string
-  manufacturer?: string
-  serialNumber?: string
-  pnpId?: string
-  locationId?: string
-  friendlyName?: string
-  vendorId?: string
-  productId?: string
-  type?: 'virtual' | 'usb' | 'bluetooth' | 'none'
-}
-
 declare global {
+  interface SerialPortInfo {
+    path: string
+    manufacturer?: string
+    serialNumber?: string
+    pnpId?: string
+    locationId?: string
+    friendlyName?: string
+    vendorId?: string
+    productId?: string
+    type?: 'virtual' | 'usb' | 'bluetooth' | 'none'
+  }
+
+  interface SyntaxSubRule {
+    id: number
+    matchType: 'regex' | 'keyword'
+    pattern: string
+    caseSensitive: boolean
+    foreground: string
+    background: string
+    bold: boolean
+    italic: boolean
+    underline: boolean
+  }
+
+  interface SyntaxRuleGroup {
+    id: number
+    name: string
+    enabled: boolean
+    subRules: SyntaxSubRule[]
+  }
+
   interface Window {
     storageApi: {
       getConnections: () => Promise<any[]>
@@ -49,6 +68,8 @@ declare global {
       addCommandHistory: (protocolType: string, command: string) => Promise<boolean>
       clearCommandHistory: (protocolType: string) => Promise<boolean>
       removeCommandHistory: (protocolType: string, command: string) => Promise<boolean>
+      getSyntaxRuleGroups: () => Promise<SyntaxRuleGroup[]>
+      saveSyntaxRuleGroups: (groups: SyntaxRuleGroup[]) => Promise<boolean>
       getBackupList: () => Promise<{ date: string; size: number }[]>
       restoreBackup: (dateStr: string) => Promise<{ success: boolean; message: string }>
       getNextBackupDate: (backupInterval: number) => Promise<string | null>
