@@ -56,7 +56,7 @@ const defaultSettings: Settings = {
   autoScrollOnWheel: true,
   language: 'zh-CN',
   autoBackup: true,
-  backupInterval: 7,
+  backupInterval: 30,
   autoStart: false,
   preventSleep: false,
   maxDisplayText: 30,
