@@ -126,6 +126,12 @@ declare global {
       getCachedUpdateInfo: () => Promise<any>
       onUpdateStatus: (callback: (data: { status: string; data?: any }) => void) => () => void
     }
+    logApi: {
+      info: (message: string, meta?: any) => Promise<void>
+      warn: (message: string, meta?: any) => Promise<void>
+      error: (message: string, meta?: any) => Promise<void>
+      debug: (message: string, meta?: any) => Promise<void>
+    }
   }
 }
 

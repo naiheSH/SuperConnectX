@@ -7,7 +7,7 @@ import sys
 
 # 服务端配置
 PORT = 6666  # 自定义端口（默认 Telnet 端口 23，需管理员权限，此处用 2323 避免冲突）
-DEFAULT_SEND_INTERVAL = 1  # 数据推送间隔（秒）
+DEFAULT_SEND_INTERVAL = 0.1  # 数据推送间隔（秒）
 
 send_interval = DEFAULT_SEND_INTERVAL
 current_host = ""
@@ -72,6 +72,8 @@ def handle_client(client_socket: socket.socket, client_addr: tuple):
         client_socket.send(welcome_msg.encode("utf-8"))
 
         counter = 0
+        expand_counter = 0  # 每5s递增，控制数据量扩大倍数
+        last_expand_time = time.time()
         # 设置非阻塞模式（避免recv阻塞导致无法定时推送）
         client_socket.setblocking(False)
 
@@ -79,13 +81,23 @@ def handle_client(client_socket: socket.socket, client_addr: tuple):
             # 持续推送数据
             counter += 1
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            data = (
+            base_data = (
                 f"[server-{current_time}] "
                 f"counter: {counter:04d} | "
                 f"now is running | "
                 f"server: {current_host}:{PORT} | "
-                f"client: {client_addr[0]}:{client_addr[1]}\r\n"
+                f"client: {client_addr[0]}:{client_addr[1]}"
             )
+
+            # 每隔5s，将待发送数据扩大10倍（用 \n 连接）
+            now = time.time()
+            if now - last_expand_time >= 5.0:
+                expand_counter += 1
+                last_expand_time = now
+                print(f"[expand] expand_counter={expand_counter}, base_data will be repeated {expand_counter * 10} times")
+
+            repeat_count = max(1, expand_counter * 10)
+            data = "\n".join([base_data] * repeat_count) + "\r\n"
             client_socket.send(data.encode("utf-8"))
             time.sleep(send_interval)
 

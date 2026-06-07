@@ -124,6 +124,13 @@ contextBridge.exposeInMainWorld('dataCheckApi', {
   checkData: (pluginName: string, hexData: string) => ipcRenderer.invoke('datacheck:checkData', pluginName, hexData)
 })
 
+contextBridge.exposeInMainWorld('logApi', {
+  info: (message: string, meta?: any) => ipcRenderer.invoke('logger:info', message, meta),
+  warn: (message: string, meta?: any) => ipcRenderer.invoke('logger:warn', message, meta),
+  error: (message: string, meta?: any) => ipcRenderer.invoke('logger:error', message, meta),
+  debug: (message: string, meta?: any) => ipcRenderer.invoke('logger:debug', message, meta)
+})
+
 contextBridge.exposeInMainWorld('updateApi', {
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   startDownload: () => ipcRenderer.invoke('start-download'),

@@ -156,6 +156,8 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null
 const loadGroups = async () => {
   try {
     const data = await window.storageApi.getSyntaxRuleGroups()
+    console.log('[SyntaxHighlightPage] loadGroups:', { count: data?.length || 0 })
+    window.logApi.info('[SyntaxHighlightPage] loadGroups', { count: data?.length || 0 }).catch(() => {})
     if (data && Array.isArray(data)) {
       groups.value = data
       const maxGroupId = data.reduce((max, g) => Math.max(max, g.id || 0), 0)
@@ -172,7 +174,8 @@ const loadGroups = async () => {
       }
     }
   } catch (e) {
-    console.error('Failed to load syntax rule groups:', e)
+    console.error('[SyntaxHighlightPage] loadGroups ERROR:', e)
+    window.logApi.error('[SyntaxHighlightPage] loadGroups ERROR', { error: String(e) }).catch(() => {})
   }
 }
 
@@ -183,10 +186,13 @@ const saveGroups = () => {
     saveTimer = null
     try {
       const plainData = JSON.parse(JSON.stringify(groups.value))
+      console.log('[SyntaxHighlightPage] saveGroups:', { count: plainData.length, groupIds: plainData.map((g: SyntaxRuleGroupLocal) => g.id) })
+      window.logApi.info('[SyntaxHighlightPage] saveGroups', { count: plainData.length, groupIds: plainData.map((g: SyntaxRuleGroupLocal) => g.id) }).catch(() => {})
       await window.storageApi.saveSyntaxRuleGroups(plainData)
       window.dispatchEvent(new CustomEvent('syntax-rules-updated', { detail: plainData }))
     } catch (e) {
-      console.error('Failed to save syntax rule groups:', e)
+      console.error('[SyntaxHighlightPage] saveGroups ERROR:', e)
+      window.logApi.error('[SyntaxHighlightPage] saveGroups ERROR', { error: String(e) }).catch(() => {})
     }
   }, 150)
 }
