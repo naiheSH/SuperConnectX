@@ -2,7 +2,7 @@
   <div :class="['unified-terminal']">
 
     <!-- 终端输出区域 -->
-    <div ref="editorContainer" class="terminal-output" :style="terminalOutputStyle">
+    <div ref="editorContainer" class="terminal-output" :class="{ 'show-scrollbar': showScrollbar }" :style="terminalOutputStyle">
       <!-- 滚动按钮 -->
       <div class="scroll-wrapper">
         <el-button icon="ArrowUp" size="mini" circle @click="handleScrollToTop" class="scroll-btn up-btn" />
@@ -229,6 +229,7 @@ const isConnected = ref(props.isConnected)
 const isConnecting = ref(props.isConnecting)
 const isAutoScroll = ref(true)
 const isShowLog = ref(true)
+const showScrollbar = ref(false)
 const activeSyntaxGroupId = ref<number | undefined>(undefined)
 
 // 语法高亮调试日志辅助函数
@@ -497,6 +498,12 @@ const initEditor = async () => {
   editor.updateOptions({ readOnly: true })
 
   const domNode = editor.getDomNode()
+
+  // 鼠标悬浮时显示滚动条
+  if (domNode) {
+    domNode.addEventListener('mouseenter', () => { showScrollbar.value = true })
+    domNode.addEventListener('mouseleave', () => { showScrollbar.value = false })
+  }
 
   editor.onMouseDown(() => {
     if (autoScrollOnFocus) {
@@ -1553,16 +1560,16 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   border-radius: 4px;
 }
 
-.terminal-output:hover::-webkit-scrollbar {
+.terminal-output.show-scrollbar::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.terminal-output:hover::-webkit-scrollbar-thumb {
+.terminal-output.show-scrollbar::-webkit-scrollbar-thumb {
   background: #444;
 }
 
-.terminal-output:hover::-webkit-scrollbar-thumb:hover {
+.terminal-output.show-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
 
@@ -1572,18 +1579,18 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   transition: opacity 0.2s;
 }
 
-/* 鼠标悬停在编辑器主视图区时显示滚动条，但 overlay 浮层部件始终不显示 */
-:deep(.monaco-editor > .monaco-scrollable-element:hover > .scrollbar) {
+/* 鼠标悬停在编辑器主视图区时显示滚动条 */
+.terminal-output.show-scrollbar :deep(.monaco-scrollable-element > .scrollbar) {
   opacity: 1 !important;
 }
 
 /* overlay 浮层部件（Find Widget、hover、suggest 等）滚动条始终隐藏 */
-:deep(.monaco-editor-overlaymessage .monaco-scrollable-element:hover > .scrollbar),
-:deep(.find-widget .monaco-scrollable-element:hover > .scrollbar),
-:deep(.monaco-hover .monaco-scrollable-element:hover > .scrollbar),
-:deep(.suggest-widget .monaco-scrollable-element:hover > .scrollbar),
-:deep(.parameter-hints-widget .monaco-scrollable-element:hover > .scrollbar),
-:deep(.editor-widget .monaco-scrollable-element:hover > .scrollbar) {
+.terminal-output.show-scrollbar :deep(.monaco-editor-overlaymessage .monaco-scrollable-element > .scrollbar),
+.terminal-output.show-scrollbar :deep(.find-widget .monaco-scrollable-element > .scrollbar),
+.terminal-output.show-scrollbar :deep(.monaco-hover .monaco-scrollable-element > .scrollbar),
+.terminal-output.show-scrollbar :deep(.suggest-widget .monaco-scrollable-element > .scrollbar),
+.terminal-output.show-scrollbar :deep(.parameter-hints-widget .monaco-scrollable-element > .scrollbar),
+.terminal-output.show-scrollbar :deep(.editor-widget .monaco-scrollable-element > .scrollbar) {
   opacity: 0 !important;
 }
 
