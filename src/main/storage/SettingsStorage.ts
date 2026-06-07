@@ -23,6 +23,7 @@ interface SyntaxRuleGroup {
   name: string
   enabled: boolean
   subRules: SyntaxSubRule[]
+  previewText?: string
 }
 
 interface Settings {
@@ -96,6 +97,7 @@ const defaultSettings: Settings = {
       id: 1,
       name: '错误/警告/成功',
       enabled: true,
+      previewText: '[2024-01-15 10:30:45] INFO  System started SUCCESS\n[2024-01-15 10:30:46] WARN  Connection timeout, retrying...\n[2024-01-15 10:30:47] ERROR Failed to connect: Network unreachable\n[2024-01-15 10:30:48] INFO  Connection OK, data transfer started\n[2024-01-15 10:30:49] SUCCESS All checks passed',
       subRules: [
         { id: 1, matchType: 'regex', pattern: '(ERROR|FAIL|异常|失败|error|fail)', caseSensitive: false, foreground: '#FF4444', background: '', bold: true, italic: false, underline: false },
         { id: 2, matchType: 'regex', pattern: '(WARN|WARNING|警告|warn)', caseSensitive: false, foreground: '#E6A23C', background: '', bold: false, italic: false, underline: false },
@@ -106,6 +108,7 @@ const defaultSettings: Settings = {
       id: 2,
       name: 'IP地址高亮',
       enabled: true,
+      previewText: 'Connecting to 192.168.1.1:8080...\nReceived response from 10.0.0.1\nDNS resolved: 8.8.8.8 -> google.com\nGateway: 192.168.1.254\nListening on 0.0.0.0:3000',
       subRules: [
         { id: 4, matchType: 'regex', pattern: '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}', caseSensitive: false, foreground: '#409EFF', background: '', bold: false, italic: false, underline: true }
       ]

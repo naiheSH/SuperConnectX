@@ -28,6 +28,7 @@ declare global {
     name: string
     enabled: boolean
     subRules: SyntaxSubRule[]
+    previewText?: string
   }
 
   interface Window {

@@ -94,6 +94,14 @@
               {{ t('syntaxSettings.noRules') }}
             </div>
           </div>
+
+          <!-- 预览区域 -->
+          <div class="preview-section" :class="{ 'preview-focused': previewFocused }">
+            <div class="preview-header">
+              <span class="preview-title">{{ t('syntaxSettings.preview') }}</span>
+            </div>
+            <div ref="previewEditorContainer" class="preview-editor"></div>
+          </div>
         </template>
         <div v-else class="empty-hint" style="flex:1; display:flex; align-items:center; justify-content:center;">
           {{ t('syntaxSettings.selectGroupHint') }}
@@ -120,9 +128,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
+import * as monaco from 'monaco-editor'
 import { Plus, Delete } from '@element-plus/icons-vue'
 
 const { t } = useI18n()
@@ -144,6 +153,7 @@ interface SyntaxRuleGroupLocal {
   name: string
   enabled: boolean
   subRules: SyntaxSubRuleLocal[]
+  previewText?: string
 }
 
 const groups = ref<SyntaxRuleGroupLocal[]>([])
@@ -152,6 +162,17 @@ const activeGroup = ref<SyntaxRuleGroupLocal | null>(null)
 let nextRuleId = 100
 let nextGroupId = 100
 let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+// 预览 Monaco Editor
+const previewEditorContainer = ref<HTMLElement | null>(null)
+const previewFocused = ref(false)
+let previewEditor: monaco.editor.IStandaloneCodeEditor | null = null
+let previewModel: monaco.editor.ITextModel | null = null
+let previewStyleEl: HTMLStyleElement | null = null
+let previewDecorationIds: string[] = []
+let previewApplyTimer: ReturnType<typeof setTimeout> | null = null
+const regexCache = new Map<string, RegExp | null>()
+const syntaxClassMap = new Map<string, string>()
 
 // 颜色选择器预定义常用颜色
 const predefineColors = [
@@ -231,7 +252,8 @@ const addGroup = () => {
     id: nextGroupId++,
     name: `${t('syntaxSettings.newGroup')} ${groups.value.length + 1}`,
     enabled: true,
-    subRules: []
+    subRules: [],
+    previewText: ''
   }
   groups.value.push(newGroup)
   selectGroup(newGroup)
@@ -358,10 +380,188 @@ const deleteRule = (idx: number) => {
 
 const onRuleChanged = () => {
   saveGroups()
+  schedulePreviewApply()
 }
 
-onMounted(() => {
-  loadGroups()
+// ---- 预览 Monaco Editor ----
+
+const initPreviewEditor = () => {
+  if (!previewEditorContainer.value) return
+
+  previewModel = monaco.editor.createModel('', 'plaintext')
+  previewEditor = monaco.editor.create(previewEditorContainer.value, {
+    model: previewModel,
+    readOnly: false,
+    lineNumbers: 'on',
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    theme: 'vs-dark',
+    automaticLayout: true,
+    hover: { enabled: false },
+    occurrencesHighlight: 'off',
+    selectionHighlight: false,
+    codeLens: false,
+    links: false,
+    wordWrap: 'on',
+    fontSize: 13,
+    fontFamily: "'Fira Code', 'Consolas', monospace"
+  })
+
+  // 监听文本变化，同步到 activeGroup.previewText
+  previewModel.onDidChangeContent(() => {
+    if (!activeGroup.value || !previewModel) return
+    activeGroup.value.previewText = previewModel.getValue()
+    saveGroups()
+    schedulePreviewApply()
+  })
+
+  // 监听焦点变化
+  previewEditor.onDidFocusEditorText(() => {
+    previewFocused.value = true
+  })
+  previewEditor.onDidBlurEditorText(() => {
+    previewFocused.value = false
+  })
+}
+
+const schedulePreviewApply = () => {
+  if (previewApplyTimer) clearTimeout(previewApplyTimer)
+  previewApplyTimer = setTimeout(() => {
+    previewApplyTimer = null
+    applyPreviewSyntax()
+  }, 150)
+}
+
+const applyPreviewSyntax = () => {
+  if (!previewEditor || !previewModel || !activeGroup.value) return
+
+  // 清除旧的装饰
+  if (previewDecorationIds.length > 0) {
+    previewDecorationIds = previewEditor.deltaDecorations(previewDecorationIds, [])
+  }
+
+  // 清除旧的样式元素
+  if (previewStyleEl) {
+    previewStyleEl.remove()
+    previewStyleEl = null
+  }
+  regexCache.clear()
+  syntaxClassMap.clear()
+
+  const rules = activeGroup.value.subRules
+  if (!rules || rules.length === 0) return
+
+  const fullText = previewModel.getValue()
+  if (!fullText) return
+
+  const decorations: monaco.editor.IModelDeltaDecoration[] = []
+  let classIndex = 0
+
+  for (const rule of rules) {
+    if (!rule.pattern.trim()) continue
+
+    const regex = buildRegexFromRule(rule)
+    if (!regex) continue
+
+    // 为每个唯一的样式组合生成 CSS class
+    const styleKey = `${rule.foreground}|${rule.background}|${rule.bold}|${rule.italic}|${rule.underline}`
+    let className = syntaxClassMap.get(styleKey)
+    if (!className) {
+      className = `syntax-preview-hl-${classIndex++}`
+      syntaxClassMap.set(styleKey, className)
+    }
+
+    // 全局匹配
+    let match: RegExpExecArray | null
+    while ((match = regex.exec(fullText)) !== null) {
+      const startPos = previewModel.getPositionAt(match.index)
+      const endPos = previewModel.getPositionAt(match.index + match[0].length)
+      decorations.push({
+        range: new monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
+        options: { inlineClassName: className }
+      })
+      if (match[0].length === 0) break // 防止死循环
+    }
+  }
+
+  // 注入 CSS 样式
+  if (classIndex > 0) {
+    let cssText = ''
+    for (const [styleKey, className] of syntaxClassMap) {
+      const [foreground, background, bold, italic, underline] = styleKey.split('|')
+      const rules: string[] = []
+      if (foreground) rules.push(`color: ${foreground} !important`)
+      if (background) rules.push(`background-color: ${background} !important`)
+      if (bold === 'true') rules.push('font-weight: bold !important')
+      if (italic === 'true') rules.push('font-style: italic !important')
+      if (underline === 'true') rules.push('text-decoration: underline !important')
+      if (rules.length > 0) {
+        cssText += `.${className} { ${rules.join('; ')} }\n`
+      }
+    }
+    if (cssText) {
+      previewStyleEl = document.createElement('style')
+      previewStyleEl.textContent = cssText
+      document.head.appendChild(previewStyleEl)
+    }
+  }
+
+  // 应用装饰
+  if (decorations.length > 0) {
+    previewDecorationIds = previewEditor.deltaDecorations([], decorations)
+  }
+}
+
+const buildRegexFromRule = (rule: SyntaxSubRuleLocal): RegExp | null => {
+  const cacheKey = `${rule.matchType}|${rule.pattern}|${rule.caseSensitive}`
+  const cached = regexCache.get(cacheKey)
+  if (cached !== undefined) return cached
+
+  try {
+    let regex: RegExp | null = null
+    if (rule.matchType === 'keyword') {
+      const keywords = rule.pattern.split(',').map(k => k.trim()).filter(k => k)
+      if (keywords.length === 0) { regexCache.set(cacheKey, null); return null }
+      const escaped = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      regex = new RegExp(escaped.join('|'), `g${rule.caseSensitive ? '' : 'i'}`)
+    } else {
+      regex = new RegExp(rule.pattern, `g${rule.caseSensitive ? '' : 'i'}`)
+    }
+    regexCache.set(cacheKey, regex)
+    return regex
+  } catch {
+    regexCache.set(cacheKey, null)
+    return null
+  }
+}
+
+const setPreviewText = (text: string) => {
+  if (!previewModel) return
+  // 避免循环触发 onDidChangeContent
+  if (previewModel.getValue() === text) return
+  previewModel.setValue(text)
+}
+
+// 当切换组时，更新预览文本
+watch(activeGroup, (newGroup) => {
+  if (!previewModel) return
+  if (newGroup) {
+    setPreviewText(newGroup.previewText || '')
+  } else {
+    setPreviewText('')
+  }
+})
+
+onMounted(async () => {
+  await loadGroups()
+  // 初始化预览编辑器
+  await nextTick()
+  initPreviewEditor()
+  // 初始化后应用一次语法高亮
+  if (activeGroup.value && previewModel) {
+    setPreviewText(activeGroup.value.previewText || '')
+    schedulePreviewApply()
+  }
   document.addEventListener('click', closeContextMenuOnClickOutside)
   document.addEventListener('contextmenu', () => {
     contextMenuVisible.value = false
@@ -377,6 +577,13 @@ onUnmounted(() => {
     window.storageApi.saveSyntaxRuleGroups(plainData).catch(() => {})
     window.dispatchEvent(new CustomEvent('syntax-rules-updated', { detail: plainData }))
   }
+  // 清理预览编辑器
+  if (previewApplyTimer) clearTimeout(previewApplyTimer)
+  if (previewStyleEl) { previewStyleEl.remove(); previewStyleEl = null }
+  if (previewEditor) { previewEditor.dispose(); previewEditor = null }
+  if (previewModel) { previewModel.dispose(); previewModel = null }
+  regexCache.clear()
+  syntaxClassMap.clear()
   document.removeEventListener('click', closeContextMenuOnClickOutside)
   document.removeEventListener('contextmenu', () => {
     contextMenuVisible.value = false
@@ -501,6 +708,7 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  min-height: 0;
 }
 
 .rules-table {
@@ -600,6 +808,48 @@ onUnmounted(() => {
   font-size: 13px;
   padding: 24px;
   text-align: center;
+}
+
+/* 预览区域 */
+.preview-section {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 200px;
+  margin: 16px 16px 16px 16px;
+  border: 1px solid #3c3c3c;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #1e1e1e;
+}
+
+.preview-section.preview-focused {
+  border-color: #2E5CC7;
+  box-shadow: 0 0 0 1px #2E5CC7;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  flex-shrink: 0;
+}
+
+.preview-title {
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* 滚动条 */
