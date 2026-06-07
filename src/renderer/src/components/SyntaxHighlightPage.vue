@@ -63,10 +63,10 @@
                   <td class="col-style">
                     <div class="style-edit-cell">
                       <el-tooltip :content="t('syntaxSettings.foreground')" placement="top">
-                        <span class="color-picker-wrap"><el-color-picker v-model="rule.foreground" size="small" @change="onRuleChanged" /></span>
+                        <span class="color-picker-wrap"><el-color-picker v-model="rule.foreground" size="small" :predefine="predefineColors" @change="onRuleChanged" /></span>
                       </el-tooltip>
                       <el-tooltip :content="t('syntaxSettings.background')" placement="top">
-                        <span class="color-picker-wrap"><el-color-picker v-model="rule.background" size="small" class="bg-color-picker" @change="onRuleChanged" /></span>
+                        <span class="color-picker-wrap"><el-color-picker v-model="rule.background" size="small" class="bg-color-picker" :predefine="predefineColors" @change="onRuleChanged" /></span>
                       </el-tooltip>
                       <el-tooltip :content="t('syntaxSettings.bold')" placement="top">
                         <span class="style-toggle" :class="{ active: rule.bold }" @click="rule.bold = !rule.bold; onRuleChanged()">B</span>
@@ -152,6 +152,30 @@ const activeGroup = ref<SyntaxRuleGroupLocal | null>(null)
 let nextRuleId = 100
 let nextGroupId = 100
 let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+// 颜色选择器预定义常用颜色
+const predefineColors = [
+  // 黑白灰
+  '#ffffff', '#f0f0f0', '#dcdcdc', '#c0c0c0', '#a9a9a9', '#808080', '#696969', '#404040', '#2d2d2d', '#1a1a1a', '#000000',
+  // 红色系
+  '#ff0000', '#ff4500', '#dc143c', '#cd5c5c', '#b22222', '#8b0000', '#800000',
+  // 橙色系
+  '#ffa500', '#ff8c00', '#ff7f50', '#f4a460',
+  // 黄色系
+  '#ffff00', '#ffd700', '#f0e68c', '#daa520',
+  // 绿色系
+  '#00ff00', '#32cd32', '#00fa9a', '#90ee90', '#3cb371', '#2e8b57', '#228b22', '#006400',
+  // 青色系
+  '#00ffff', '#00ced1', '#20b2aa', '#008b8b',
+  // 蓝色系
+  '#0000ff', '#1e90ff', '#4169e1', '#6495ed', '#4682b4', '#00008b',
+  // 紫色系
+  '#800080', '#8b008b', '#9400d3', '#c71585', '#ff1493', '#db7093', '#ba55d3',
+  // 棕色系
+  '#8b4513', '#a0522d', '#d2691e', '#cd853f',
+  // 补充
+  '#ff6347', '#7fffd4', '#ff69b4', '#adff2f', '#00bfff',
+]
 
 const loadGroups = async () => {
   try {
