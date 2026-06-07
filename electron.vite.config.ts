@@ -7,7 +7,19 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
     build: {
-      outDir: resolve('out/main') // 明确主进程输出到 out/main
+      outDir: resolve('out/main'), // 明确主进程输出到 out/main
+      rollupOptions: {
+        input: {
+          index: resolve('src/main/index.ts'),
+          // Worker 线程入口，作为独立 chunk 打包，供 Worker Pool 动态加载
+          'workers/ConnectionWorker': resolve('src/main/workers/ConnectionWorker.ts')
+        },
+        output: {
+          // 保持目录结构，确保 Worker 路径与源码一致
+          entryFileNames: '[name].js',
+          chunkFileNames: 'chunks/[name]-[hash].js'
+        }
+      }
     }
   },
   preload: {

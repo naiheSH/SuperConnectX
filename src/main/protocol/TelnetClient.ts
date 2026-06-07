@@ -1,6 +1,5 @@
 import { Telnet } from 'telnet-client'
-import logger from '../ipc/IpcAppLogger'
-import BaseClient from './BaseClient'
+import BaseClient, { ILogger } from './BaseClient'
 import ConnectionInfo from './ConnectionInfo'
 import { BufferLineSplitter } from './BufferLineSplitter'
 
@@ -28,6 +27,10 @@ export default class TelnetClient extends BaseClient {
   telnetConnections = new Map<string, Telnet>()
   connectionInfos = new Map<string, TelnetConnectionInfo>()
   telnetConnectionData = new Map<string, TelnetConnection>()
+
+  constructor(logger?: ILogger) {
+    super(logger)
+  }
 
   // 处理缓冲区数据，按行分割并添加时间戳
   private processBuffer(sessionId: string): void {
@@ -63,8 +66,8 @@ export default class TelnetClient extends BaseClient {
         stripShellPrompt: false // 不剥离shell提示符（避免干扰连接）
       }
 
-      logger.info(`start to connect: ${host}:${port} (session: ${sessionId})`)
-      logger.debug(JSON.stringify(params))
+      this.logger.info(`start to connect: ${host}:${port} (session: ${sessionId})`)
+      this.logger.debug(JSON.stringify(params))
 
       await connection.connect(params)
       this.telnetConnections.set(sessionId, connection)
@@ -94,7 +97,7 @@ export default class TelnetClient extends BaseClient {
       }, READ_INTERVAL_MS)
 
       connection.on('close', () => {
-        logger.info(`telnet connection closed: ${host}:${port}`)
+        this.logger.info(`telnet connection closed: ${host}:${port}`)
         if (connData.timer) {
           clearInterval(connData.timer)
           connData.timer = null
@@ -113,10 +116,10 @@ export default class TelnetClient extends BaseClient {
         onClose?.()
       })
 
-      logger.info(`connect ok`)
+      this.logger.info(`connect ok`)
       return { success: true, message: 'Connected successfully', connId: sessionId }
     } catch (error) {
-      logger.error('telnet connect failed', { host, port, sessionId, error })
+      this.logger.error('telnet connect failed', { host, port, sessionId, error })
       return {
         success: false,
         message: error instanceof Error ? error.message : '连接失败'
@@ -135,10 +138,10 @@ export default class TelnetClient extends BaseClient {
       await connection.send(command + '\n')
       onComplete?.(dataStr)
 
-      logger.info(`send command: ${command}`)
+      this.logger.info(`send command: ${command}`)
       return { success: true }
     } catch (error) {
-      logger.error('telnet send failed', { connId, command, error })
+      this.logger.error('telnet send failed', { connId, command, error })
       return {
         success: false,
         message: error instanceof Error ? error.message : '发送命令失败'
@@ -151,7 +154,7 @@ export default class TelnetClient extends BaseClient {
     const info = this.connectionInfos.get(connId)
     const connData = this.telnetConnectionData.get(connId)
     if (connection) {
-      logger.info(`disconnect: ${info?.host}:${info?.port}`)
+      this.logger.info(`disconnect: ${info?.host}:${info?.port}`)
 
       // 停止定时器
       if (connData?.timer) {
@@ -166,8 +169,14 @@ export default class TelnetClient extends BaseClient {
       this.connectionInfos.delete(connId)
       this.telnetConnectionData.delete(connId)
     } else {
-      logger.warn('not find connId for disconnect', { connId })
+      this.logger.warn('not find connId for disconnect', { connId })
     }
     return { success: true }
+  }
+
+  async updateConfig(_connId: string, _config: any): Promise<object> {
+    // Telnet 连接不支持运行时参数热更新（host/port 无法动态变更）
+    // receiveHex 和 logTimestamp 的切换在主线程 / Worker 的 onData/onLog 回调中处理
+    return { success: true, message: 'No config to update for Telnet' }
   }
 }

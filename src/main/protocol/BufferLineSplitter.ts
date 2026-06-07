@@ -54,7 +54,7 @@ export class BufferLineSplitter {
         const lfPos = buffer.indexOf(LF, offset)
         if (lfPos === -1) break
 
-        const line = buffer.toString(this.encoding, offset, lfPos)
+        const line = buffer.toString(this.encoding as BufferEncoding, offset, lfPos)
         offset = lfPos + 1
         if (line) {
           dataLines.push(line)
@@ -65,7 +65,7 @@ export class BufferLineSplitter {
 
       // 检查 \r\n 组合
       if (crPos + 1 < bufLen && buffer[crPos + 1] === LF) {
-        const line = buffer.toString(this.encoding, offset, crPos)
+        const line = buffer.toString(this.encoding as BufferEncoding, offset, crPos)
         offset = crPos + 2
         if (line) {
           dataLines.push(line)
@@ -73,7 +73,7 @@ export class BufferLineSplitter {
         }
       } else {
         // 单独的 \r
-        const line = buffer.toString(this.encoding, offset, crPos)
+        const line = buffer.toString(this.encoding as BufferEncoding, offset, crPos)
         offset = crPos + 1
         if (line) {
           dataLines.push(line)

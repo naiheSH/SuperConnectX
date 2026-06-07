@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import logger from './IpcAppLogger'
 import { printAppInfo } from '../utils/PrintAppInfo'
 import IpcTray from './IpcTray'
+import IpcConnector from './IpcConnector'
 import SettingsStorage from '../storage/SettingsStorage'
 import BackupManager from '../utils/BackupManager'
 import AppUpdater from '../updater/AppUpdater'
@@ -141,11 +142,13 @@ export default class IpcMain {
       }, 300)
     })
 
-    app.on('before-quit', (_event) => {
+    app.on('before-quit', async (_event) => {
       if (isQuitting) return
       isQuitting = true
       ;(app as any).isQuitting = true
       _logger.flush()
+      // 关闭所有 Worker 连接
+      await IpcConnector.getInstance().cleanup()
       // 真正退出时销毁托盘
       IpcTray.getInstance().destroyTray()
       // 退出时执行自动备份（用户数据已保存）

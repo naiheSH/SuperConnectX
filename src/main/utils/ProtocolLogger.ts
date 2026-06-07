@@ -159,7 +159,7 @@ export default class ProtocolLogger {
   // 启动定时写入
   private startWriteTimer(): void {
     this.writeTimer = setInterval(() => {
-      this.flushAllLogs(false) // 正常运行时异步写入
+      this.flushAllLogs(false) // 正常运行时异步写入，不阻塞事件循环
     }, this.BATCH_WRITE_INTERVAL_MS)
     if (this.writeTimer.unref) this.writeTimer.unref()
   }
@@ -208,8 +208,8 @@ export default class ProtocolLogger {
     return fileName
   }
 
-  // 批量写入日志（区分同步/异步）
-  private flushAllLogs(isSync: boolean = true): void {
+  // 批量写入日志（默认异步，isSync=true 时同步写入）
+  private flushAllLogs(isSync: boolean = false): void {
     this.logCache.forEach((logEntries, connId) => {
       if (logEntries.length <= 0) {
         return
@@ -226,21 +226,19 @@ export default class ProtocolLogger {
 
       try {
         if (isSync) {
-          // 退出时同步写入（纯Node.js API，无Electron依赖）
+          // 退出时同步写入
           appendFileSync(logFile, logData, 'utf-8')
-          // 更新文件大小
           const stats = statSync(logFile)
           this.currentFileSizes.set(connId, stats.size)
         } else {
-          // 正常运行时异步写入
+          // 正常运行时异步写入（不阻塞事件循环）
           appendFile(logFile, logData, 'utf-8', (err) => {
             if (err) console.error(`Async write log failed [connId:${connId}]:`, err)
             else {
-              // 异步写入成功后更新文件大小
               try {
                 const stats = statSync(logFile)
                 this.currentFileSizes.set(connId, stats.size)
-              } catch {}
+              } catch { /* ignore */ }
             }
           })
         }

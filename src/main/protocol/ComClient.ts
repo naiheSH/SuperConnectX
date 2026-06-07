@@ -1,6 +1,5 @@
 import { SerialPort } from 'serialport'
-import logger from '../ipc/IpcAppLogger'
-import BaseClient from './BaseClient'
+import BaseClient, { ILogger } from './BaseClient'
 import ConnectionInfo from './ConnectionInfo'
 import { BufferLineSplitter } from './BufferLineSplitter'
 
@@ -27,6 +26,10 @@ interface SerialConnection {
 
 export default class ComClient extends BaseClient {
   serialConnections = new Map<string, SerialConnection>()
+
+  constructor(logger?: ILogger) {
+    super(logger)
+  }
 
   // 处理缓冲区数据，按行分割并添加时间戳
   private processBuffer(connection: SerialConnection): void {
@@ -59,8 +62,8 @@ export default class ComClient extends BaseClient {
     }
 
     try {
-      logger.info(`start to connect serial port: ${comName} @ ${baudRate} (session: ${sessionId})`)
-      logger.debug(`dataBits: ${dataBits}, stopBits: ${stopBits}, parity: ${parity}, encoding: ${encoding}, readTimeout: ${readTimeout}`)
+      this.logger.info(`start to connect serial port: ${comName} @ ${baudRate} (session: ${sessionId})`)
+      this.logger.debug(`dataBits: ${dataBits}, stopBits: ${stopBits}, parity: ${parity}, encoding: ${encoding}, readTimeout: ${readTimeout}`)
 
       // 获取流控制配置
       const flowControl = info.flowControl || 'none'
@@ -89,7 +92,7 @@ export default class ComClient extends BaseClient {
 
       return new Promise((resolve, reject) => {
         port.once('open', () => {
-          logger.info(`serial port opened successfully`)
+          this.logger.info(`serial port opened successfully`)
 
           const connection: SerialConnection = {
             port,
@@ -116,7 +119,7 @@ export default class ComClient extends BaseClient {
           }, READ_INTERVAL_MS)
 
           port.on('close', () => {
-            logger.info(`serial port closed: ${comName}`)
+            this.logger.info(`serial port closed: ${comName}`)
             if (connection.timer) {
               clearInterval(connection.timer)
               connection.timer = null
@@ -134,26 +137,26 @@ export default class ComClient extends BaseClient {
           })
 
           port.on('error', (err: Error) => {
-            logger.error(`serial port error: ${err.message}`)
+            this.logger.error(`serial port error: ${err.message}`)
           })
 
           resolve({ success: true, message: 'Connected successfully', connId: sessionId })
         })
 
         port.once('error', (err: Error) => {
-          logger.error(`serial port open failed: ${err.message}`)
+          this.logger.error(`serial port open failed: ${err.message}`)
           reject(new Error(err.message || '打开串口失败'))
         })
 
         port.open((err: Error | null) => {
           if (err) {
-            logger.error(`serial port open error: ${err.message}`)
+            this.logger.error(`serial port open error: ${err.message}`)
             reject(new Error(err.message || '打开串口失败'))
           }
         })
       })
     } catch (error) {
-      logger.error('serial connect failed', { comName, baudRate, sessionId, error })
+      this.logger.error('serial connect failed', { comName, baudRate, sessionId, error })
       return {
         success: false,
         message: error instanceof Error ? error.message : '连接失败'
@@ -170,18 +173,21 @@ export default class ComClient extends BaseClient {
     try {
       const dataStr = `[${new Date().toISOString()}] SEND >>>>>>>>>> ${command}`
       const commandWithNewline = command.endsWith(COMMAND_LINE_TERMINATOR) ? command : (command.endsWith('\n') ? command.replace(/\n$/, COMMAND_LINE_TERMINATOR) : command + COMMAND_LINE_TERMINATOR)
-      connection.port.write(commandWithNewline, connection.encoding as BufferEncoding, (err: Error | null | undefined) => {
-        if (err) {
-          logger.error(`serial write error: ${err.message}`)
-          return
-        }
-        onComplete?.(dataStr)
-        logger.info(`send command: ${command}`)
+      
+      return new Promise((resolve) => {
+        connection.port.write(commandWithNewline, connection.encoding as BufferEncoding, (err: Error | null | undefined) => {
+          if (err) {
+            this.logger.error(`serial write error: ${err.message}`)
+            resolve({ success: false, message: err.message })
+            return
+          }
+          onComplete?.(dataStr)
+          this.logger.info(`send command: ${command}`)
+          resolve({ success: true })
+        })
       })
-
-      return { success: true }
     } catch (error) {
-      logger.error('serial send failed', { connId, command, error })
+      this.logger.error('serial send failed', { connId, command, error })
       return {
         success: false,
         message: error instanceof Error ? error.message : '发送命令失败'
@@ -192,7 +198,7 @@ export default class ComClient extends BaseClient {
   async disconnect(connId: string): Promise<object> {
     const connection = this.serialConnections.get(connId)
     if (connection) {
-      logger.info(`disconnect serial port: ${connection.port.path}`)
+      this.logger.info(`disconnect serial port: ${connection.port.path}`)
 
       // 停止定时器
       if (connection.timer) {
@@ -204,12 +210,12 @@ export default class ComClient extends BaseClient {
       connection.port.removeAllListeners('close')
       connection.port.close((err: Error | null) => {
         if (err) {
-          logger.error(`serial port close error: ${err.message}`)
+          this.logger.error(`serial port close error: ${err.message}`)
         }
       })
       this.serialConnections.delete(connId)
     } else {
-      logger.warn('not find connId for disconnect', { connId })
+      this.logger.warn('not find connId for disconnect', { connId })
     }
     return { success: true }
   }
@@ -234,7 +240,7 @@ export default class ComClient extends BaseClient {
       if (connection) {
         connection.receiveHex = config.receiveHex
         connection.splitter.updateReceiveHex(config.receiveHex)
-        logger.info(`update serial receiveHex: ${config.receiveHex}, sessionId: ${connId}`)
+        this.logger.info(`update serial receiveHex: ${config.receiveHex}, sessionId: ${connId}`)
         return { success: true, message: 'Updated successfully' }
       }
       return { success: false, message: 'Connection does not exist' }
@@ -258,7 +264,7 @@ export default class ComClient extends BaseClient {
     const newRts = config.rts !== undefined ? config.rts : true
     const newDtr = config.dtr !== undefined ? config.dtr : true
 
-    logger.info(`update serial config: ${comName} @ ${newBaudRate}, dataBits: ${newDataBits}, stopBits: ${newStopBits}, parity: ${newParity}, encoding: ${newEncoding}, flowControl: ${newFlowControl}, rts: ${newRts}, dtr: ${newDtr}`)
+    this.logger.info(`update serial config: ${comName} @ ${newBaudRate}, dataBits: ${newDataBits}, stopBits: ${newStopBits}, parity: ${newParity}, encoding: ${newEncoding}, flowControl: ${newFlowControl}, rts: ${newRts}, dtr: ${newDtr}`)
 
     return new Promise((resolve) => {
       // 保存回调
@@ -279,7 +285,7 @@ export default class ComClient extends BaseClient {
       // 关闭当前端口
       port.close((err: Error | null) => {
         if (err) {
-          logger.error(`close port error: ${err.message}`)
+          this.logger.error(`close port error: ${err.message}`)
         }
 
         // 重新打开新配置的端口
@@ -299,7 +305,7 @@ export default class ComClient extends BaseClient {
         })
 
         newPort.once('open', () => {
-          logger.info(`serial port reopened successfully with new config`)
+          this.logger.info(`serial port reopened successfully with new config`)
 
           // 更新连接信息
           const newConnection: SerialConnection = {
@@ -327,7 +333,7 @@ export default class ComClient extends BaseClient {
           }, READ_INTERVAL_MS)
 
           newPort.on('close', () => {
-            logger.info(`serial port closed after update: ${comName}`)
+            this.logger.info(`serial port closed after update: ${comName}`)
             if (newConnection.timer) {
               clearInterval(newConnection.timer)
               newConnection.timer = null
@@ -336,14 +342,14 @@ export default class ComClient extends BaseClient {
           })
 
           newPort.on('error', (err: Error) => {
-            logger.error(`serial port error after update: ${err.message}`)
+            this.logger.error(`serial port error after update: ${err.message}`)
           })
 
           resolve({ success: true, message: 'Configuration updated successfully' })
         })
 
         newPort.once('error', (err: Error) => {
-          logger.error(`reopen port error: ${err.message}`)
+          this.logger.error(`reopen port error: ${err.message}`)
           // 尝试恢复原来的连接
           this.reopenPort(connId, connection)
           resolve({ success: false, message: err.message || '更新配置失败' })
@@ -351,7 +357,7 @@ export default class ComClient extends BaseClient {
 
         newPort.open((err: Error | null) => {
           if (err) {
-            logger.error(`open port error: ${err.message}`)
+            this.logger.error(`open port error: ${err.message}`)
             this.reopenPort(connId, connection)
             resolve({ success: false, message: err.message || '打开串口失败' })
           }
@@ -408,9 +414,9 @@ export default class ComClient extends BaseClient {
           this.serialConnections.delete(connId)
         })
 
-        logger.info(`serial port recovered: ${comName} @ ${baudRate}`)
+        this.logger.info(`serial port recovered: ${comName} @ ${baudRate}`)
       } else {
-        logger.error(`cannot recover serial port: ${err.message}`)
+        this.logger.error(`cannot recover serial port: ${err.message}`)
       }
     })
   }
@@ -420,7 +426,7 @@ export default class ComClient extends BaseClient {
     if (connection) {
       connection.receiveHex = receiveHex
       connection.splitter.updateReceiveHex(receiveHex)
-      logger.info(`setReceiveHex: ${receiveHex} for sessionId: ${connId}`)
+      this.logger.info(`setReceiveHex: ${receiveHex} for sessionId: ${connId}`)
     }
   }
 }
