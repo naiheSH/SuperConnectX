@@ -636,3 +636,164 @@ input[type="number"] {
   font-size: 12px !important;
   line-height: 22px !important;
 }
+
+/* ==============================
+   Color Picker 颜色选择器面板样式
+   Element Plus 面板类名：el-color-picker-panel + el-color-picker__panel
+   （面板通过 teleport 渲染到 body，必须用全局样式）
+   ============================== */
+
+/* 外层 popper panel */
+.el-color-picker__panel {
+  background-color: #252526 !important;
+  border: 1px solid #3c3c3c !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 内层面板主容器 */
+.el-color-picker-panel {
+  background: #252526 !important;
+  padding: 12px !important;
+}
+
+.el-color-picker-panel.is-border {
+  border: none !important;
+}
+
+/* 底部 footer（按钮 + 输入框区域） */
+.el-color-picker-panel__footer {
+  margin-top: 12px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+/* footer 中的输入框 */
+.el-color-picker-panel__footer .el-input {
+  color: #e8e8e8 !important;
+}
+
+.el-color-picker-panel__footer .el-input .el-input__wrapper {
+  background-color: #3c3c3c !important;
+  border: 1px solid #4a4a4a !important;
+  box-shadow: none !important;
+}
+
+.el-color-picker-panel__footer .el-input .el-input__wrapper:hover,
+.el-color-picker-panel__footer .el-input .el-input__wrapper:focus-within {
+  border-color: var(--focus-border-color) !important;
+}
+
+.el-color-picker-panel__footer .el-input .el-input__inner {
+  color: #e8e8e8 !important;
+  font-size: 12px !important;
+}
+
+/* 面板内按钮统一样式 */
+.el-color-picker-panel__footer .el-button {
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  padding: 5px 14px !important;
+  height: 28px !important;
+}
+
+/* Clear 按钮（el-color-footer__link-btn，text 属性，红色样式） */
+.el-color-footer__link-btn.el-button {
+  background-color: #c45656 !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.el-color-footer__link-btn.el-button:hover {
+  background-color: #d66a6a !important;
+}
+
+.el-color-footer__link-btn.el-button:active {
+  background-color: #b04545 !important;
+}
+
+/* OK 确认按钮（el-color-footer__btn，plain 属性，primary 类型） */
+.el-color-footer__btn.el-button {
+  background-color: #0e639c !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.el-color-footer__btn.el-button:hover {
+  background-color: #1177bb !important;
+}
+
+.el-color-footer__btn.el-button:active {
+  background-color: #0d5a8c !important;
+}
+
+/* 兜底：footer 中的其他 el-button--primary */
+.el-color-picker-panel__footer .el-button--primary {
+  background-color: #0e639c !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.el-color-picker-panel__footer .el-button--primary:hover {
+  background-color: #1177bb !important;
+}
+
+/* SV 面板（饱和度/明度选择区） */
+.el-color-svpanel {
+  border-radius: 4px !important;
+  overflow: hidden !important;
+}
+
+/* SV 面板 cursor */
+.el-color-svpanel__cursor {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+/* 色调滑块 */
+.el-color-hue-slider {
+  border-radius: 4px !important;
+  margin-top: 8px !important;
+}
+
+.el-color-hue-slider__bar {
+  border-radius: 4px !important;
+}
+
+/* Alpha 透明度滑块 */
+.el-color-alpha-slider {
+  border-radius: 4px !important;
+  margin-top: 8px !important;
+}
+
+.el-color-alpha-slider__bar {
+  border-radius: 4px !important;
+}
+
+/* 滑块 thumb */
+.el-color-hue-slider__thumb,
+.el-color-alpha-slider__thumb {
+  width: 6px !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 2px rgba(0,0,0,0.6) !important;
+}
+
+/* 预定义颜色块 */
+.el-color-predefine {
+  margin-top: 10px !important;
+}
+
+.el-color-predefine__color-selector {
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+
+.el-color-predefine__color-selector:hover {
+  box-shadow: 0 0 0 2px #60a5fa !important;
+}
+
+.el-color-predefine__color-selector.selected {
+  box-shadow: 0 0 0 2px #ffffff !important;
+}
+
