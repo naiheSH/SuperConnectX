@@ -88,6 +88,13 @@
         </el-button>
         <el-button
           v-if="status === 'update-available'"
+          class="website-btn"
+          @click="handleOpenWebsite"
+        >
+          {{ t('update.openWebsite') }}
+        </el-button>
+        <el-button
+          v-if="status === 'update-available'"
           icon="Refresh"
           class="recheck-btn"
           @click="handleRecheck"
@@ -259,6 +266,13 @@ const handleStartDownload = () => {
   window.updateApi.startDownload()
 }
 
+const handleOpenWebsite = () => {
+  const repoUrl = 'https://github.com/SuperStudio/SuperConnectX'
+  const tagVersion = updateInfo.value?.version || currentVersion.value
+  const url = `${repoUrl}/releases/tag/v${tagVersion}`
+  window.toolApi.openExternalUrl(url)
+}
+
 const handleCancelDownload = () => {
   window.updateApi.cancelDownload()
 }
@@ -424,6 +438,18 @@ defineExpose({ open })
   justify-content: center;
   align-items: center;
   gap: 8px;
+}
+
+.website-btn {
+  background-color: transparent !important;
+  border: 1px solid #555 !important;
+  color: #aaa !important;
+}
+
+.website-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: #888 !important;
+  color: #ddd !important;
 }
 
 .recheck-btn {

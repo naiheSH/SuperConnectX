@@ -349,6 +349,7 @@
     "restartNow": "Restart Now",
     "retry": "Retry",
     "recheck": "Recheck",
+    "openWebsite": "Download",
     "error": "Update Error",
     "unknownError": "Unknown error"
   }

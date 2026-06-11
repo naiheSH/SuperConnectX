@@ -349,6 +349,7 @@
     "restartNow": "立即重启",
     "retry": "重试",
     "recheck": "重新检测",
+    "openWebsite": "官网下载",
     "error": "更新出错",
     "unknownError": "未知错误"
   }
