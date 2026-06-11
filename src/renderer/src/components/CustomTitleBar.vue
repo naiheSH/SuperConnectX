@@ -32,7 +32,7 @@
         <div
           class="dropdown-menu"
           v-if="showFileMenu"
-          @mouseenter="((showFileMenu = true), (showEditMenu = false), (showToolsMenu = false), (showHelpMenu = false))"
+          @mouseenter="handleDropdownMouseEnter('file')"
           @mouseleave="hideFileMenu"
         >
           <div class="menu-item" @click="importCmd">{{ t('titlebar.importCmd') }}</div>
@@ -51,7 +51,23 @@
         @mouseleave="handleMenuMouseLeave('edit')"
       >
         <button class="menu-btn">{{ t('titlebar.edit') }}</button>
-        <div class="dropdown-menu" v-if="showEditMenu">
+        <div class="dropdown-menu" v-if="showEditMenu"
+          @mouseenter="handleDropdownMouseEnter('edit')"
+          @mouseleave="handleDropdownMouseLeave('edit')"
+        >
+          <div class="menu-item checkbox-item" @click.stop="toggleWordWrap">
+            <span class="checkbox-mark">{{ wordWrap ? '✓' : '' }}</span>
+            <span>{{ t('titlebar.wordWrap') }}</span>
+          </div>
+          <div class="menu-item checkbox-item" @click.stop="toggleLineNumbers">
+            <span class="checkbox-mark">{{ lineNumbers ? '✓' : '' }}</span>
+            <span>{{ t('titlebar.lineNumbers') }}</span>
+          </div>
+          <div class="menu-item checkbox-item" @click.stop="toggleLogEditable">
+            <span class="checkbox-mark">{{ logEditable ? '✓' : '' }}</span>
+            <span>{{ t('titlebar.logEditable') }}</span>
+          </div>
+          <div class="menu-separator"></div>
           <div
             class="menu-item submenu-trigger"
             @mouseenter="handleFontSubmenuMouseEnter"
@@ -59,7 +75,10 @@
           >
             <span class="checkbox-mark"></span>
             <span>{{ t('titlebar.font') }}</span>
-            <div class="dropdown-submenu" v-if="showFontSubmenu">
+            <div class="dropdown-submenu" v-if="showFontSubmenu"
+              @mouseenter="showFontSubmenu = true"
+              @mouseleave="showFontSubmenu = false"
+            >
               <div
                 class="menu-item"
                 :class="{ 'font-item-active': font && currentFontFamily && font === currentFontFamily }"
@@ -73,19 +92,6 @@
               </div>
             </div>
           </div>
-          <div class="menu-separator"></div>
-          <div class="menu-item checkbox-item" @click.stop="toggleWordWrap">
-            <span class="checkbox-mark">{{ wordWrap ? '✓' : '' }}</span>
-            <span>{{ t('titlebar.wordWrap') }}</span>
-          </div>
-          <div class="menu-item checkbox-item" @click.stop="toggleLineNumbers">
-            <span class="checkbox-mark">{{ lineNumbers ? '✓' : '' }}</span>
-            <span>{{ t('titlebar.lineNumbers') }}</span>
-          </div>
-          <div class="menu-item checkbox-item" @click.stop="toggleLogEditable">
-            <span class="checkbox-mark">{{ logEditable ? '✓' : '' }}</span>
-            <span>{{ t('titlebar.logEditable') }}</span>
-          </div>
         </div>
       </div>
 
@@ -97,7 +103,7 @@
         <div
           class="dropdown-menu"
           v-if="showToolsMenu"
-          @mouseenter="((showFileMenu = false), (showEditMenu = false), (showToolsMenu = true), (showHelpMenu = false))"
+          @mouseenter="handleDropdownMouseEnter('tools')"
           @mouseleave="hideToolsMenu"
         >
           <div class="menu-item" @click="handleSettings">{{ t('sidebar.settings') }}</div>
@@ -116,7 +122,7 @@
         <div
           class="dropdown-menu"
           v-if="showHelpMenu"
-          @mouseenter="((showFileMenu = false), (showEditMenu = false), (showToolsMenu = false), (showHelpMenu = true))"
+          @mouseenter="handleDropdownMouseEnter('help')"
           @mouseleave="hideHelpMenu"
         >
           <div class="menu-item" @click="handleDoc">{{ t('titlebar.doc') }}</div>
@@ -414,6 +420,7 @@ const handlePlugins = () => {
 }
 
 const handleMenuMouseEnter = async (menuType) => {
+  if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null }
   showFileMenu.value = false
   showEditMenu.value = false
   showToolsMenu.value = false
@@ -431,8 +438,10 @@ const handleMenuMouseEnter = async (menuType) => {
   if (menuType === 'help') showHelpMenu.value = true
 }
 
+let leaveTimer: ReturnType<typeof setTimeout> | null = null
+
 const handleMenuMouseLeave = (menuType) => {
-  setTimeout(() => {
+  leaveTimer = setTimeout(() => {
     if (menuType === 'file' && !showFontSubmenu.value) showFileMenu.value = false
     if (menuType === 'edit' && !showFontSubmenu.value) showEditMenu.value = false
     if (menuType === 'tools' && !showFontSubmenu.value) showToolsMenu.value = false
@@ -456,6 +465,25 @@ const handleFontSubmenuMouseEnter = (e: MouseEvent) => {
 const handleFontSubmenuMouseLeave = () => {
   setTimeout(() => {
     showFontSubmenu.value = false
+  }, 200)
+}
+
+/** 鼠标进入下拉菜单时取消 leaveTimer 并保持菜单打开 */
+const handleDropdownMouseEnter = (menu: 'file' | 'edit' | 'tools' | 'help') => {
+  if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null }
+  showFileMenu.value = menu === 'file'
+  showEditMenu.value = menu === 'edit'
+  showToolsMenu.value = menu === 'tools'
+  showHelpMenu.value = menu === 'help'
+}
+
+/** 鼠标离开下拉菜单时延迟关闭 */
+const handleDropdownMouseLeave = (menu: 'file' | 'edit' | 'tools' | 'help') => {
+  leaveTimer = setTimeout(() => {
+    if (menu === 'file' && !showFontSubmenu.value) showFileMenu.value = false
+    if (menu === 'edit' && !showFontSubmenu.value) showEditMenu.value = false
+    if (menu === 'tools' && !showFontSubmenu.value) showToolsMenu.value = false
+    if (menu === 'help' && !showFontSubmenu.value) showHelpMenu.value = false
   }, 200)
 }
 

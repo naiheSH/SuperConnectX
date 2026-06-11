@@ -1,5 +1,5 @@
 import * as monaco from 'monaco-editor'
-import type { AnsiSegment, AnsiStyleState } from './AnsiParser'
+import type { AnsiSegment } from './AnsiParser'
 
 /**
  * 将 cleanText 内的字符偏移转换为 Monaco Position
@@ -18,7 +18,7 @@ export function offsetInTextToMonacoPos(
   for (let i = 0; i < charOffset; i++) {
     if (text[i] === '\n') { lineNum++; col = 1 } else { col++ }
   }
-  return { lineNumber: lineNum, column: col }
+  return new monaco.Position(lineNum, col)
 }
 
 /**
