@@ -29,6 +29,7 @@
       v-model="selectedGroupId"
       @command="handleGroupCommand"
       placement="bottom-start"
+      popper-class="group-dropdown-popper"
     >
       <el-button type="default" size="small" class="group-selector">
         <span class="group-selector-text">{{ selectedGroupName || '暂无命令组' }}</span>
@@ -1119,42 +1120,50 @@ const handlePresetCommandsChanged = (connectionType: string) => {
 
 /* 右键上下文菜单容器 */
 .context-menu-container {
-  padding: 2px !important;
+  position: fixed;
+  z-index: 9999;
+  padding: 0;
 }
 
-/* 右键菜单 */
-.context-menu {
+/* 右键菜单 —— 使用 main.css 的 .context-menu 统一样式 */
+.context-menu-container .context-menu {
   width: 120px !important;
-  background-color: transparent !important;
-  border: none !important;
 }
 
-.el-menu--vertical {
+.context-menu-container :deep(.el-menu) {
+  background-color: var(--menu-bg-color);
+  border: 1px solid var(--menu-border-color);
+  border-radius: var(--menu-border-radius);
+  box-shadow: var(--menu-box-shadow);
+  padding: 4px 0;
+}
+
+.context-menu-container :deep(.el-menu--vertical) {
   border-right: none !important;
 }
 
-/* 上下文菜单项特殊样式 */
-.context-menu :deep(.el-menu-item) {
+.context-menu-container :deep(.el-menu-item) {
   color: var(--menu-item-color) !important;
+  font-size: var(--menu-item-font-size);
   height: 36px !important;
   line-height: 36px !important;
-  padding: 0 16px !important;
+  padding: var(--menu-item-padding);
   margin: 0 !important;
-  border-radius: 2px !important;
-  transition: background-color 0.15s ease !important;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.context-menu :deep(.el-menu-item:hover) {
+.context-menu-container :deep(.el-menu-item:hover) {
   background-color: var(--menu-item-hover-bg) !important;
   color: var(--menu-item-hover-color) !important;
 }
 
-.context-menu :deep(.el-menu-item:not(:last-child)) {
+.context-menu-container :deep(.el-menu-item:not(:last-child)) {
   border-bottom: 1px solid var(--menu-divider-color) !important;
 }
 
-.context-menu :deep(.delete-item) {
-  color: #ff4d4f !important;
+.context-menu-container :deep(.delete-item) {
+  color: var(--menu-danger-color) !important;
 }
 
 .el-dialog {
@@ -1207,6 +1216,34 @@ const handlePresetCommandsChanged = (connectionType: string) => {
 /* 下拉菜单样式 - 扩展最小宽度 */
 .dropdown-menu {
   min-width: 240px !important;
+}
+
+/* popper 容器限制高度并启用滚动 */
+:global(.group-dropdown-popper) {
+  max-height: 50vh !important;
+  overflow: hidden !important;
+}
+
+:global(.group-dropdown-popper .el-scrollbar) {
+  max-height: 50vh !important;
+  overflow-y: auto !important;
+}
+
+:global(.group-dropdown-popper .el-scrollbar::-webkit-scrollbar) {
+  width: 5px;
+}
+
+:global(.group-dropdown-popper .el-scrollbar::-webkit-scrollbar-track) {
+  background: transparent;
+}
+
+:global(.group-dropdown-popper .el-scrollbar::-webkit-scrollbar-thumb) {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+:global(.group-dropdown-popper .el-scrollbar::-webkit-scrollbar-thumb:hover) {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* 组菜单项样式 */
