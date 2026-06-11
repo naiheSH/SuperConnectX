@@ -336,11 +336,18 @@ const { t } = useI18n()
 
 const activeCategory = ref('basic')
 
+// 标记：是否已通过事件切换到指定分类（避免 loadActiveCategory 覆盖）
+let pendingCategorySwitch: string | null = null
+
 // 加载上次选中的设置分类
 const loadActiveCategory = async () => {
   try {
     const appSettings = await window.storageApi.getAppSettings()
-    if (appSettings?.settingsActiveCategory) {
+    // 如果有 pending 切换，优先使用 pending 值
+    if (pendingCategorySwitch) {
+      activeCategory.value = pendingCategorySwitch
+      pendingCategorySwitch = null
+    } else if (appSettings?.settingsActiveCategory) {
       activeCategory.value = appSettings.settingsActiveCategory
     }
   } catch {
@@ -576,14 +583,13 @@ watch(() => settings.value?.autoBackup, () => {
 })
 
 onMounted(async () => {
+  // 先注册事件监听，确保在 loadActiveCategory 完成前收到事件也能处理
+  window.addEventListener('settings-updated', handleSettingsUpdated)
+  window.addEventListener('open-syntax-highlight-page', switchToSyntaxCategory)
+
   await loadDefaultSettings()
   await loadSettings()
   await loadActiveCategory()
-
-  // 监听设置更新事件（ComTerminal 修改波特率列表时刷新显示）
-  window.addEventListener('settings-updated', handleSettingsUpdated)
-  // 监听切换到语法高亮分类的事件
-  window.addEventListener('open-syntax-highlight-page', switchToSyntaxCategory)
 })
 
 onUnmounted(() => {
@@ -594,6 +600,7 @@ onUnmounted(() => {
 // 切换到语法高亮分类
 const switchToSyntaxCategory = () => {
   activeCategory.value = 'syntax'
+  pendingCategorySwitch = 'syntax'
   saveActiveCategory()
 }
 
