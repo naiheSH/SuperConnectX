@@ -104,7 +104,6 @@ import { FolderOpened, Document, Edit } from '@element-plus/icons-vue'
 interface SyntaxGroupInfo {
   id: number
   name: string
-  enabled: boolean
 }
 
 const props = defineProps<{
@@ -141,7 +140,7 @@ const loadSyntaxGroups = async () => {
   try {
     const data = await window.storageApi.getSyntaxRuleGroups()
     if (data && Array.isArray(data)) {
-      syntaxGroups.value = data.map((g: any) => ({ id: g.id, name: g.name, enabled: g.enabled }))
+      syntaxGroups.value = data.map((g: any) => ({ id: g.id, name: g.name }))
     }
   } catch (e) {
     console.error('Failed to load syntax groups:', e)

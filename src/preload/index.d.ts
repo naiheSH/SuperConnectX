@@ -26,7 +26,6 @@ declare global {
   interface SyntaxRuleGroup {
     id: number
     name: string
-    enabled: boolean
     subRules: SyntaxSubRule[]
     previewText?: string
   }

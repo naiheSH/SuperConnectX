@@ -721,7 +721,7 @@ const applySyntaxWithClasses = () => {
   let styleContent = ''
 
   for (const group of groupsToApply) {
-    if (!group.enabled || !group.subRules) continue
+    if (!group.subRules) continue
     for (const rule of group.subRules) {
       const regex = buildRegexFromRule(rule)
       if (!regex) continue

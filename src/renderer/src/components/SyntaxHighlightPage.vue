@@ -162,7 +162,6 @@ interface SyntaxSubRuleLocal {
 interface SyntaxRuleGroupLocal {
   id: number
   name: string
-  enabled: boolean
   subRules: SyntaxSubRuleLocal[]
   previewText?: string
 }
@@ -215,10 +214,31 @@ const loadGroups = async () => {
     console.log('[SyntaxHighlightPage] loadGroups:', { count: data?.length || 0 })
     window.logApi.info('[SyntaxHighlightPage] loadGroups', { count: data?.length || 0 }).catch(() => {})
     if (data && Array.isArray(data)) {
+      // 自动为缺少 id 的 subRule 生成 id
+      let maxRuleId = 0
+      data.forEach(g => {
+        g.subRules?.forEach(r => { maxRuleId = Math.max(maxRuleId, r.id || 0) })
+      })
+      // 从 maxRuleId 之后的 100 开始分配
+      let autoRuleId = Math.max(100, maxRuleId + 1)
+      let assignedCount = 0
+      data.forEach(g => {
+        g.subRules?.forEach(r => {
+          if (r.id === undefined || r.id === null) {
+            r.id = autoRuleId++
+            assignedCount++
+          }
+        })
+      })
+      if (assignedCount > 0) {
+        console.log('[SyntaxHighlightPage] loadGroups: auto-assigned', assignedCount, 'subRule IDs, next starts at', autoRuleId)
+      }
+
       groups.value = data
       const maxGroupId = data.reduce((max, g) => Math.max(max, g.id || 0), 0)
       nextGroupId = Math.max(100, maxGroupId + 1)
-      let maxRuleId = 0
+      // 重新计算 maxRuleId（包含刚分配的）
+      maxRuleId = 0
       data.forEach(g => {
         g.subRules?.forEach(r => { maxRuleId = Math.max(maxRuleId, r.id || 0) })
       })
@@ -262,7 +282,6 @@ const addGroup = () => {
   const newGroup: SyntaxRuleGroupLocal = {
     id: nextGroupId++,
     name: `${t('syntaxSettings.newGroup')} ${groups.value.length + 1}`,
-    enabled: true,
     subRules: [],
     previewText: ''
   }

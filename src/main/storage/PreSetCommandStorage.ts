@@ -387,7 +387,6 @@ export default class PreSetCommandStorage extends BaseStorage {
             existingSyntaxGroups.push({
               id: maxGroupId,
               name: groupName,
-              enabled: true,
               subRules,
               previewText: hr.PreviewText || ''
             })
