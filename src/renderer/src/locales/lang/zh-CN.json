@@ -11,6 +11,7 @@
     "disconnect": "断开",
     "edit": "编辑",
     "delete": "删除",
+    "copy": "拷贝",
     "confirm": "确认",
     "cancel": "取消",
     "noResults": "没有找到匹配的设置项",

@@ -11,6 +11,7 @@
     "disconnect": "Disconnect",
     "edit": "Edit",
     "delete": "Delete",
+    "copy": "Copy",
     "confirm": "Confirm",
     "cancel": "Cancel",
     "noResults": "No matching settings found",

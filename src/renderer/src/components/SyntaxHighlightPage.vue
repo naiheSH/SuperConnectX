@@ -128,6 +128,9 @@
       <div class="menu-item" @click="handleContextMenuEdit">
         {{ t('common.edit') }}
       </div>
+      <div class="menu-item" @click="handleContextMenuCopy">
+        {{ t('common.copy') }}
+      </div>
       <div class="menu-item danger" @click="handleContextMenuDelete">
         {{ t('common.delete') }}
       </div>
@@ -138,7 +141,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import * as monaco from 'monaco-editor'
 import { Plus, Delete } from '@element-plus/icons-vue'
 
@@ -327,7 +330,7 @@ const showGroupContextMenu = (event: MouseEvent, group: SyntaxRuleGroupLocal) =>
   event.stopPropagation()
   selectGroup(group)
 
-  const menuHeight = 72
+  const menuHeight = 108
   const screenHeight = window.innerHeight
 
   let left = event.clientX
@@ -361,6 +364,25 @@ const handleContextMenuEdit = () => {
 const handleContextMenuDelete = () => {
   contextMenuVisible.value = false
   deleteGroup()
+}
+
+const handleContextMenuCopy = () => {
+  contextMenuVisible.value = false
+  if (!activeGroup.value) return
+  // 深拷贝整组数据，生成新的 id
+  const copied: SyntaxRuleGroupLocal = JSON.parse(JSON.stringify(activeGroup.value))
+  copied.id = nextGroupId++
+  copied.name = `${copied.name} - ${t('common.copy')}`
+  // 为子规则也生成新的 id
+  if (copied.subRules) {
+    copied.subRules.forEach(r => {
+      r.id = nextRuleId++
+    })
+  }
+  groups.value.push(copied)
+  selectGroup(copied)
+  saveGroups()
+  ElMessage.success(t('common.success'))
 }
 
 const addRule = () => {
