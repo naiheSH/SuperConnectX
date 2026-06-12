@@ -114,12 +114,16 @@
                 <el-card
                   shadow="never"
                   class="connection-card"
+                  :class="{ 'has-ribbon': conn.connectionType === 'ftp' && conn.ftpMode === 'server' }"
                   v-for="conn in conns"
                   :key="conn.id"
                   @dblclick="connectToServer(conn)"
                 >
+                  <div v-if="conn.connectionType === 'ftp' && conn.ftpMode === 'server'" class="ribbon-badge">服务端</div>
                   <div class="connection-info">
-                    <div class="conn-name">{{ conn.name }}</div>
+                    <div class="conn-name">
+                      {{ conn.name }}
+                    </div>
                     <div class="conn-detail">
                       <span>{{ t('sidebar.address') }}: {{ conn.host }}:{{ conn.port }}</span>
                       <span v-if="conn.username">{{ t('sidebar.user') }}: {{ conn.username }}</span>
@@ -1920,6 +1924,10 @@ onUnmounted(() => {
   margin-top: 12px;
   border-radius: 8px !important;
   overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.2s ease, margin-top 0.2s ease, margin-bottom 0.2s ease !important;
+  will-change: margin-top;
 }
 
 .connection-card :deep(.el-card__body) {
@@ -1927,13 +1935,10 @@ onUnmounted(() => {
   overflow-x: hidden;
 }
 
-.connection-card {
-  cursor: pointer;
-}
-
 .connection-card:hover {
   border: 1px solid rgb(64, 158, 255) !important;
-  transform: translateY(-2px);
+  margin-top: 10px;
+  margin-bottom: 2px;
 }
 
 .connection-info {
@@ -2037,6 +2042,29 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   color: #e0e0e0;
+}
+
+/* 斜角绑带式标签 */
+.connection-card.has-ribbon {
+  overflow: hidden;
+}
+
+.ribbon-badge {
+  position: absolute;
+  top: 8px;
+  right: -28px;
+  width: 110px;
+  padding: 2px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #0e639c;
+  text-align: center;
+  transform: rotate(45deg);
+  transform-origin: center;
+  z-index: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  letter-spacing: 1px;
 }
 
 .conn-detail {
