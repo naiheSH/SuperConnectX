@@ -18,6 +18,33 @@ export default class ConnectionStorage extends BaseStorage {
     })
   }
 
+  // 确保所有连接都有 id，修复历史数据缺失 id 的问题
+  private ensureIds(connections: any[]): any[] {
+    let needSave = false
+    const maxId = connections.reduce((max, c) => {
+      const id = Number(c.id)
+      return id > 0 ? Math.max(max, id) : max
+    }, 0)
+    let nextId = maxId + 1
+
+    for (const c of connections) {
+      if (!c.id || typeof c.id !== 'number') {
+        c.id = nextId++
+        needSave = true
+      }
+    }
+    if (needSave) {
+      this.saveAll(connections as never[])
+      logger.info(`[ensureIds] assigned ids to connections, saved`)
+    }
+    return connections
+  }
+
+  getAll(): any[] {
+    const data = (this.storageData.get(this.storageName) as any[]) || []
+    return this.ensureIds(data)
+  }
+
   // 检查是否存在重复连接（协议类型、连接名称、地址、端口都相同）
   private isDuplicateConnection(conn: any, connections: any[], excludeId?: number): boolean {
     return connections.some((existing) => {
@@ -47,7 +74,7 @@ export default class ConnectionStorage extends BaseStorage {
     }
 
     const newId = connections.length ? Math.max(...connections.map((c) => c.id)) + 1 : 1
-    const newConn = { id: newId, ...conn }
+    const newConn = { ...conn, id: newId }
     connections.push(newConn)
     this.saveAll(connections as never[])
 
@@ -58,7 +85,8 @@ export default class ConnectionStorage extends BaseStorage {
 
   update(conn: any) {
     const connections = this.getAll() as any[]
-    let con = connections.filter((item) => item.id === conn.id)
+    const numId = Number(conn.id)
+    let con = connections.filter((item) => item.id === numId)
     if (!con.length) {
       logger.warn(`update connection not found, id: ${conn.id}`)
       return
@@ -108,12 +136,18 @@ export default class ConnectionStorage extends BaseStorage {
 
   delete(id: number) {
     const connections = this.getAll() as any[]
-    const newConnections = connections.filter((c) => c.id !== id)
-    const deleteItem = connections.filter((c) => c.id === id)
+    const numId = Number(id)
+    const newConnections = connections.filter((c) => c.id !== numId)
+    const deleteItem = connections.filter((c) => c.id === numId)
     this.saveAll(newConnections as never[])
 
-    logger.info(`delete connection ${deleteItem?.[0].host}:${deleteItem?.[0].port}`)
-    logger.debug(JSON.stringify(deleteItem))
+    const deleted = deleteItem[0]
+    if (deleted) {
+      logger.info(`delete connection ${deleted.host}:${deleted.port}`)
+      logger.debug(JSON.stringify(deleted))
+    } else {
+      logger.warn(`delete connection not found, id: ${numId}`)
+    }
     return newConnections
   }
 }

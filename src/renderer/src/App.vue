@@ -1229,8 +1229,8 @@ const deleteConnection = async (conn) => {
       cancelButtonClass: 'el-button--danger'
     })
 
-    const newConnections = await window.storageApi.deleteConnection(conn.id)
-    connections.value = newConnections
+    await window.storageApi.deleteConnection(conn.id)
+    await loadConnections()
     ElMessage.success(t('dialog.connectionDeleted'))
   } catch (error) {
     if (error !== 'cancel') {
