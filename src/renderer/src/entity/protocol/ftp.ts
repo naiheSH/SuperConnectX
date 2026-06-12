@@ -7,7 +7,7 @@ export const FtpStrategy = {
     return {
       name: '',
       connectionType: 'ftp',
-      ftpMode: 'client',
+      ftpMode: 'server',
       host: '',
       port: 21,
       username: '',
@@ -22,7 +22,7 @@ export const FtpStrategy = {
       id: raw.id,
       name: raw.name || '',
       connectionType: 'ftp',
-      ftpMode: raw.ftpMode || 'client',
+      ftpMode: raw.ftpMode || 'server',
       host: raw.host || '',
       port: raw.port || 21,
       username: raw.username || '',

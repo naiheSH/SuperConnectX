@@ -328,89 +328,8 @@
       <div class="command-status" v-if="lastSentCommand">{{ t('notification.commandSent', { command: lastSentCommand }) }}</div>
     </div>
 
-    <!-- 新建连接弹窗：选项卡区分协议类型 -->
-    <el-dialog
-      :title="t('dialog.newConnection')"
-      v-model="isCreateDialogOpen"
-      width="640px"
-      @keydown.enter.native="submitNewConn"
-      :close-on-click-modal="false"
-    >
-      <el-tabs v-model="newConnForm.connectionType" @tab-change="handleProtocolChange" class="protocol-tabs">
-        <el-tab-pane label="Telnet" name="telnet" />
-        <el-tab-pane label="SSH" name="ssh" disabled />
-        <el-tab-pane label="FTP" name="ftp" />
-        <el-tab-pane label="TCP" name="tcp" disabled />
-        <el-tab-pane label="UDP" name="udp" disabled />
-        <el-tab-pane label="Ping" name="ping" disabled />
-        <el-tab-pane label="TFTP" name="tftp" disabled />
-        <el-tab-pane label="HTTP" name="http" disabled />
-      </el-tabs>
-      <el-form :model="newConnForm" :rules="newConnRules" ref="connFormRef" label-width="120px" @submit.prevent>
-        <el-form-item :label="t('dialog.connectionName')" prop="name">
-          <el-input v-model="newConnForm.name" :placeholder="t('dialog.namePlaceholder')" prefix="User" />
-        </el-form-item>
-        <!-- FTP 模式选择 -->
-        <el-form-item label="模式" v-if="newConnForm.connectionType === 'ftp'">
-          <el-radio-group v-model="newConnForm.ftpMode">
-            <el-radio value="server">服务端</el-radio>
-            <el-radio value="client">客户端</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <!-- FTP 服务端：端口、目录、权限 -->
-        <template v-if="newConnForm.connectionType === 'ftp' && newConnForm.ftpMode === 'server'">
-          <el-form-item :label="t('dialog.port')" prop="port">
-            <el-input v-model.number="newConnForm.port" placeholder="21" prefix="Key" type="number" />
-          </el-form-item>
-          <el-form-item label="目录" prop="ftpDirectory">
-            <div style="display: flex; gap: 8px; width: 100%">
-              <el-input v-model="newConnForm.ftpDirectory" placeholder="选择共享目录" style="flex: 1" />
-              <el-button @click="selectFtpDirectory">浏览</el-button>
-            </div>
-          </el-form-item>
-          <el-form-item label="权限">
-            <el-checkbox-group v-model="newConnForm.ftpPermissions">
-              <el-checkbox label="get">Get (下载)</el-checkbox>
-              <el-checkbox label="put">Put (上传)</el-checkbox>
-              <el-checkbox label="delete">Delete (删除)</el-checkbox>
-              <el-checkbox label="rename">Rename (重命名)</el-checkbox>
-            </el-checkbox-group>
-          </el-form-item>
-        </template>
-        <!-- FTP 客户端 / 其他协议 -->
-        <template v-if="newConnForm.connectionType !== 'ftp' || newConnForm.ftpMode === 'client'">
-          <el-form-item :label="t('dialog.serverAddress')" prop="host">
-            <el-input v-model="newConnForm.host" :placeholder="t('dialog.addressPlaceholder')" prefix="Monitor" />
-          </el-form-item>
-          <el-form-item :label="t('dialog.port')" prop="port" v-if="newConnForm.connectionType !== 'ping'">
-            <el-input
-              v-model.number="newConnForm.port"
-              :placeholder="t('dialog.portPlaceholder')"
-              prefix="Key"
-              type="number"
-            />
-          </el-form-item>
-          <el-form-item :label="t('dialog.username')" prop="username" v-if="!['ping', 'tftp', 'http', 'udp'].includes(newConnForm.connectionType)">
-            <el-input
-              v-model="newConnForm.username"
-              :placeholder="t('dialog.usernamePlaceholder')"
-              prefix="UserFilled"
-            />
-          </el-form-item>
-          <el-form-item :label="t('dialog.password')" prop="password" v-if="['ftp', 'tftp', 'http'].includes(newConnForm.connectionType)">
-            <el-input v-model="newConnForm.password" :placeholder="t('dialog.passwordPlaceholder')" type="password" />
-          </el-form-item>
-        </template>
-      </el-form>
-      <template #footer>
-        <el-button class="btn-cancel" @click="isCreateDialogOpen = false"
-          >{{ t('common.cancel') }}</el-button
-        >
-        <el-button class="btn-primary submit-btn" @click="submitNewConn"
-          >{{ t('dialog.confirmSave') }}</el-button
-        >
-      </template>
-    </el-dialog>
+    <!-- 新建连接弹窗 -->
+    <ConnectionDialog ref="connectionDialogRef" @submit="handleConnectionSubmit" />
 
     <!-- 关于弹窗 -->
     <AboutDialog v-model:modelValue="isAboutDialogOpen" />
@@ -448,7 +367,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, reactive, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElForm, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import TelnetTerminal from './components/TelnetTerminal.vue'
 import ComTerminal from './components/ComTerminal.vue'
 import NotifyContainer from './components/NotifyContainer.vue'
@@ -460,7 +379,8 @@ import ShortcutsPage from './components/ShortcutsPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
 import UpdateDialog from './components/UpdateDialog.vue'
 import CommandEditor from './components/CommandEditor.vue'
-import { createDefaultConnection, fromRawConnection } from './entity/protocol'
+import ConnectionDialog from './components/ConnectionDialog.vue'
+import { fromRawConnection } from './entity/protocol'
 import logoImage from './assets/icon.png'
 
 const { t } = useI18n()
@@ -505,7 +425,6 @@ const handleAutoScrollToast = (e: Event) => {
 const searchKeyword = ref('')
 const filterConnection = ref<any[]>([])
 const connections = ref<any[]>([])
-const isCreateDialogOpen = ref(false)
 const isAboutDialogOpen = ref(false)
 const isUpdateDialogOpen = ref(false)
 const updateDialogRef = ref<InstanceType<typeof UpdateDialog> | null>(null)
@@ -561,8 +480,7 @@ const handlePlugins = () => {
   ElMessage.info(t('notification.pluginsDeveloping'))
 }
 
-const connFormRef = ref<InstanceType<typeof ElForm> | null>(null)
-const newConnForm = reactive(createDefaultConnection('telnet'))
+const connectionDialogRef = ref<InstanceType<typeof ConnectionDialog> | null>(null)
 const showConnectionList = ref(true)
 const sidebarWidth = ref(320)
 const lastSentCommand = ref('')
@@ -1154,54 +1072,6 @@ const refreshHandler = () => {
   }
 }
 
-const newConnRules = computed(() => {
-  return {}
-})
-
-const handleProtocolChange = (value) => {
-  // 清空密码（切换非FTP/TFTP时）
-  if (value !== 'ftp' && value !== 'tftp') {
-    newConnForm.password = ''
-  }
-
-  // 切换到 FTP 时设置默认模式
-  if (value === 'ftp') {
-    newConnForm.ftpMode = newConnForm.ftpMode || 'client'
-    newConnForm.ftpDirectory = newConnForm.ftpDirectory || ''
-    newConnForm.ftpPermissions = newConnForm.ftpPermissions?.length ? newConnForm.ftpPermissions : ['get', 'put', 'delete', 'rename']
-  }
-
-  // 自动设置默认端口
-  switch (value) {
-    case 'telnet':
-      newConnForm.port = 23
-      break
-    case 'ssh':
-      newConnForm.port = 22
-      break
-    case 'ftp':
-      newConnForm.port = 21
-      break
-    case 'tcp':
-      newConnForm.port = 0
-      break
-    case 'udp':
-      newConnForm.port = 0
-      break
-    case 'ping':
-      newConnForm.port = 0
-      break
-    case 'tftp':
-      newConnForm.port = 69
-      break
-    case 'http':
-      newConnForm.port = 80
-      break
-    default:
-      newConnForm.port = 0
-      break
-  }
-}
 
 const filtereList = () => {
   if (!searchKeyword.value) {
@@ -1218,20 +1088,6 @@ const filtereList = () => {
   )
 }
 
-// FTP 目录选择
-const selectFtpDirectory = async () => {
-  try {
-    const result = await window.dialogApi.openDirectoryDialog({
-      title: '选择FTP共享目录'
-    })
-    if (result.filePaths && result.filePaths.length > 0) {
-      newConnForm.ftpDirectory = result.filePaths[0]
-    }
-  } catch (error) {
-    console.error('选择目录失败', error)
-  }
-}
-
 const handleSearch = (keyword: string) => (searchKeyword.value = keyword)
 const loadConnections = async () => {
   try {
@@ -1245,52 +1101,31 @@ const loadConnections = async () => {
   }
 }
 
-const setConnFormData = (defaultData) => {
-  newConnForm.id = defaultData.id
-  newConnForm.name = defaultData.name
-  newConnForm.connectionType = defaultData.connectionType
-  newConnForm.host = defaultData.host
-  newConnForm.port = defaultData.port
-  newConnForm.username = defaultData.username
-  newConnForm.password = defaultData.password
-  newConnForm.ftpMode = defaultData.ftpMode || 'client'
-  newConnForm.ftpDirectory = defaultData.ftpDirectory || ''
-  newConnForm.ftpPermissions = defaultData.ftpPermissions || ['get', 'put', 'delete', 'rename']
-}
-
+// 新建连接
 const openCreateDialog = () => {
-  setConnFormData(createDefaultConnection('telnet'))
-  if (connFormRef.value) {
-    connFormRef.value.clearValidate()
-  }
-  isCreateDialogOpen.value = true
+  connectionDialogRef.value?.open('ftp')
 }
 
-const editCreateDialog = (conn) => {
-  setConnFormData(fromRawConnection(conn))
-  isCreateDialogOpen.value = true
+// 编辑连接
+const editCreateDialog = (conn: any) => {
+  connectionDialogRef.value?.openEdit(conn)
 }
 
-const submitNewConn = async () => {
-  if (!connFormRef.value) return
-
+// 连接对话框提交处理
+const handleConnectionSubmit = async (data: any) => {
   try {
-    await connFormRef.value.validate()
-    if (newConnForm.id) {
-      await window.storageApi.updateConnection(fromRawConnection(newConnForm))
+    if (data.id) {
+      await window.storageApi.updateConnection(data)
     } else {
-      await window.storageApi.addConnection(fromRawConnection(newConnForm))
+      await window.storageApi.addConnection(data)
     }
-
-    loadConnections()
-    isCreateDialogOpen.value = false
-    ElMessage.success(t('dialog.connectionSaved', { name: newConnForm.name }))
+    await loadConnections()
+    connectionDialogRef.value?.closeOnSuccess()
   } catch (error: any) {
-    console.error(error)
     if (error?.message?.includes('已存在相同的连接')) {
-      ElMessage.error(t('dialog.connectionExists'))
+      connectionDialogRef.value?.onSaveError(t('dialog.connectionExists'))
     } else {
-      ElMessage.error(t('dialog.completeForm'))
+      connectionDialogRef.value?.onSaveError(t('dialog.completeForm'))
     }
   }
 }
@@ -2310,61 +2145,6 @@ onUnmounted(() => {
   --el-border-color: var(--focus-border-color) !important;
 }
 
-.submit-btn {
-  width: 100px !important;
-}
-
-.protocol-tabs {
-  margin-bottom: 16px;
-}
-
-.protocol-tabs :deep(.el-tabs__header) {
-  margin-bottom: 0;
-}
-
-.protocol-tabs :deep(.el-tabs__nav-wrap::after) {
-  background-color: #3c3c3c !important;
-}
-
-.protocol-tabs :deep(.el-tabs__active-bar) {
-  background-color: var(--focus-border-color) !important;
-}
-
-.protocol-tabs :deep(.el-tabs__item) {
-  color: #a0a0a0 !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-}
-
-.protocol-tabs :deep(.el-tabs__item:hover) {
-  color: #f0f0f0 !important;
-}
-
-.protocol-tabs :deep(.el-tabs__item.is-active) {
-  color: #f0f0f0 !important;
-}
-
-.protocol-tabs :deep(.el-tabs__item.is-disabled) {
-  color: #5a5a5a !important;
-  cursor: not-allowed !important;
-}
-
-/* FTP 表单样式 */
-.el-radio {
-  color: #e0e0e0 !important;
-}
-
-.el-radio__label {
-  color: #e0e0e0 !important;
-}
-
-.el-checkbox {
-  color: #e0e0e0 !important;
-}
-
-.el-checkbox__label {
-  color: #e0e0e0 !important;
-}
 
 .status-bar {
   height: 25px;
