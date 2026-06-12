@@ -332,7 +332,7 @@
     <el-dialog
       :title="t('dialog.newConnection')"
       v-model="isCreateDialogOpen"
-      width="520px"
+      width="640px"
       @keydown.enter.native="submitNewConn"
       :close-on-click-modal="false"
     >
@@ -340,6 +340,11 @@
         <el-tab-pane label="Telnet" name="telnet" />
         <el-tab-pane label="SSH" name="ssh" disabled />
         <el-tab-pane label="FTP" name="ftp" />
+        <el-tab-pane label="TCP" name="tcp" disabled />
+        <el-tab-pane label="UDP" name="udp" disabled />
+        <el-tab-pane label="Ping" name="ping" disabled />
+        <el-tab-pane label="TFTP" name="tftp" disabled />
+        <el-tab-pane label="HTTP" name="http" disabled />
       </el-tabs>
       <el-form :model="newConnForm" :rules="newConnRules" ref="connFormRef" label-width="120px" @submit.prevent>
         <el-form-item :label="t('dialog.connectionName')" prop="name">
@@ -348,7 +353,7 @@
         <el-form-item :label="t('dialog.serverAddress')" prop="host">
           <el-input v-model="newConnForm.host" :placeholder="t('dialog.addressPlaceholder')" prefix="Monitor" />
         </el-form-item>
-        <el-form-item :label="t('dialog.port')" prop="port">
+        <el-form-item :label="t('dialog.port')" prop="port" v-if="newConnForm.connectionType !== 'ping'">
           <el-input
             v-model.number="newConnForm.port"
             :placeholder="t('dialog.portPlaceholder')"
@@ -356,14 +361,14 @@
             type="number"
           />
         </el-form-item>
-        <el-form-item :label="t('dialog.username')" prop="username">
+        <el-form-item :label="t('dialog.username')" prop="username" v-if="!['ping', 'tftp', 'http', 'udp'].includes(newConnForm.connectionType)">
           <el-input
             v-model="newConnForm.username"
             :placeholder="t('dialog.usernamePlaceholder')"
             prefix="UserFilled"
           />
         </el-form-item>
-        <el-form-item :label="t('dialog.password')" prop="password" v-if="newConnForm.connectionType === 'ftp'">
+        <el-form-item :label="t('dialog.password')" prop="password" v-if="['ftp', 'tftp', 'http'].includes(newConnForm.connectionType)">
           <el-input v-model="newConnForm.password" :placeholder="t('dialog.passwordPlaceholder')" type="password" />
         </el-form-item>
       </el-form>
@@ -1124,21 +1129,39 @@ const newConnRules = computed(() => {
 })
 
 const handleProtocolChange = (value) => {
-  // 清空密码（切换非FTP时）
-  if (value !== 'ftp') {
+  // 清空密码（切换非FTP/TFTP时）
+  if (value !== 'ftp' && value !== 'tftp') {
     newConnForm.password = ''
   }
 
   // 自动设置默认端口
   switch (value) {
-    case 'ftp':
-      newConnForm.port = 21 // FTP默认21
-      break
     case 'telnet':
-      newConnForm.port = 23 // Telnet默认23
+      newConnForm.port = 23
+      break
+    case 'ssh':
+      newConnForm.port = 22
+      break
+    case 'ftp':
+      newConnForm.port = 21
+      break
+    case 'tcp':
+      newConnForm.port = 0
+      break
+    case 'udp':
+      newConnForm.port = 0
+      break
+    case 'ping':
+      newConnForm.port = 0
+      break
+    case 'tftp':
+      newConnForm.port = 69
+      break
+    case 'http':
+      newConnForm.port = 80
       break
     default:
-      newConnForm.port = 0 // 其他协议清空端口
+      newConnForm.port = 0
       break
   }
 }
