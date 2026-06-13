@@ -283,10 +283,18 @@ export default class FtpClient extends BaseClient {
             .then((result) => {
               if (result.success) {
                 this.connections.set(sessionId, state)
+              } else {
+                // 认证失败，主动关闭控制连接，防止 socket 泄漏和后续意外 close 事件
+                state.onClose = null
+                state.controlSocket.removeAllListeners()
+                state.controlSocket.destroy()
               }
               resolve(result)
             })
             .catch((err) => {
+              state.onClose = null
+              state.controlSocket.removeAllListeners()
+              state.controlSocket.destroy()
               resolve({ success: false, message: err.message })
             })
         }

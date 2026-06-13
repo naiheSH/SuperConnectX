@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import UnifiedTerminal from './UnifiedTerminal.vue'
 import { fromRawConnection } from '../entity/protocol'
@@ -120,7 +120,6 @@ const { openLogFolder, openLogFile, saveLogFile, cleanup: terminalCleanup } = te
 
 const handleClose = async () => {
   stopRetry.value = true
-  preventAutoReconnect = true
   if (retryTimer) {
     clearTimeout(retryTimer)
     retryTimer = null
@@ -158,6 +157,7 @@ const cleanup = () => {
 }
 
 const handleReconnect = () => {
+  preventAutoReconnect = false
   stopRetry.value = false
   terminal.totalTxSize = 0
   terminal.totalRxSize = 0
@@ -189,6 +189,9 @@ const handleTelnetClose = (_connId: number) => {
 let currentConnId = 0
 
 const connect = async () => {
+  if (preventAutoReconnect) {
+    return
+  }
   stopRetry.value = false
   retryCount = 0
   isConnected.value = false
@@ -348,7 +351,23 @@ defineExpose({
   isConnected: computed(() => isConnected.value),
   disconnect: handleClose,
   reconnect,
-  preventAutoReconnect: () => { preventAutoReconnect = true },
+  cleanup: () => {
+    preventAutoReconnect = true
+    stopRetry.value = true
+    if (retryTimer) {
+      clearTimeout(retryTimer)
+      retryTimer = null
+    }
+    cleanup()
+  },
+  preventAutoReconnect: () => {
+    preventAutoReconnect = true
+    stopRetry.value = true
+    if (retryTimer) {
+      clearTimeout(retryTimer)
+      retryTimer = null
+    }
+  },
   getFontFamily: () => {
     const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()
     return unifiedFont || terminal.fontFamily.value
@@ -357,6 +376,17 @@ defineExpose({
   setWordWrap: (val: boolean) => unifiedTerminalRef.value?.setWordWrap?.(val),
   setLineNumbers: (val: boolean) => unifiedTerminalRef.value?.setLineNumbers?.(val),
   setLogEditable: (val: boolean) => unifiedTerminalRef.value?.setLogEditable?.(val)
+})
+
+onBeforeUnmount(() => {
+  // 组件销毁时确保一切清理干净：停止重试、移除监听器
+  preventAutoReconnect = true
+  stopRetry.value = true
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
+  cleanup()
 })
 
 onMounted(() => {

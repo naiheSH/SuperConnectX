@@ -1177,6 +1177,13 @@ const closeTabOnly = async (tabId: string) => {
   const tab = connectionTabs.value.find((t) => t.id === tabId)
   if (!tab) return
 
+  // 禁止自动重连（必须在移除 tab / 销毁组件之前调用，否则 ref 会失效）
+  if (tab.connectionType === 'ftp' || tab.connectionType === 'telnet') {
+    telnetTerminalRefs[tabId]?.preventAutoReconnect?.()
+  } else if (tab.connectionType === 'com') {
+    comTerminalRefs[tabId]?.preventAutoReconnect?.()
+  }
+
   // 先从标签列表中移除（销毁组件，移除监听器，避免触发断开消息）
   connectionTabs.value = connectionTabs.value.filter((t) => t.id !== tabId)
 
@@ -1213,9 +1220,11 @@ const closeTab = async (tabId, force = false) => {
   // 找到对应的标签
   const tab = connectionTabs.value.find((t) => t.id === tabId)
   if (tab) {
-    // FTP Server 关闭时需要禁止自动重连，防止 stopConnect 触发 onConnectClose 回调后自动重建 FtpServer
-    if (tab.connectionType === 'ftp' && (tab as any).ftpMode === 'server') {
-      telnetTerminalRefs[tabId]?.preventAutoReconnect?.()
+    // 关闭时需要禁止自动重连并清理监听器，防止 stopConnect 触发 onConnectClose 回调后自动重连
+    if (tab.connectionType === 'ftp' || tab.connectionType === 'telnet') {
+      telnetTerminalRefs[tabId]?.cleanup?.()
+    } else if (tab.connectionType === 'com') {
+      comTerminalRefs[tabId]?.preventAutoReconnect?.()
     }
 
     // 断开对应的会话连接

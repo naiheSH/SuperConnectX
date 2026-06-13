@@ -422,8 +422,13 @@ export default class FtpServer {
       const error = err as Error
       const errMsg = `Failed to stop FTP server: ${error.message}`
       this.logger.error(errMsg)
+      this.emitData(errMsg)
       // 确保 server 引用被清理，避免后续 start 时状态混乱
       this.server = null
+      // 即使停止失败，也要通知主线程清理 ftpModeMap 等状态
+      if (this._onClose) {
+        this._onClose()
+      }
       return { success: false, message: errMsg }
     }
   }

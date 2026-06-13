@@ -483,7 +483,8 @@ export default class IpcConnector {
   private async stopConnectDirect(conn: any): Promise<object> {
     // FTP 连接：区分服务端/客户端
     if (conn.connectionType === 'ftp') {
-      if (this.isFtpServerMode(conn.sessionId)) {
+      const isServer = this.isFtpServerMode(conn.sessionId)
+      if (isServer) {
         if (this._ftpServer) {
           const stopPromise = (async () => {
             try {
@@ -497,9 +498,18 @@ export default class IpcConnector {
             await stopPromise
           } finally {
             this._ftpServerStopping = null
+            this.ftpModeMap.delete(conn.sessionId)
+            this.receiveHexMap.delete(conn.sessionId)
+            this.logTimestampMap.delete(conn.sessionId)
+            this.connectionTypeMap.delete(conn.sessionId)
           }
           return { success: true, message: 'FTP server stopped' }
         }
+        // _ftpServer 为 null 但 ftpModeMap 仍有记录，清理残留
+        this.ftpModeMap.delete(conn.sessionId)
+        this.receiveHexMap.delete(conn.sessionId)
+        this.logTimestampMap.delete(conn.sessionId)
+        this.connectionTypeMap.delete(conn.sessionId)
         return { success: true }
       } else {
         const client = this._ftpClients.get(conn.sessionId)
