@@ -300,10 +300,12 @@ export default class IpcConnector {
   // ============ 直连模式（回退方案，保留原有逻辑）============
 
   // FTP 服务端实例（直连模式，不走 Worker）
-  private _ftpServer: DirectClient | null = null
+  // 注意：FtpServer 不实现 DirectClient 接口（API 不同：start 参数不同、有 stop 而非 disconnect）
+  private _ftpServer: any = null
   private _ftpServerStopping: Promise<void> | null = null
   // FTP 客户端实例（每个 session 一个，直连模式）
-  private _ftpClients: Map<string, DirectClient> = new Map()
+  // FtpClient extends BaseClient，其 uploadFile 不在 DirectClient 接口中
+  private _ftpClients: Map<string, any> = new Map()
 
   /**
    * 判断当前 FTP 连接是否为服务端模式

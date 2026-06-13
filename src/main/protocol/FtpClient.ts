@@ -75,9 +75,8 @@ export default class FtpClient extends BaseClient {
    * 发送 FTP 命令并等待响应
    */
   private async sendCommand(state: FtpConnectionState, command: string): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       state.pendingResolve = resolve
-      state.pendingReject = reject
       state.controlSocket.write(command + '\r\n')
       this.emitData(state, `>>> ${command}`)
     })
@@ -110,7 +109,6 @@ export default class FtpClient extends BaseClient {
           // 多行响应结束
           const fullResponse = lines.slice(0, i + 1).join('\r\n')
           const pendingResolve = state.pendingResolve
-          const pendingReject = state.pendingReject
           state.pendingResolve = null
           state.pendingReject = null
           pendingResolve?.(fullResponse)
@@ -128,7 +126,6 @@ export default class FtpClient extends BaseClient {
       // 单行响应
       if (state.pendingResolve) {
         const pendingResolve = state.pendingResolve
-        const pendingReject = state.pendingReject
         state.pendingResolve = null
         state.pendingReject = null
         pendingResolve(line)
@@ -209,54 +206,6 @@ export default class FtpClient extends BaseClient {
       })
 
       dataSocket.on('error', reject)
-    })
-  }
-
-  /**
-   * 建立主动模式数据连接（PORT 命令）- 用于接收数据
-   */
-  private async enterActiveMode(state: FtpConnectionState): Promise<{ socket: net.Socket; dataPromise: Promise<Buffer> }> {
-    this.emitData(state, '[FTP] PORT >>> Starting local server for active mode...')
-    return new Promise((resolve, reject) => {
-      const server = net.createServer((dataSocket) => {
-        this.emitData(state, '[FTP] PORT <<< Server connected to data channel')
-        const dataChunks: Buffer[] = []
-
-        const dataPromise = new Promise<Buffer>((resolveData) => {
-          dataSocket.on('data', (chunk: Buffer) => {
-            dataChunks.push(chunk)
-          })
-          dataSocket.on('end', () => {
-            resolveData(Buffer.concat(dataChunks))
-          })
-          dataSocket.on('close', () => {
-            resolveData(Buffer.concat(dataChunks))
-          })
-        })
-
-        // 连接建立后关闭 server，避免端口泄露
-        server.close()
-        resolve({ socket: dataSocket, dataPromise })
-      })
-
-      server.listen(0, '0.0.0.0', () => {
-        const serverAddr = server.address() as net.AddressInfo
-        // PORT 命令必须使用控制连接的实际本地 IP，而非 0.0.0.0
-        const localIp = state.controlSocket.localAddress || serverAddr.address
-        const ipParts = localIp.split('.').map(Number)
-        const portHi = (serverAddr.port >> 8) & 0xff
-        const portLo = serverAddr.port & 0xff
-
-        const portCmd = `PORT ${ipParts.join(',')},${portHi},${portLo}`
-        this.emitData(state, `[FTP] PORT >>> ${portCmd} (local IP: ${localIp}, port: ${serverAddr.port})`)
-        this.sendCommand(state, portCmd)
-          .then((resp) => {
-            this.emitData(state, `[FTP] PORT <<< ${resp.trim()}`)
-          })
-          .catch(reject)
-      })
-
-      server.on('error', reject)
     })
   }
 
@@ -371,7 +320,7 @@ export default class FtpClient extends BaseClient {
   /**
    * 处理 FTP 登录流程
    */
-  private async handleLogin(state: FtpConnectionState, sessionId: string): Promise<object> {
+  private async handleLogin(state: FtpConnectionState, sessionId: string): Promise<{ success: boolean; message: string; connId?: string }> {
     try {
       // USER
       const userResp = await this.sendCommand(state, `USER ${state.username}`)
@@ -452,7 +401,7 @@ export default class FtpClient extends BaseClient {
           await this.sendCommand(state, 'LIST')
           const data = await dataPromise
           if (dataError) {
-            return { success: false, message: `LIST data channel error: ${dataError.message}` }
+            return { success: false, message: `LIST data channel error: ${(dataError as Error).message}` }
           }
           const listing = data.toString('utf-8')
           this.emitData(state, listing)
@@ -684,10 +633,11 @@ export default class FtpClient extends BaseClient {
         let lastProgressPercent = -1
         const startTime = Date.now()
 
-        readStream.on('data', (chunk: Buffer) => {
+        readStream.on('data', (chunk) => {
+          const buf = chunk as Buffer
           // 背压控制：如果 socket 缓冲区满则暂停读取
-          const canContinue = dataSocket.write(chunk)
-          bytesSent += chunk.length
+          const canContinue = dataSocket.write(buf)
+          bytesSent += buf.length
 
           // 每 10% 输出一次进度
           const progressPercent = Math.round((bytesSent / totalBytes) * 100)
