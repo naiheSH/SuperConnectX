@@ -119,7 +119,7 @@
           </div>
         </div>
         <el-button
-          v-if="connection?.connectionType === 'ftp'"
+          v-if="connection?.connectionType === 'ftp' && connection?.ftpMode !== 'server'"
           icon="Upload"
           size="small"
           class="btn-primary upload-btn"
@@ -185,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as monaco from 'monaco-editor'
 import PresetCommands from './PresetCommands.vue'
@@ -998,12 +998,22 @@ const handleInputKeydown = (e: KeyboardEvent) => {
       e.preventDefault()
       return
     }
-    // Ctrl+Enter 发送，Enter 换行
-    if (e.ctrlKey) {
-      handleSendCommand()
+    // Ctrl+Enter 或 Shift+Enter 换行，普通 Enter 发送
+    if (e.ctrlKey || e.shiftKey) {
+      e.preventDefault()
+      const textarea = e.target as HTMLTextAreaElement
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const value = textarea.value
+      currentCommand.value = value.substring(0, start) + '\n' + value.substring(end)
+      // 将光标移到换行后
+      nextTick(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 1
+      })
       return
     }
-    // 普通 Enter 换行，不做任何处理
+    e.preventDefault()
+    handleSendCommand()
     return
   }
 
