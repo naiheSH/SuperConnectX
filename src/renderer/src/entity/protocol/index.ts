@@ -2,7 +2,7 @@
  * 连接协议 - 策略注册表
  * 新增协议只需：1) 创建策略文件 2) 在此注册
  */
-import type { ConnectionFormData, ProtocolType } from './base'
+import type { ConnectionFormData } from './base'
 import { TelnetStrategy } from './telnet'
 import { SshStrategy } from './ssh'
 import { ComStrategy } from './com'

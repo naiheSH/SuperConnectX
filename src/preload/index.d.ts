@@ -77,6 +77,7 @@ declare global {
     connectApi: {
       startConnect: (conn: any) => Promise<any>
       sendData: (data: { conn: any; command: string }) => Promise<any>
+      uploadFile: (data: { conn: any; localFilePath: string; remoteFileName: string }) => Promise<any>
       stopConnect: (conn: any) => Promise<any>
       updateConnect: (conn: any, config: any) => Promise<{ success: boolean; message?: string }>
       onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void

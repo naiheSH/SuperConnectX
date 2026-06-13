@@ -68,13 +68,13 @@
         </el-form-item>
         <el-form-item :label="t('dialog.username')" prop="username" v-if="!['ping', 'tftp', 'http', 'udp'].includes(formData.connectionType)">
           <el-input
-            v-model="formData.username"
+            v-model="(formData as any).username"
             :placeholder="t('dialog.usernamePlaceholder')"
             prefix="UserFilled"
           />
         </el-form-item>
         <el-form-item :label="t('dialog.password')" prop="password" v-if="['ftp', 'tftp', 'http'].includes(formData.connectionType)">
-          <el-input v-model="formData.password" :placeholder="t('dialog.passwordPlaceholder')" type="password" />
+          <el-input v-model="(formData as any).password" :placeholder="t('dialog.passwordPlaceholder')" type="password" />
         </el-form-item>
       </template>
     </el-form>
@@ -133,7 +133,7 @@ const openEdit = (conn: any) => {
 const handleProtocolChange = (value: string) => {
   // 清空密码（切换非FTP/TFTP时）
   if (value !== 'ftp' && value !== 'tftp') {
-    formData.password = ''
+    (formData as any).password = ''
   }
 
   // 切换到 FTP 时设置默认模式
@@ -158,7 +158,7 @@ const handleProtocolChange = (value: string) => {
     tftp: 69,
     http: 80
   }
-  formData.port = portMap[value] ?? 0
+  ;(formData as any).port = portMap[value] ?? 0
 }
 
 // FTP 目录选择
@@ -189,7 +189,7 @@ const getRequiredFields = () => {
     fields.push({ prop: 'ftpDirectory', message: '请选择共享目录' })
   } else if (needsServer) {
     fields.push({ prop: 'host', message: '请输入服务器地址' })
-    if (formData.connectionType !== 'ping') {
+    if ((formData as any).connectionType !== 'ping') {
       fields.push({ prop: 'port', message: '请输入端口' })
     }
     if (!['tcp', 'udp', 'ftp'].includes(formData.connectionType)) {
