@@ -268,6 +268,8 @@ onMounted(() => {
   border-color: transparent !important;
   box-shadow: none !important;
   background-color: #3a3a3a !important;
+  min-height: 28px !important;
+  height: 28px !important;
 }
 
 .syntax-group-select :deep(.el-select__wrapper:hover),
