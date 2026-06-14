@@ -63,7 +63,7 @@
         >
           <el-table-column label="操作" width="80" align="center">
             <template #default="{ row }">
-              <el-tooltip content="删除命令" placement="top">
+              <el-tooltip content="删除命令" placement="top" effect="dark">
                 <el-button type="danger" size="small" circle @click="deleteCommand(row)">
                   <el-icon><Delete /></el-icon>
                 </el-button>

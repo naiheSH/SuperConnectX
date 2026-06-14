@@ -220,16 +220,19 @@
                   class="connection-dot"
                   :class="getConnectionStatus(tab)"
                 ></span>
-                <span class="tab-name" :title="tab.name || `${tab.host || tab.comName}:${tab.port || ''}`">
-                  {{ tab.name || `${tab.host || tab.comName}:${tab.port || ''}` }}
-                  <span v-if="tab.connectionType === 'com' && tab.comName && serialRemarks[tab.comName]" class="tab-remark">{{ serialRemarks[tab.comName] }}</span>
-                </span>
-                <span
-                  class="tab-action-btn"
-                  :class="{ pinned: pinnedTabs.has(tab.id) }"
-                  @click.stop="togglePinTabByButton(tab.id)"
-                  :title="pinnedTabs.has(tab.id) ? t('tabs.unpin') : t('tabs.pin')"
-                ></span>
+                <el-tooltip :content="tab.name || `${tab.host || tab.comName}:${tab.port || ''}`" placement="top" effect="dark">
+                  <span class="tab-name">
+                    {{ tab.name || `${tab.host || tab.comName}:${tab.port || ''}` }}
+                    <span v-if="tab.connectionType === 'com' && tab.comName && serialRemarks[tab.comName]" class="tab-remark">{{ serialRemarks[tab.comName] }}</span>
+                  </span>
+                </el-tooltip>
+                <el-tooltip :content="pinnedTabs.has(tab.id) ? t('tabs.unpin') : t('tabs.pin')" placement="top" effect="dark">
+                  <span
+                    class="tab-action-btn"
+                    :class="{ pinned: pinnedTabs.has(tab.id) }"
+                    @click.stop="togglePinTabByButton(tab.id)"
+                  ></span>
+                </el-tooltip>
               </div>
             </div>
           </div>

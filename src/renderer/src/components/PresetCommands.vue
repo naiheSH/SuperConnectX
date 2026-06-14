@@ -8,7 +8,7 @@
 
     <!-- 运行/停止按钮（移到组选择左边） -->
     <div class="group-actions-buttons">
-      <el-tooltip :content="isRunningAll ? '停止循环' : '循环运行'" placement="bottom">
+      <el-tooltip :content="isRunningAll ? '停止循环' : '循环运行'" placement="bottom" effect="dark">
         <el-button
           size="small"
           :class="isRunningAll ? 'run-btn stop-btn' : 'run-btn'"
@@ -82,20 +82,25 @@
     </el-button>
 
     <!-- 命令按钮列表 -->
-    <el-button
+    <el-tooltip
       v-for="cmd in filteredCommands"
       :key="cmd.id"
-      type="default"
-      size="small"
-      class="preset-btn"
-      :title="cmd.command"
-      :class="{ looping: loopStatus[cmd.id] }"
-      @click="sendPresetCommand(cmd)"
-      @contextmenu.prevent="showContextMenu(cmd, $event)"
+      :content="cmd.command"
+      placement="top"
+      effect="dark"
     >
-      {{ cmd.name }}
-      <template v-if="loopStatus[cmd.id]">🔄</template>
-    </el-button>
+      <el-button
+        type="default"
+        size="small"
+        class="preset-btn"
+        :class="{ looping: loopStatus[cmd.id] }"
+        @click="sendPresetCommand(cmd)"
+        @contextmenu.prevent="showContextMenu(cmd, $event)"
+      >
+        {{ cmd.name }}
+        <template v-if="loopStatus[cmd.id]">🔄</template>
+      </el-button>
+    </el-tooltip>
 
     <!-- 组编辑对话框 -->
     <el-dialog

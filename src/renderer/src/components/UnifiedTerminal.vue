@@ -114,7 +114,9 @@
               @mouseenter="historySelectedIndex = index"
             >
               <span class="history-item-text">{{ item }}</span>
-              <span class="history-item-delete" @mousedown.prevent.stop="deleteHistoryItem(item)" :title="t('historySettings.deleteCommand')">×</span>
+              <el-tooltip :content="t('historySettings.deleteCommand')" placement="top" effect="dark">
+                <span class="history-item-delete" @mousedown.prevent.stop="deleteHistoryItem(item)">×</span>
+              </el-tooltip>
             </div>
           </div>
         </div>

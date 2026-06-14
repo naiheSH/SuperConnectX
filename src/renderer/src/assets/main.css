@@ -798,6 +798,28 @@ input[type="number"] {
 }
 
 /* ==============================
+   Tooltip 统一样式（强制暗色背景）
+   ============================== */
+.el-tooltip__popper,
+.el-tooltip__popper.is-dark,
+.el-tooltip__popper.is-light {
+  background-color: #2d2d2d !important;
+  border: 1px solid #3a3a3a !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  color: #e0e0e0 !important;
+  font-size: 13px !important;
+  padding: 6px 12px !important;
+  max-width: 300px !important;
+  word-break: break-word !important;
+}
+
+.el-tooltip__popper .el-popper__arrow,
+.el-tooltip__popper .el-popper__arrow::before {
+  display: none !important;
+}
+
+/* ==============================
    Radio Button 组样式
    ============================== */
 .mode-radio-group {

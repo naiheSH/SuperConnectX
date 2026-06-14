@@ -28,33 +28,36 @@
       >
         清空
       </el-button>
-      <el-button
-        size="small"
-        class="auto-scroll-btn"
-        :class="{ 'auto-scroll-active': !autoScroll }"
-        @click="autoScroll = !autoScroll"
-        :title="autoScroll ? '取消自动滚动' : '自动滚动'"
-      >
-        <svg class="pin-icon-svg" viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor">
-          <path d="M963.925333 326.997333L697.002667 60.074667a25.6 25.6 0 0 0-43.52 21.845333l14.506666 99.498667-273.066666 151.381333c-91.477333-45.738667-170.666667-36.693333-234.496 27.306667a25.941333 25.941333 0 0 0 0 36.352L327.68 563.2 57.685333 930.645333a25.6 25.6 0 0 0 35.84 35.669334l366.250667-270.677334 167.765333 167.936a25.941333 25.941333 0 0 0 36.352 0c79.530667-79.701333 58.538667-165.546667 26.965334-233.813333l152.064-273.066667 99.157333 14.165334a25.6 25.6 0 0 0 26.624-13.824 25.941333 25.941333 0 0 0-4.778667-30.037334z"/>
-        </svg>
-      </el-button>
-      <el-button
-        size="small"
-        class="icon-action-btn"
-        @click="emit('onOpenLogFolder')"
-        title="打开日志所在文件夹"
-      >
-        <el-icon :size="14"><FolderOpened /></el-icon>
-      </el-button>
-      <el-button
-        size="small"
-        class="icon-action-btn"
-        @click="emit('onOpenLogFile')"
-        title="打开日志文件"
-      >
-        <el-icon :size="14"><Document /></el-icon>
-      </el-button>
+      <el-tooltip :content="autoScroll ? '取消自动滚动' : '自动滚动'" placement="bottom" effect="dark">
+        <el-button
+          size="small"
+          class="auto-scroll-btn"
+          :class="{ 'auto-scroll-active': !autoScroll }"
+          @click="autoScroll = !autoScroll"
+        >
+          <svg class="pin-icon-svg" viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor">
+            <path d="M963.925333 326.997333L697.002667 60.074667a25.6 25.6 0 0 0-43.52 21.845333l14.506666 99.498667-273.066666 151.381333c-91.477333-45.738667-170.666667-36.693333-234.496 27.306667a25.941333 25.941333 0 0 0 0 36.352L327.68 563.2 57.685333 930.645333a25.6 25.6 0 0 0 35.84 35.669334l366.250667-270.677334 167.765333 167.936a25.941333 25.941333 0 0 0 36.352 0c79.530667-79.701333 58.538667-165.546667 26.965334-233.813333l152.064-273.066667 99.157333 14.165334a25.6 25.6 0 0 0 26.624-13.824 25.941333 25.941333 0 0 0-4.778667-30.037334z"/>
+          </svg>
+        </el-button>
+      </el-tooltip>
+      <el-tooltip content="打开日志所在文件夹" placement="bottom" effect="dark">
+        <el-button
+          size="small"
+          class="icon-action-btn"
+          @click="emit('onOpenLogFolder')"
+        >
+          <el-icon :size="14"><FolderOpened /></el-icon>
+        </el-button>
+      </el-tooltip>
+      <el-tooltip content="打开日志文件" placement="bottom" effect="dark">
+        <el-button
+          size="small"
+          class="icon-action-btn"
+          @click="emit('onOpenLogFile')"
+        >
+          <el-icon :size="14"><Document /></el-icon>
+        </el-button>
+      </el-tooltip>
       <el-switch
         v-model="showTimestamp"
         size="small"
@@ -85,14 +88,15 @@
           :value="group.id"
         />
       </el-select>
-      <el-button
-        size="small"
-        class="icon-action-btn"
-        title="编辑高亮规则"
-        @click="emit('onEditSyntaxRules')"
-      >
-        <el-icon :size="14"><Edit /></el-icon>
-      </el-button>
+      <el-tooltip content="编辑高亮规则" placement="bottom" effect="dark">
+        <el-button
+          size="small"
+          class="icon-action-btn"
+          @click="emit('onEditSyntaxRules')"
+        >
+          <el-icon :size="14"><Edit /></el-icon>
+        </el-button>
+      </el-tooltip>
     </div>
   </div>
 </template>
