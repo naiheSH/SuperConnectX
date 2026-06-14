@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Checkout
@@ -37,11 +37,11 @@ jobs:
             Remove-Item -Recurse -Force node_modules\ssh2\node_modules\cpu-features
           }
 
-      - name: Rebuild native modules
-        run: npx electron-builder install-app-deps
-
       - name: Run tests
         run: npm test
+
+      - name: Rebuild native modules
+        run: npx electron-builder install-app-deps
 
       - name: Build (Windows)
         run: npm run build:win
