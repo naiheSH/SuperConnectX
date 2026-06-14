@@ -9,25 +9,32 @@ export const MASKED_PASSWORD = '***MASKED***'
 
 const KEY_FILE = 'scx.key'
 
+function loadOrCreateKey(keyDir: string): Buffer {
+  const keyPath = path.join(keyDir, KEY_FILE)
+  if (fs.existsSync(keyPath)) {
+    const raw = fs.readFileSync(keyPath, 'utf8')
+    const key = Buffer.from(raw, 'hex')
+    // 如果文件内容无效（空文件或非 hex），重新生成密钥
+    if (key.length === 32) {
+      return key
+    }
+  }
+  // 生成新密钥并持久化
+  const newKey = crypto.randomBytes(32)
+  fs.writeFileSync(keyPath, newKey.toString('hex'), { mode: 0o600 })
+  return newKey
+}
+
 export default class SafeStorageString {
   private static instance: SafeStorageString
 
   private key: Buffer
 
-  private constructor() {
-    const keyPath = path.join(app.getPath('userData'), KEY_FILE)
-    if (fs.existsSync(keyPath)) {
-      const raw = fs.readFileSync(keyPath, 'utf8')
-      this.key = Buffer.from(raw, 'hex')
-      // 如果文件内容无效（空文件或非 hex），重新生成密钥
-      if (this.key.length !== 32) {
-        this.key = crypto.randomBytes(32)
-        fs.writeFileSync(keyPath, this.key.toString('hex'), { mode: 0o600 })
-      }
-    } else {
-      this.key = crypto.randomBytes(32)
-      fs.writeFileSync(keyPath, this.key.toString('hex'), { mode: 0o600 })
-    }
+  /**
+   * @param key 可注入 32 字节密钥（用于测试）；不传则从 userData/scx.key 加载或生成
+   */
+  constructor(key?: Buffer) {
+    this.key = key ?? loadOrCreateKey(app.getPath('userData'))
   }
 
   static getInstance(): SafeStorageString {

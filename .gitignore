@@ -7,3 +7,5 @@ out
 release
 package-lock.json
 ICON.pptx
+tests/coverage
+tests/report

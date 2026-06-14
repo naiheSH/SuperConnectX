@@ -24,6 +24,11 @@
             "command": "npm run typecheck"
         },
         {
+            "label": "npm run test:coverage",
+            "type": "shell",
+            "command": "npm run test:coverage"
+        },
+        {
             "label": "re-create tag and push",
             "type": "shell",
             "command": "release.bat"
