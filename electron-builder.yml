@@ -23,6 +23,7 @@ nsis:
   createDesktopShortcut: always
   oneClick: false
   allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
 mac:
   target: dmg
   entitlementsInherit: build/entitlements.mac.plist
