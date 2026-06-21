@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from 'electron'
+import { BrowserWindow } from 'electron'
 import ConnectionInfo from '../protocol/ConnectionInfo'
 import { ipcMain } from 'electron'
 import logger from './IpcAppLogger'
@@ -7,6 +7,7 @@ import SettingsStorage from '../storage/SettingsStorage'
 import ConnectionStorage from '../storage/ConnectionStorage'
 import WorkerPool from '../pool/WorkerPool'
 import path from 'path'
+import { getAppDataDir } from '../utils/AppDir'
 
 // 直连模式客户端接口（Telnet/COM 客户端均实现）
 interface DirectClient {
@@ -140,11 +141,9 @@ export default class IpcConnector {
     }
     _logger.setEnableLogStorage(settings.enableLogStorage === true)
 
-    // 首次使用时 logPath 为空，自动设置为 exe 目录下的 logs 目录
+    // 首次使用时 logPath 为空，自动设置为智能目录下的 logs 目录
     if (!settings.logPath) {
-      const exePath = app.getPath('exe')
-      const appDir = path.dirname(exePath)
-      const defaultLogPath = path.join(appDir, 'logs')
+      const defaultLogPath = path.join(getAppDataDir(), 'logs')
       settings.logPath = defaultLogPath
       this.settingsStorage.saveSettings({ logPath: defaultLogPath })
     }
@@ -279,7 +278,8 @@ export default class IpcConnector {
 
     // 更新连接配置（主要用于串口参数热更新和动态切换 hex/str 模式）
     ipcMain.handle('update-connect', async (_, { conn, config }: { conn: any; config: any }) => {
-      logger.info(`update connect config: ${conn.name}, sessionId: ${conn.sessionId}`)
+      const connLabel = conn.comName || conn.host || conn.name || conn.sessionId
+      logger.info(`update connect config: ${connLabel}, sessionId: ${conn.sessionId}`)
 
       // 如果是动态切换 receiveHex
       if (config.receiveHex !== undefined) {

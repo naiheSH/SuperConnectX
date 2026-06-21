@@ -1,8 +1,8 @@
 import os from 'os'
-import { shell, ipcMain, app } from 'electron'
+import { shell, ipcMain } from 'electron'
 import logger from './IpcAppLogger'
 import fs from 'fs'
-import path from 'path'
+import { getExeDir } from '../utils/AppDir'
 
 const CPU_FLOAT_FIXED_SIZE = 2
 const MEM_FLOAT_FIXED_SIZE = 2
@@ -99,12 +99,7 @@ export default class IpcTools {
   }
 
   getAppExecutableDir(): string {
-    let exePath = app.getPath('exe')
-    if (process.platform === 'darwin') {
-      exePath = path.resolve(exePath, '../../..')
-    }
-
-    const exeDir = path.dirname(exePath)
+    const exeDir = getExeDir()
     if (!fs.existsSync(exeDir)) {
       logger.error(`not find exe dir: ${exeDir}`)
     }

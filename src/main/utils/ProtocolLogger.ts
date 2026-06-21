@@ -1,9 +1,8 @@
 import { appendFile, appendFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs'
-import { shell } from 'electron'
+import { shell, app } from 'electron'
 import fs from 'fs/promises'
 import { join } from 'path'
-import { app } from 'electron'
-import path from 'path'
+import { getAppDataDir } from './AppDir'
 
 export interface LogSplitCallback {
   (connId: string, oldFileName: string, newFileName: string): void
@@ -28,9 +27,8 @@ export default class ProtocolLogger {
   private logFileNamePattern: string = '%C-%Y-%M-%D-%hh-%mm-%ss' // 文件名模板
 
   constructor() {
-    const exePath = app.isPackaged ? app.getPath('exe') : process.cwd()
-    const appDir = path.dirname(exePath)
-    this.defaultLogDir = join(appDir, 'logs')
+    // 智能路径：exe 同目录（非系统盘有权限）或 userData（回退）
+    this.defaultLogDir = join(getAppDataDir(), 'logs')
     this.logDir = this.defaultLogDir
 
     if (!existsSync(this.logDir)) {

@@ -9,12 +9,15 @@ const DEFAULT_STOP_BITS = 1
 const DEFAULT_PARITY = 'none' as const
 const DEFAULT_ENCODING = 'utf8'
 const READ_INTERVAL_MS = 10 // 固定10ms读取间隔
+const FLUSH_TIMEOUT_MS = 100 // 空闲超时：buffer 中有数据但超过此时间无新数据到达，强制刷新
 const COMMAND_LINE_TERMINATOR = '\r\n'
 
 interface SerialConnection {
   port: SerialPort
   buffer: Buffer
   timer: NodeJS.Timeout | null
+  flushTimer: NodeJS.Timeout | null
+  lastDataTime: number
   writeTimeout: number
   encoding: string
   onData: any
@@ -44,6 +47,26 @@ export default class ComClient extends BaseClient {
       onData?.({ data: result.data, timestamp })
       onLog?.(result.log, timestamp)
     }
+  }
+
+  /**
+   * 空闲超时检查：如果 buffer 中有未完成的数据，
+   * 且距离上次收到新数据超过 FLUSH_TIMEOUT_MS，则强制刷新
+   */
+  private checkFlushBuffer(connection: SerialConnection): void {
+    if (!connection.buffer || connection.buffer.length === 0) return
+    const elapsed = Date.now() - connection.lastDataTime
+    if (elapsed < FLUSH_TIMEOUT_MS) return
+
+    const { buffer, splitter, onData, onLog, encoding } = connection
+    const timestamp = BufferLineSplitter.timestamp()
+    const remainingStr = buffer.toString(encoding as BufferEncoding)
+    connection.buffer = Buffer.alloc(0)
+    connection.lastDataTime = Date.now()
+
+    this.logger.info(`serial idle flush: ${buffer.length} bytes after ${elapsed}ms idle`)
+    onData?.({ data: remainingStr, timestamp })
+    onLog?.(splitter.toLogLine(remainingStr), timestamp)
   }
 
   async start(info: ConnectionInfo, onData: any, onClose: any, onLog: any): Promise<object> {
@@ -98,6 +121,8 @@ export default class ComClient extends BaseClient {
             port,
             buffer: Buffer.alloc(0),
             timer: null,
+            flushTimer: null,
+            lastDataTime: Date.now(),
             writeTimeout: writeTimeout,
             encoding: encoding,
             onData: onData,
@@ -110,7 +135,12 @@ export default class ComClient extends BaseClient {
 
           // 收集原始 Buffer 数据到缓冲区（不在 data 事件中 toString，避免多字节字符被分割）
           port.on('data', (data: Buffer) => {
-            connection.buffer = Buffer.concat([connection.buffer, data])
+            try {
+              connection.buffer = Buffer.concat([connection.buffer, data])
+              connection.lastDataTime = Date.now()
+            } catch (err: any) {
+              this.logger.error(`serial data concat error: ${err?.message || err}`)
+            }
           })
 
           // 使用固定间隔处理数据
@@ -118,11 +148,20 @@ export default class ComClient extends BaseClient {
             this.processBuffer(connection)
           }, READ_INTERVAL_MS)
 
+          // 空闲超时刷新：如果 buffer 中有数据但长时间无新数据，强制刷新剩余数据
+          connection.flushTimer = setInterval(() => {
+            this.checkFlushBuffer(connection)
+          }, FLUSH_TIMEOUT_MS)
+
           port.on('close', () => {
             this.logger.info(`serial port closed: ${comName}`)
             if (connection.timer) {
               clearInterval(connection.timer)
               connection.timer = null
+            }
+            if (connection.flushTimer) {
+              clearInterval(connection.flushTimer)
+              connection.flushTimer = null
             }
             // 关闭前输出缓冲区中剩余的数据
             if (connection.buffer && connection.buffer.length > 0) {
@@ -204,6 +243,10 @@ export default class ComClient extends BaseClient {
       if (connection.timer) {
         clearInterval(connection.timer)
         connection.timer = null
+      }
+      if (connection.flushTimer) {
+        clearInterval(connection.flushTimer)
+        connection.flushTimer = null
       }
 
       // 主动断开前移除 close 事件监听器，防止触发 onClose 回调导致重连
@@ -312,6 +355,8 @@ export default class ComClient extends BaseClient {
             port: newPort,
             buffer: Buffer.alloc(0),
             timer: null,
+            flushTimer: null,
+            lastDataTime: Date.now(),
             writeTimeout: config.writeTimeout ?? connection.writeTimeout,
             encoding: newEncoding,
             onData: savedOnData,
@@ -324,7 +369,12 @@ export default class ComClient extends BaseClient {
 
           // 收集数据到缓冲区（Buffer 累积，避免多字节字符被分割）
           newPort.on('data', (data: Buffer) => {
-            newConnection.buffer = Buffer.concat([newConnection.buffer, data])
+            try {
+              newConnection.buffer = Buffer.concat([newConnection.buffer, data])
+              newConnection.lastDataTime = Date.now()
+            } catch (err: any) {
+              this.logger.error(`serial data concat error: ${err?.message || err}`)
+            }
           })
 
           // 重新启动数据收集定时器
@@ -332,11 +382,20 @@ export default class ComClient extends BaseClient {
             this.processBuffer(newConnection)
           }, READ_INTERVAL_MS)
 
+          // 空闲超时刷新
+          newConnection.flushTimer = setInterval(() => {
+            this.checkFlushBuffer(newConnection)
+          }, FLUSH_TIMEOUT_MS)
+
           newPort.on('close', () => {
             this.logger.info(`serial port closed after update: ${comName}`)
             if (newConnection.timer) {
               clearInterval(newConnection.timer)
               newConnection.timer = null
+            }
+            if (newConnection.flushTimer) {
+              clearInterval(newConnection.flushTimer)
+              newConnection.flushTimer = null
             }
             this.serialConnections.delete(connId)
           })
@@ -387,6 +446,8 @@ export default class ComClient extends BaseClient {
           port: recoveryPort,
           buffer: Buffer.alloc(0),
           timer: null,
+          flushTimer: null,
+          lastDataTime: Date.now(),
           writeTimeout: oldConnection.writeTimeout,
           encoding: encoding,
           onData: oldConnection.onData,
@@ -399,17 +460,31 @@ export default class ComClient extends BaseClient {
 
         // 收集数据到缓冲区（Buffer 累积，避免多字节字符被分割）
         recoveryPort.on('data', (data: Buffer) => {
-          newConnection.buffer = Buffer.concat([newConnection.buffer, data])
+          try {
+            newConnection.buffer = Buffer.concat([newConnection.buffer, data])
+            newConnection.lastDataTime = Date.now()
+          } catch (err: any) {
+            this.logger.error(`serial data concat error: ${err?.message || err}`)
+          }
         })
 
         newConnection.timer = setInterval(() => {
           this.processBuffer(newConnection)
         }, READ_INTERVAL_MS)
 
+        // 空闲超时刷新
+        newConnection.flushTimer = setInterval(() => {
+          this.checkFlushBuffer(newConnection)
+        }, FLUSH_TIMEOUT_MS)
+
         recoveryPort.on('close', () => {
           if (newConnection.timer) {
             clearInterval(newConnection.timer)
             newConnection.timer = null
+          }
+          if (newConnection.flushTimer) {
+            clearInterval(newConnection.flushTimer)
+            newConnection.flushTimer = null
           }
           this.serialConnections.delete(connId)
         })

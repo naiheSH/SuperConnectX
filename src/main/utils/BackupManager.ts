@@ -1,7 +1,7 @@
-import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import logger from '../ipc/IpcAppLogger'
+import { getExeDir } from './AppDir'
 
 const BACKUP_DIR_NAME = 'backup'
 const USERDATA_DIR_NAME = 'userdata'
@@ -20,12 +20,7 @@ export default class BackupManager {
    * 获取 exe 所在目录
    */
   private getAppDir(): string {
-    const exePath = app.getPath('exe')
-    let exeDir = path.dirname(exePath)
-    if (process.platform === 'darwin') {
-      exeDir = path.resolve(exeDir, '../../..')
-    }
-    return exeDir
+    return getExeDir()
   }
 
   /**

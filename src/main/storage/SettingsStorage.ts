@@ -1,8 +1,8 @@
 import Store from 'electron-store'
-import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import logger from '../ipc/IpcAppLogger'
+import { getAppDataDir } from '../utils/AppDir'
 
 const SAVE_DIR_NAME = 'userdata'
 
@@ -247,13 +247,7 @@ export default class SettingsStorage {
   }
 
   private getAppUserDataPath(): string {
-    const exePath = app.getPath('exe')
-    let exeDir = path.dirname(exePath)
-    if (process.platform === 'darwin') {
-      exeDir = path.resolve(exeDir, '../../..')
-    }
-
-    const userDataPath = path.join(exeDir, SAVE_DIR_NAME)
+    const userDataPath = path.join(getAppDataDir(), SAVE_DIR_NAME)
     if (!fs.existsSync(userDataPath)) {
       fs.mkdirSync(userDataPath, { recursive: true })
     }

@@ -1,11 +1,13 @@
 import winston from 'winston'
 import DailyRotateFile from 'winston-daily-rotate-file'
-import { app, ipcMain } from 'electron'
+import { ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { join } from 'path'
+import { getAppDataDir } from '../utils/AppDir'
 
-const LOG_DIR = join(path.dirname(app.getPath('exe')), 'app-logs')
+// 使用智能路径：exe 同目录（非系统盘有权限）或 userData（回退）
+const LOG_DIR = join(getAppDataDir(), 'app-logs')
 
 // 确保日志目录存在
 if (!fs.existsSync(LOG_DIR)) {
