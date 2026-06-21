@@ -199,6 +199,7 @@
     "importFromSuperCom": "Import from SuperCom",
     "openAppDir": "Open App Directory",
     "exit": "Exit",
+    "exitConfirm": "Are you sure you want to exit SuperConnectX?",
     "doc": "Documentation",
     "about": "About",
     "feedback": "Feedback",

@@ -200,7 +200,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getSystemFonts, formatFontName } from '../utils/FontDetector'
 
@@ -377,8 +377,23 @@ const openAppDir = async () => {
   await window.toolApi.openAppDir()
 }
 
-const handleExit = () => {
-  window.windowApi.closeWindow()
+const handleExit = async () => {
+  showFileMenu.value = false
+  try {
+    await ElMessageBox.confirm(
+      t('titlebar.exitConfirm'),
+      t('titlebar.exit'),
+      {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+        center: true
+      }
+    )
+    window.windowApi.closeWindow()
+  } catch {
+    // 用户取消，不做任何操作
+  }
 }
 
 const handleAbout = () => {
