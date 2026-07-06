@@ -160,9 +160,10 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
   const saveLogFile = async () => {
     try {
       const namePart = connectionType === 'telnet' ? `${conn.host}_${conn.port}` : conn.comName
+      const safeNamePart = String(namePart || 'unknown').replace(/[\\/*?:"<>|]/g, '-')
       const result = await window.dialogApi.saveFileDialog({
         title: '保存日志',
-        defaultPath: `${connectionType}_${namePart}_${Date.now()}.log`,
+        defaultPath: `${connectionType}_${safeNamePart}_${Date.now()}.log`,
         filters: [{ name: '日志文件', extensions: ['log', 'txt'] }]
       })
       if (result.filePath) {
