@@ -1,3 +1,5 @@
+import { decodeBuffer } from './decodeBuffer'
+
 /**
  * Buffer 行分割器
  * 在原始 Buffer 中查找换行符再解码，彻底避免多字节字符被 data 事件分割导致数据损坏
@@ -54,7 +56,7 @@ export class BufferLineSplitter {
         const lfPos = buffer.indexOf(LF, offset)
         if (lfPos === -1) break
 
-        const line = buffer.toString(this.encoding as BufferEncoding, offset, lfPos)
+        const line = decodeBuffer(buffer, this.encoding, offset, lfPos)
         offset = lfPos + 1
         if (line) {
           dataLines.push(line)
@@ -65,7 +67,7 @@ export class BufferLineSplitter {
 
       // 检查 \r\n 组合
       if (crPos + 1 < bufLen && buffer[crPos + 1] === LF) {
-        const line = buffer.toString(this.encoding as BufferEncoding, offset, crPos)
+        const line = decodeBuffer(buffer, this.encoding, offset, crPos)
         offset = crPos + 2
         if (line) {
           dataLines.push(line)
@@ -77,7 +79,7 @@ export class BufferLineSplitter {
         break
       } else {
         // 单独的 \r（后面不是 \n 且不是 buffer 末尾）
-        const line = buffer.toString(this.encoding as BufferEncoding, offset, crPos)
+        const line = decodeBuffer(buffer, this.encoding, offset, crPos)
         offset = crPos + 1
         if (line) {
           dataLines.push(line)

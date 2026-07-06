@@ -1,7 +1,7 @@
 import { appendFile, appendFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs'
 import { shell, app } from 'electron'
 import fs from 'fs/promises'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { getAppDataDir } from './AppDir'
 
 export interface LogSplitCallback {
@@ -223,6 +223,7 @@ export default class ProtocolLogger {
       const logData = logEntries.join('\n') + '\n'
 
       try {
+        this.ensureDir(dirname(logFile))
         if (isSync) {
           // 退出时同步写入
           appendFileSync(logFile, logData, 'utf-8')
@@ -284,8 +285,8 @@ export default class ProtocolLogger {
       .replace(/%ss/g, String(date.getSeconds()))
       .replace(/%fff/g, String(date.getMilliseconds()))
 
-    // 替换非法文件名字符（保留 \ 和 / 作为路径分隔符）
-    return result.replace(/[*?:"<>|]/g, '-')
+    // 日志文件名不能保留路径分隔符，Linux 串口名如 /dev/ttyUSB0 会被当成子目录。
+    return result.replace(/[\\/\\*?:"<>|]/g, '-')
   }
 
   createConnLogFile(connId: string, connName: string, remark?: string): string {
@@ -311,6 +312,7 @@ export default class ProtocolLogger {
 
     // 连接时立即创建空日志文件，避免刚连接时点击打开日志提示文件不存在
     const logFilePath = join(resolvedDir, fileName)
+    this.ensureDir(dirname(logFilePath))
     if (!existsSync(logFilePath)) {
       writeFileSync(logFilePath, '', 'utf-8')
     }
@@ -359,6 +361,7 @@ export default class ProtocolLogger {
         const logFile = join(this.getConnLogDir(connId), fileName)
         const logData = remainingLogs.join('\n') + '\n'
         try {
+          this.ensureDir(dirname(logFile))
           appendFileSync(logFile, logData, 'utf-8') // 同步写入
         } catch (err) {
           console.error(`Flush log on disconnect failed:`, err)

@@ -2,6 +2,7 @@ import { SerialPort } from 'serialport'
 import BaseClient, { ILogger } from './BaseClient'
 import ConnectionInfo from './ConnectionInfo'
 import { BufferLineSplitter } from './BufferLineSplitter'
+import { decodeBuffer, encodeBuffer } from './decodeBuffer'
 
 const DEFAULT_BAUD_RATE = 9600
 const DEFAULT_DATA_BITS = 8
@@ -60,7 +61,7 @@ export default class ComClient extends BaseClient {
 
     const { buffer, splitter, onData, onLog, encoding } = connection
     const timestamp = BufferLineSplitter.timestamp()
-    const remainingStr = buffer.toString(encoding as BufferEncoding)
+    const remainingStr = decodeBuffer(buffer, encoding)
     connection.buffer = Buffer.alloc(0)
     connection.lastDataTime = Date.now()
 
@@ -166,7 +167,7 @@ export default class ComClient extends BaseClient {
             // 关闭前输出缓冲区中剩余的数据
             if (connection.buffer && connection.buffer.length > 0) {
               const timestamp = BufferLineSplitter.timestamp()
-              const remainingStr = connection.buffer.toString(encoding as BufferEncoding)
+              const remainingStr = decodeBuffer(connection.buffer, encoding)
               connection.onData?.({ data: remainingStr, timestamp })
               connection.onLog?.(connection.splitter.toLogLine(remainingStr), timestamp)
               connection.buffer = Buffer.alloc(0)
@@ -214,7 +215,7 @@ export default class ComClient extends BaseClient {
       const commandWithNewline = command.endsWith(COMMAND_LINE_TERMINATOR) ? command : (command.endsWith('\n') ? command.replace(/\n$/, COMMAND_LINE_TERMINATOR) : command + COMMAND_LINE_TERMINATOR)
       
       return new Promise((resolve) => {
-        connection.port.write(commandWithNewline, connection.encoding as BufferEncoding, (err: Error | null | undefined) => {
+        connection.port.write(encodeBuffer(commandWithNewline, connection.encoding), (err: Error | null | undefined) => {
           if (err) {
             this.logger.error(`serial write error: ${err.message}`)
             resolve({ success: false, message: err.message })

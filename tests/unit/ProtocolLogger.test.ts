@@ -150,6 +150,18 @@ describe('ProtocolLogger', () => {
       expect(fs.existsSync(logFile)).toBe(true)
     })
 
+    it('文件名模板包含子目录时自动创建父目录', async () => {
+      const logger = await createLogger()
+      logger.setLogDir(path.join(TEST_ROOT, 'logs'))
+      logger.setLogFileName('dev/%C-%Y-%M-%D-%hh-%mm-%ss')
+
+      const result = logger.createConnLogFile('conn-1', 'ttyUSB0')
+      const logFile = path.join(TEST_ROOT, 'logs', result)
+
+      expect(result).toContain('dev')
+      expect(fs.existsSync(logFile)).toBe(true)
+    })
+
     it('创建多个连接日志文件不冲突', async () => {
       const logger = await createLogger()
       const r1 = logger.createConnLogFile('conn-1', 'Conn1')

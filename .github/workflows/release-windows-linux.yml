@@ -1,0 +1,146 @@
+name: Build and Release Windows Linux
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-2022
+            builder-target: --win
+            artifact-name: windows-release
+            artifact-path: |
+              release/*.exe
+              release/*.yml
+              release/*.blockmap
+              release/*.zip
+          - name: Linux
+            os: ubuntu-22.04
+            builder-target: --linux
+            artifact-name: linux-release
+            artifact-path: |
+              release/*.AppImage
+              release/*.snap
+              release/*.deb
+              release/*.yml
+              release/*.blockmap
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libarchive-tools
+
+      - name: Install Python setuptools
+        run: pip install setuptools
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Remove problematic cpu-features (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path node_modules\cpu-features) {
+            Remove-Item -Recurse -Force node_modules\cpu-features
+          }
+          if (Test-Path node_modules\ssh2\node_modules\cpu-features) {
+            Remove-Item -Recurse -Force node_modules\ssh2\node_modules\cpu-features
+          }
+
+      - name: Remove problematic cpu-features (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          rm -rf node_modules/cpu-features
+          rm -rf node_modules/ssh2/node_modules/cpu-features
+
+      - name: Run tests
+        run: npm test
+
+      - name: Rebuild native modules
+        run: npx electron-builder install-app-deps
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build renderer and main
+        run: npx electron-vite build
+
+      - name: Build package
+        run: npx electron-builder ${{ matrix.builder-target }} --publish never
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pack Windows unpacked directory
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Encoding UTF8 | ConvertFrom-Json
+          $unpackedDir = "release\win-unpacked"
+          if (Test-Path $unpackedDir) {
+            $zipPath = "release\$($pkg.name)-$($pkg.version)-win-x64.zip"
+            Compress-Archive -Path "$unpackedDir\*" -DestinationPath $zipPath -CompressionLevel Optimal
+          }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create Release and Upload Assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          release_body=""
+          if [ -f latest.md ]; then
+            release_body="$(cat latest.md)"
+          fi
+
+          gh release delete "$TAG" --repo "$REPO" --cleanup-tag --yes 2>/dev/null || true
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --title "$TAG" \
+            --notes "$release_body" \
+            release-assets/*
