@@ -44,7 +44,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
@@ -87,8 +87,15 @@ jobs:
       - name: Build renderer and main
         run: npx electron-vite build
 
-      - name: Build package
-        run: npx electron-builder ${{ matrix.builder-target }} --publish never
+      - name: Build package (Windows)
+        if: runner.os == 'Windows'
+        run: npx electron-builder --win --publish never
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build package (Linux)
+        if: runner.os == 'Linux'
+        run: npx electron-builder --linux --config electron-builder.yml --publish never
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
