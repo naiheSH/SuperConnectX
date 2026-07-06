@@ -206,6 +206,18 @@ describe('ProtocolLogger', () => {
       logger.createConnLogFile('conn-1', 'Test')
       expect(() => logger.appendToConnLog('extra data', 'conn-1')).not.toThrow()
     })
+
+    it('多行追加时每行都带时间戳', async () => {
+      const logger = await createLogger()
+      const fileName = logger.createConnLogFile('conn-1', 'Test')
+      logger.appendToConnLog('[2026-07-06 12:00:00.000] line1\nline2', 'conn-1')
+      logger.flushConnLog('conn-1')
+
+      const logFile = path.join(logger.getLogDir(), fileName)
+      const content = fs.readFileSync(logFile, 'utf8')
+      expect(content).toContain('[2026-07-06 12:00:00.000] line1')
+      expect(content).toContain('[2026-07-06 12:00:00.000] line2')
+    })
   })
 
   describe('flushConnLog', () => {

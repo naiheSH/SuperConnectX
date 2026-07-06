@@ -337,17 +337,19 @@ export default class ProtocolLogger {
     this.logCache.set(connId, currentLogs)
   }
 
-  // 直接追加日志文本（前端调用，已包含时间戳）
+  // 直接追加日志文本。若传入内容只在整段开头带时间戳，拆行后为每一行补同一个时间戳。
   appendToConnLog(content: string, connId: string): void {
     if (!this.enableLogStorage) return
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return
 
     const currentLogs = this.logCache.get(connId) || []
-    // 直接追加，不添加额外时间戳
-    const lines = content.split(/\r?\n/).filter((line) => line.trim() !== '')
+    const timestampMatch = content.match(/^(\[[^\]]+\]\s*)/)
+    const timestampPrefix = timestampMatch ? timestampMatch[1] : `[${this.getTimeStamp()}] `
+    const logContent = timestampMatch ? content.slice(timestampPrefix.length) : content
+    const lines = logContent.split(/\r?\n/).filter((line) => line.trim() !== '')
     for (const line of lines) {
-      currentLogs.push(line)
+      currentLogs.push(/^\[[^\]]+\]\s*/.test(line) ? line : `${timestampPrefix}${line}`)
     }
     this.logCache.set(connId, currentLogs)
   }
