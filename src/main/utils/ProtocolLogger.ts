@@ -13,6 +13,7 @@ export default class ProtocolLogger {
   private logDirPattern: string = '' // 目录模板（用户设置的原始模板）
   private defaultLogDir: string // 默认目录（程序目录/logs）
   private connLogFiles = new Map<string, string>()
+  private connLogFileHistory = new Map<string, string[]>()
   private connLogDirs = new Map<string, string>() // 每个连接解析后的日志目录
   private connLogIndexes = new Map<string, number>()
   private connLogNames = new Map<string, string>() // 保存原始连接名
@@ -193,6 +194,7 @@ export default class ProtocolLogger {
       const remark = this.connLogRemarks.get(connId)
       const newFileName = `${this.resolveFileName(connName, remark)}-${index}.log`
       this.connLogFiles.set(connId, newFileName)
+      this.connLogFileHistory.set(connId, [...(this.connLogFileHistory.get(connId) || []), newFileName])
       this.currentFileSizes.set(connId, 0)
 
       // 触发分片回调
@@ -302,6 +304,7 @@ export default class ProtocolLogger {
 
     const fileName = `${this.resolveFileName(connName, remark)}.log`
     this.connLogFiles.set(connId, fileName)
+    this.connLogFileHistory.set(connId, [fileName])
     this.connLogIndexes.set(connId, 0)
     this.connLogNames.set(connId, connName) // 保存原始连接名
     if (remark) {
@@ -377,6 +380,7 @@ export default class ProtocolLogger {
   clearConnLogFile(connId: string): void {
     this.flushConnLog(connId)
     this.connLogFiles.delete(connId)
+    this.connLogFileHistory.delete(connId)
     this.connLogDirs.delete(connId)
     this.connLogIndexes.delete(connId)
     this.connLogNames.delete(connId)
@@ -464,17 +468,31 @@ export default class ProtocolLogger {
     try {
       this.flushAllLogs(true) // 确保所有日志都已写入
 
-      const fileName = this.connLogFiles.get(connId)
-      if (!fileName) {
+      const fileNames = this.connLogFileHistory.get(connId) || []
+      if (fileNames.length === 0) {
         return { success: false, message: 'Log file not found' }
       }
 
-      const sourcePath = join(this.getConnLogDir(connId), fileName)
-      if (!existsSync(sourcePath)) {
+      const logDir = this.getConnLogDir(connId)
+      await fs.mkdir(dirname(destPath), { recursive: true })
+      await fs.writeFile(destPath, '', 'utf-8')
+
+      let hasCopied = false
+      for (const fileName of fileNames) {
+        const sourcePath = join(logDir, fileName)
+        if (!existsSync(sourcePath)) {
+          continue
+        }
+
+        const content = await fs.readFile(sourcePath)
+        await fs.appendFile(destPath, content)
+        hasCopied = true
+      }
+
+      if (!hasCopied) {
         return { success: false, message: 'Source log file does not exist' }
       }
 
-      await fs.copyFile(sourcePath, destPath)
       return { success: true }
     } catch (error) {
       console.error('Failed to copy log file:', error)

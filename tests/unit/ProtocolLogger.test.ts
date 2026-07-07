@@ -323,6 +323,24 @@ describe('ProtocolLogger', () => {
       expect(result.success).toBe(true)
       expect(fs.existsSync(destPath)).toBe(true)
     })
+
+    it('分片后另存为会合并完整日志', async () => {
+      const logger = await createLogger()
+      logger.setLogSplitSize(0.00001)
+      logger.createConnLogFile('conn-1', 'Test')
+      logger.writeToConnLog('first chunk', 'conn-1')
+      logger.flushAllLogs(true)
+      logger.writeToConnLog('second chunk', 'conn-1')
+      logger.flushAllLogs(true)
+
+      const destPath = path.join(TEST_ROOT, 'copy-merged.log')
+      const result = await logger.copyLogFile('conn-1', destPath)
+      const content = fs.readFileSync(destPath, 'utf8')
+
+      expect(result.success).toBe(true)
+      expect(content).toContain('first chunk')
+      expect(content).toContain('second chunk')
+    })
   })
 
   describe('日志分片逻辑', () => {
