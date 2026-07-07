@@ -121,6 +121,20 @@ const terminal = useTerminal({
 
 const { openLogFolder, openLogFile, saveLogFile, cleanup: terminalCleanup } = terminal
 
+const formatReceivedData = (content: string, timestamp?: string): string => {
+  if (!terminal.showTimestamp.value || !timestamp) {
+    return `${content}\n`
+  }
+
+  const prefix = `[${timestamp}] `
+  const lines = content.split(/\r?\n/).filter(line => line.length > 0)
+  if (lines.length === 0) {
+    return `${prefix}\n`
+  }
+
+  return `${lines.map(line => `${prefix}${line}`).join('\n')}\n`
+}
+
 const handleClose = async () => {
   stopRetry.value = true
   if (retryTimer) {
@@ -258,8 +272,7 @@ const connect = async () => {
           if (data.connId !== currentConnId) return
           terminal.totalRxSize += data.data.length
           unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-          const prefix = terminal.showTimestamp.value && data.timestamp ? `[${data.timestamp}] ` : ''
-          const displayText = `${prefix}${data.data}\n`
+          const displayText = formatReceivedData(data.data, data.timestamp)
           unifiedTerminalRef.value?.appendToTerminal(displayText)
         })
 

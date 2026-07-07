@@ -595,8 +595,7 @@ const handleConnect = async () => {
         if (String(data.connId) !== String(currentSessionId.value)) return
         terminal.totalRxSize += data.data.length
         unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-        const prefix = terminal.showTimestamp.value && data.timestamp ? `[${data.timestamp}] ` : ''
-        const displayText = `${prefix}${data.data}\n`
+        const displayText = formatReceivedData(data.data, data.timestamp)
         unifiedTerminalRef.value?.appendToTerminal(displayText)
       })
 
@@ -609,6 +608,20 @@ const handleConnect = async () => {
     unifiedTerminalRef.value?.appendToTerminal(`\n${t('comTerminal.connectFailed')}: ${(error as Error).message}\n`)
     ElMessage.error(t('comTerminal.connectFailed'))
   }
+}
+
+const formatReceivedData = (content: string, timestamp?: string): string => {
+  if (!terminal.showTimestamp.value || !timestamp) {
+    return `${content}\n`
+  }
+
+  const prefix = `[${timestamp}] `
+  const lines = content.split(/\r?\n/).filter(line => line.length > 0)
+  if (lines.length === 0) {
+    return `${prefix}\n`
+  }
+
+  return `${lines.map(line => `${prefix}${line}`).join('\n')}\n`
 }
 
 const handleClose = async () => {
