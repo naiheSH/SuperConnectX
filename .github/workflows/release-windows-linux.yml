@@ -156,13 +156,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Rename Ubuntu 24 artifacts
+        run: |
+          cd release
+          for f in *.AppImage; do mv "$f" "${f%.AppImage}-ubuntu24.AppImage"; done
+          for f in *.deb; do mv "$f" "${f%.deb}-ubuntu24.deb"; done
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-ubuntu24-release
           path: |
-            release/*.AppImage
-            release/*.deb
+            release/*-ubuntu24.AppImage
+            release/*-ubuntu24.deb
           if-no-files-found: error
 
   release:
