@@ -161,9 +161,15 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     try {
       const namePart = connectionType === 'telnet' ? `${conn.host}_${conn.port}` : conn.comName
       const safeNamePart = String(namePart || 'unknown').replace(/[\\/*?:"<>|]/g, '-')
+      const now = new Date()
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+        now.getDate()
+      ).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}h-${String(
+        now.getMinutes()
+      ).padStart(2, '0')}m-${String(now.getSeconds()).padStart(2, '0')}s`
       const result = await window.dialogApi.saveFileDialog({
         title: '保存日志',
-        defaultPath: `${connectionType}_${safeNamePart}_${Date.now()}.log`,
+        defaultPath: `${safeNamePart}-${timestamp}.log`,
         filters: [{ name: '日志文件', extensions: ['log', 'txt'] }]
       })
       if (result.filePath) {
