@@ -51,6 +51,7 @@ linux:
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
+afterPack: ./scripts/afterPack.js
 npmRebuild: false
 publish:
   provider: github
