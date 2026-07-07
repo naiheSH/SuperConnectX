@@ -353,5 +353,20 @@ describe('ProtocolLogger', () => {
       // 不应该出错
       expect(true).toBe(true)
     })
+
+    it('分片文件名使用连接创建时的固定基名', async () => {
+      const logger = await createLogger()
+      logger.setLogSplitSize(0.00001)
+      const firstFileName = logger.createConnLogFile('conn-1', 'Test')
+      logger.writeToConnLog('first chunk', 'conn-1')
+      logger.flushAllLogs(true)
+      logger.writeToConnLog('second chunk', 'conn-1')
+      logger.flushAllLogs(true)
+
+      const baseName = firstFileName.replace(/\.log$/, '')
+      const logDir = logger.getLogDir()
+      expect(fs.existsSync(path.join(logDir, `${baseName}-1.log`))).toBe(true)
+      expect(fs.existsSync(path.join(logDir, `${baseName}-2.log`))).toBe(true)
+    })
   })
 })

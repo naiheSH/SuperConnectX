@@ -14,6 +14,7 @@ export default class ProtocolLogger {
   private defaultLogDir: string // 默认目录（程序目录/logs）
   private connLogFiles = new Map<string, string>()
   private connLogFileHistory = new Map<string, string[]>()
+  private connLogBaseNames = new Map<string, string>()
   private connLogDirs = new Map<string, string>() // 每个连接解析后的日志目录
   private connLogIndexes = new Map<string, number>()
   private connLogNames = new Map<string, string>() // 保存原始连接名
@@ -189,10 +190,8 @@ export default class ProtocolLogger {
       const index = (this.connLogIndexes.get(connId) || 0) + 1
       this.connLogIndexes.set(connId, index)
 
-      // 使用保存的原始连接名和备注生成新文件名
-      const connName = this.connLogNames.get(connId) || 'unknown'
-      const remark = this.connLogRemarks.get(connId)
-      const newFileName = `${this.resolveFileName(connName, remark)}-${index}.log`
+      const baseName = this.connLogBaseNames.get(connId) || oldFileName.replace(/\.log$/, '')
+      const newFileName = `${baseName}-${index}.log`
       this.connLogFiles.set(connId, newFileName)
       this.connLogFileHistory.set(connId, [...(this.connLogFileHistory.get(connId) || []), newFileName])
       this.currentFileSizes.set(connId, 0)
@@ -305,6 +304,7 @@ export default class ProtocolLogger {
     const fileName = `${this.resolveFileName(connName, remark)}.log`
     this.connLogFiles.set(connId, fileName)
     this.connLogFileHistory.set(connId, [fileName])
+    this.connLogBaseNames.set(connId, fileName.replace(/\.log$/, ''))
     this.connLogIndexes.set(connId, 0)
     this.connLogNames.set(connId, connName) // 保存原始连接名
     if (remark) {
@@ -381,6 +381,7 @@ export default class ProtocolLogger {
     this.flushConnLog(connId)
     this.connLogFiles.delete(connId)
     this.connLogFileHistory.delete(connId)
+    this.connLogBaseNames.delete(connId)
     this.connLogDirs.delete(connId)
     this.connLogIndexes.delete(connId)
     this.connLogNames.delete(connId)
