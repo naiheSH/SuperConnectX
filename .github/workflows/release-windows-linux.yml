@@ -133,16 +133,11 @@ jobs:
             prerelease="--prerelease"
           fi
 
-          release_body=""
-          if [ -f latest.md ]; then
-            release_body="$(cat latest.md)"
-          fi
-
           gh release delete "$tag" --repo "$REPO" --cleanup-tag --yes 2>/dev/null || true
           gh release create "$tag" \
             --repo "$REPO" \
             --target "$GITHUB_SHA" \
             --title "$tag" \
-            --notes "$release_body" \
+            --generate-notes \
             $prerelease \
             release-assets/*
