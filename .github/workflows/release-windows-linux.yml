@@ -25,7 +25,6 @@ jobs:
               release/*.exe
               release/*.yml
               release/*.blockmap
-              release/*.zip
           - name: Linux
             os: ubuntu-22.04
             builder-target: --linux
@@ -98,17 +97,6 @@ jobs:
         run: npx electron-builder --linux --config electron-builder.yml --publish never
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pack Windows unpacked directory
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $pkg = Get-Content package.json -Encoding UTF8 | ConvertFrom-Json
-          $unpackedDir = "release\win-unpacked"
-          if (Test-Path $unpackedDir) {
-            $zipPath = "release\$($pkg.name)-$($pkg.version)-win-x64.zip"
-            Compress-Archive -Path "$unpackedDir\*" -DestinationPath $zipPath -CompressionLevel Optimal
-          }
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
