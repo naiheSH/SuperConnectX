@@ -50,6 +50,7 @@ declare global {
       exportCommands: (filePath: string) => Promise<any>
       importCommands: (filePath: string) => Promise<any>
       importFromSuperCom: (filePath: string) => Promise<any>
+      exportData: (filePath: string, selections: string[]) => Promise<{ success: boolean; message?: string }>
 
       getComSettings: (comName: string) => Promise<any>
       saveComSettings: (comName: string, settings: any) => Promise<boolean>

@@ -10,6 +10,10 @@ import SettingsStorage from '../storage/SettingsStorage'
 import CommandHistoryStorage from '../storage/CommandHistoryStorage'
 import IpcConnector from './IpcConnector'
 import BackupManager from '../utils/BackupManager'
+import archiver from 'archiver'
+import fs from 'fs'
+import path from 'path'
+import { getAppDataDir } from '../utils/AppDir'
 
 export default class IpcStorage {
   private static sInstance: IpcStorage
@@ -166,6 +170,130 @@ export default class IpcStorage {
       BackupManager.getInstance().getNextBackupDate(backupInterval)
     )
 
+    /* 导出数据（勾选多个类型，打包为 ZIP） */
+    ipcMain.handle('export-data', async (_, filePath: string, selections: string[]) => {
+      try {
+        logger.info('[IpcStorage] export-data start, filePath:', filePath, 'selections:', selections)
+        await exportDataToZip(connectionStorage, groupStorage, preSetCommandStorage,
+          comSettingsStorage, appSettingsStorage, settingsStorage, filePath, selections)
+        logger.info('[IpcStorage] export-data success')
+        return { success: true }
+      } catch (err: any) {
+        logger.error('[IpcStorage] export-data failed:', err.message, err.stack)
+        return { success: false, message: err.message }
+      }
+    })
+
     logger.info(`init IpcStorage done`)
   }
+}
+
+/**
+ * 将选中的数据类别打包为 ZIP 文件
+ *
+ * 每个勾选的类别会导出为一个 JSON 文件，所有文件打包进一个 ZIP。
+ * 文件列表：
+ *   settings     -> settings.json       (全局设置 + 语法高亮规则组)
+ *   commandGroups -> commandGroups.json  (命令组)
+ *   commands     -> commands.json        (预设命令)
+ *   comPorts     -> comPorts.json        (COM 串口设置 + 波特率列表)
+ *   connections  -> connections.json     (连接配置，密码已脱敏)
+ */
+async function exportDataToZip(
+  connectionStorage: ConnectionStorage,
+  groupStorage: CommandGroupStorage,
+  preSetCommandStorage: PreSetCommandStorage,
+  comSettingsStorage: ComSettingsStorage,
+  appSettingsStorage: AppSettingsStorage,
+  settingsStorage: SettingsStorage,
+  filePath: string,
+  selections: string[]
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(filePath)
+    const archive = archiver('zip', { zlib: { level: 9 } })
+
+    let settled = false
+    const settle = (err?: Error): void => {
+      if (settled) return
+      settled = true
+      if (err) {
+        // 清理不完整的文件
+        try { fs.unlinkSync(filePath) } catch (_) { /* ignore */ }
+        reject(err)
+      } else {
+        resolve()
+      }
+    }
+
+    output.on('close', () => settle())
+    output.on('error', (err) => settle(err))
+    archive.on('error', (err) => settle(err))
+
+    archive.pipe(output)
+
+    const addJsonEntry = (name: string, data: any): void => {
+      archive.append(JSON.stringify(data, null, 2), { name })
+    }
+
+    try {
+      if (selections.includes('settings')) {
+        const settings = settingsStorage.getSettings()
+        addJsonEntry('settings.json', {
+          exportTime: new Date().toISOString(),
+          type: 'settings',
+          data: settings
+        })
+      }
+
+      if (selections.includes('commandGroups')) {
+        const groups = groupStorage.getAll()
+        addJsonEntry('commandGroups.json', {
+          exportTime: new Date().toISOString(),
+          type: 'commandGroups',
+          data: groups
+        })
+      }
+
+      if (selections.includes('commands')) {
+        const commands = preSetCommandStorage.getAll()
+        addJsonEntry('commands.json', {
+          exportTime: new Date().toISOString(),
+          type: 'commands',
+          data: commands
+        })
+      }
+
+      if (selections.includes('comPorts')) {
+        const store = (comSettingsStorage as any).storageData
+        const ports = store ? store.get('ports') || {} : {}
+        const baudRates = comSettingsStorage.getBaudRates()
+        addJsonEntry('comPorts.json', {
+          exportTime: new Date().toISOString(),
+          type: 'comPorts',
+          data: { ports, baudRates }
+        })
+      }
+
+      if (selections.includes('connections')) {
+        const connections = connectionStorage.getAll()
+        // 密码已脱敏（ConnectionStorage.getAll 返回时已将密码替换为掩码）
+        const sanitized = connections.map((c: any) => ({
+          ...c,
+          password: c.password && c.password !== '' ? '***' : ''
+        }))
+        addJsonEntry('connections.json', {
+          exportTime: new Date().toISOString(),
+          type: 'connections',
+          data: sanitized
+        })
+      }
+    } catch (err: any) {
+      settle(err)
+      return
+    }
+
+    // 如果没有选中任何项目，直接 resolve（空 zip 也可以）
+    archive.finalize()
+  })
 }

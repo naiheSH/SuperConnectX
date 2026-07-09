@@ -36,7 +36,7 @@
           @mouseleave="hideFileMenu"
         >
           <div class="menu-item" @click="importCmd">{{ t('titlebar.importCmd') }}</div>
-          <div class="menu-item" @click="exportCmd">{{ t('titlebar.exportCmd') }}</div>
+          <div class="menu-item" @click="exportData">{{ t('titlebar.exportData') }}</div>
           <div class="menu-item" @click="importFromSuperCom">{{ t('titlebar.importFromSuperCom') }}</div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="openAppDir">{{ t('titlebar.openAppDir') }}</div>
@@ -197,6 +197,7 @@
       </button>
     </div>
   </div>
+  <ExportDialog ref="exportDialogRef" />
 </template>
 
 <script setup lang="ts">
@@ -204,6 +205,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getSystemFonts, formatFontName } from '../utils/FontDetector'
+import ExportDialog from './ExportDialog.vue'
 
 const { t } = useI18n()
 
@@ -308,28 +310,11 @@ const importCmd = async () => {
   }
 }
 
-// 导出命令
-const exportCmd = async () => {
+// 导出数据（打开勾选对话框）
+const exportDialogRef = ref<InstanceType<typeof ExportDialog> | null>(null)
+const exportData = () => {
   showFileMenu.value = false
-  try {
-    const result = await window.dialogApi.saveFileDialog({
-      title: t('titlebar.exportCmd'),
-      defaultPath: 'commands.json',
-      filters: [{ name: '命令文件', extensions: ['json'] }]
-    })
-
-    if (result.filePath) {
-      const exportResult = await window.storageApi.exportCommands(result.filePath)
-      if (exportResult.success) {
-        ElMessage.success(t('notification.exportSuccess', { count: exportResult.count }))
-      } else {
-        ElMessage.error(`${t('notification.exportFailed')}: ${exportResult.message}`)
-      }
-    }
-  } catch (error) {
-    console.error(t('notification.exportFailed'), error)
-    ElMessage.error(t('notification.exportFailed'))
-  }
+  exportDialogRef.value?.open()
 }
 
 // 从 SuperCom 导入

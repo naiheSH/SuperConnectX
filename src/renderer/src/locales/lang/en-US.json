@@ -196,6 +196,7 @@
     "font": "Font",
     "importCmd": "Import Commands",
     "exportCmd": "Export Commands",
+    "exportData": "Export Data",
     "importFromSuperCom": "Import from SuperCom",
     "openAppDir": "Open App Directory",
     "openUserDataDir": "Open User Data Folder",
@@ -510,5 +511,23 @@
     "openWebsite": "Download",
     "error": "Update Error",
     "unknownError": "Unknown error"
+  },
+  "exportDialog": {
+    "title": "Export Data",
+    "description": "Select the data categories to export. Selected items will be packed into a ZIP file.",
+    "settings": "Global Settings",
+    "settingsDesc": "Language, display, backup settings + syntax highlight rule groups",
+    "commandGroups": "Command Groups",
+    "commandGroupsDesc": "All command group information",
+    "commands": "Preset Commands",
+    "commandsDesc": "All preset commands (name, content, delay, order)",
+    "comPorts": "COM Port Settings",
+    "comPortsDesc": "Serial port configs (baud rate, data bits, etc.) + custom baud rate list",
+    "connections": "Connection Configs",
+    "connectionsDesc": "All saved connections (passwords are masked)",
+    "noSelection": "Please select at least one item",
+    "exportBtn": "Export",
+    "exportSuccess": "Data exported successfully",
+    "exportFailed": "Export failed"
   }
 }

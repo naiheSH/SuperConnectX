@@ -196,6 +196,7 @@
     "font": "字体",
     "importCmd": "导入命令",
     "exportCmd": "导出命令",
+    "exportData": "导出数据",
     "importFromSuperCom": "从 SuperCom 导入",
     "openAppDir": "打开程序所在路径",
     "openUserDataDir": "打开用户数据文件夹",
@@ -510,5 +511,23 @@
     "openWebsite": "官网下载",
     "error": "更新出错",
     "unknownError": "未知错误"
+  },
+  "exportDialog": {
+    "title": "导出数据",
+    "description": "请勾选需要导出的数据类别，选中的数据将打包为一个 ZIP 文件。",
+    "settings": "全局设置",
+    "settingsDesc": "语言、显示、备份等设置项 + 语法高亮规则组",
+    "commandGroups": "命令组",
+    "commandGroupsDesc": "所有命令分组信息",
+    "commands": "预设命令",
+    "commandsDesc": "所有预设命令（含命令内容、延时、序号）",
+    "comPorts": "COM 串口设置",
+    "comPortsDesc": "串口配置（波特率、数据位等）+ 自定义波特率列表",
+    "connections": "连接配置",
+    "connectionsDesc": "所有保存的连接信息（密码已脱敏）",
+    "noSelection": "请至少勾选一项数据",
+    "exportBtn": "导出",
+    "exportSuccess": "数据导出成功",
+    "exportFailed": "导出失败"
   }
 }
