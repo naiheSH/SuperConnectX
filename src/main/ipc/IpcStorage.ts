@@ -10,9 +10,9 @@ import SettingsStorage from '../storage/SettingsStorage'
 import CommandHistoryStorage from '../storage/CommandHistoryStorage'
 import IpcConnector from './IpcConnector'
 import BackupManager from '../utils/BackupManager'
-import archiver from 'archiver'
 import AdmZip from 'adm-zip'
 import fs from 'fs'
+const archiver = require('archiver')
 
 export default class IpcStorage {
   private static sInstance: IpcStorage
@@ -221,7 +221,7 @@ async function exportDataToZip(
   groupStorage: CommandGroupStorage,
   preSetCommandStorage: PreSetCommandStorage,
   comSettingsStorage: ComSettingsStorage,
-  appSettingsStorage: AppSettingsStorage,
+  _appSettingsStorage: AppSettingsStorage,
   settingsStorage: SettingsStorage,
   filePath: string,
   selections: string[]
@@ -330,7 +330,7 @@ async function importDataFromZip(
   groupStorage: CommandGroupStorage,
   preSetCommandStorage: PreSetCommandStorage,
   comSettingsStorage: ComSettingsStorage,
-  appSettingsStorage: AppSettingsStorage,
+  _appSettingsStorage: AppSettingsStorage,
   settingsStorage: SettingsStorage,
   filePath: string
 ): Promise<Record<string, any>> {
