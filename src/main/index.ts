@@ -9,7 +9,7 @@ import IpcMain from './ipc/IpcMain'
 import IpcDataCheck from './ipc/IpcDataCheck'
 import AppUpdater from './updater/AppUpdater'
 import logger from './ipc/IpcAppLogger'
-import { migrateDataIfNeeded, initAppPaths } from './utils/AppDir'
+import { migrateDataIfNeeded, initAppPaths, cleanupChromiumClutter } from './utils/AppDir'
 
 // 必须在 app.whenReady() 之前调用，将 Electron 内置路径（Cache、CrashDumps 等）
 // 重定向到 userData 子目录，避免根目录散乱
@@ -41,5 +41,10 @@ if (!app.isPackaged || process.env.NODE_ENV !== 'development') {
     }
   })
 }
+
+// 清理 Chromium 在 userData 根目录下残留的杂散目录
+app.whenReady().then(() => {
+  cleanupChromiumClutter(logger)
+})
 
 logger.info(`======== start superconnect-x ok ========`)
