@@ -11,9 +11,8 @@ import CommandHistoryStorage from '../storage/CommandHistoryStorage'
 import IpcConnector from './IpcConnector'
 import BackupManager from '../utils/BackupManager'
 import archiver from 'archiver'
+import AdmZip from 'adm-zip'
 import fs from 'fs'
-import path from 'path'
-import { getAppDataDir } from '../utils/AppDir'
 
 export default class IpcStorage {
   private static sInstance: IpcStorage
@@ -184,6 +183,24 @@ export default class IpcStorage {
       }
     })
 
+    /* 导入数据（从 ZIP 文件导入） */
+    ipcMain.handle('import-data', async (_, filePath: string) => {
+      try {
+        logger.info('[IpcStorage] import-data start, filePath:', filePath)
+        const result = await importDataFromZip(connectionStorage, groupStorage, preSetCommandStorage,
+          comSettingsStorage, appSettingsStorage, settingsStorage, filePath)
+        if (result.__invalidFormat) {
+          logger.warn('[IpcStorage] import-data: invalid format, no importable data found')
+          return { success: false, message: 'INVALID_FORMAT' }
+        }
+        logger.info('[IpcStorage] import-data success:', JSON.stringify(result))
+        return { success: true, ...result }
+      } catch (err: any) {
+        logger.error('[IpcStorage] import-data failed:', err.message, err.stack)
+        return { success: false, message: err.message }
+      }
+    })
+
     logger.info(`init IpcStorage done`)
   }
 }
@@ -296,4 +313,173 @@ async function exportDataToZip(
     // 如果没有选中任何项目，直接 resolve（空 zip 也可以）
     archive.finalize()
   })
+}
+
+/**
+ * 从 ZIP 文件导入数据
+ *
+ * ZIP 中包含若干 JSON 文件，每个对应一个数据类别：
+ *   settings.json      -> 全局设置 + 语法高亮规则组（覆盖）
+ *   commandGroups.json -> 命令组（自动新增，按 name+connectionType 去重）
+ *   commands.json      -> 预设命令（自动新增，按 name+groupId+command 去重）
+ *   comPorts.json      -> COM 串口设置 + 波特率列表（覆盖）
+ *   connections.json   -> 连接配置（自动新增，按 connectionType+name+host+port 去重，密码为空）
+ */
+async function importDataFromZip(
+  connectionStorage: ConnectionStorage,
+  groupStorage: CommandGroupStorage,
+  preSetCommandStorage: PreSetCommandStorage,
+  comSettingsStorage: ComSettingsStorage,
+  appSettingsStorage: AppSettingsStorage,
+  settingsStorage: SettingsStorage,
+  filePath: string
+): Promise<Record<string, any>> {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`file not exists: ${filePath}`)
+  }
+
+  const zip = new AdmZip(filePath)
+  const zipEntries = zip.getEntries()
+  const result: Record<string, any> = {}
+
+  // 辅助：读取 ZIP 中的 JSON 条目
+  const readJsonEntry = (entryName: string): any | null => {
+    const entry = zipEntries.find((e) => e.entryName === entryName)
+    if (!entry) return null
+    try {
+      return JSON.parse(entry.getData().toString('utf8'))
+    } catch {
+      logger.warn(`[importDataFromZip] failed to parse ${entryName}`)
+      return null
+    }
+  }
+
+  // ---- 1. settings (覆盖) ----
+  const settingsData = readJsonEntry('settings.json')
+  if (settingsData?.data) {
+    settingsStorage.saveSettings(settingsData.data)
+    result.settingsImported = true
+    logger.info('[importDataFromZip] settings imported (overwrite)')
+  }
+
+  // ---- 2. commandGroups (自动新增) ----
+  const groupsData = readJsonEntry('commandGroups.json')
+  if (groupsData?.data && Array.isArray(groupsData.data)) {
+    const existingGroups = groupStorage.getAll()
+    let groupsAdded = 0
+    let groupsSkipped = 0
+    for (const g of groupsData.data) {
+      const exists = existingGroups.some(
+        (eg) => eg.name === g.name && eg.connectionType === g.connectionType
+      )
+      if (!exists) {
+        groupStorage.add({ name: g.name, connectionType: g.connectionType })
+        groupsAdded++
+      } else {
+        groupsSkipped++
+      }
+    }
+    result.groupsImported = groupsAdded
+    result.groupsSkipped = groupsSkipped
+    logger.info(`[importDataFromZip] commandGroups: ${groupsAdded} added, ${groupsSkipped} skipped`)
+  }
+
+  // ---- 3. commands (自动新增，去重) ----
+  const commandsData = readJsonEntry('commands.json')
+  if (commandsData?.data && Array.isArray(commandsData.data)) {
+    const existingCommands = preSetCommandStorage.getAll()
+    let commandsAdded = 0
+    let commandsSkipped = 0
+    for (const cmd of commandsData.data) {
+      // 按 name+groupId+command 去重
+      const exists = existingCommands.some(
+        (ec) => ec.name === cmd.name && ec.groupId === cmd.groupId && ec.command === cmd.command
+      )
+      if (!exists) {
+        preSetCommandStorage.add({
+          name: cmd.name,
+          command: cmd.command,
+          delay: cmd.delay || 0,
+          seqNum: cmd.seqNum || 1,
+          groupId: cmd.groupId || 0
+        })
+        commandsAdded++
+      } else {
+        commandsSkipped++
+      }
+    }
+    result.commandsImported = commandsAdded
+    result.commandsSkipped = commandsSkipped
+    logger.info(`[importDataFromZip] commands: ${commandsAdded} added, ${commandsSkipped} skipped`)
+  }
+
+  // ---- 4. comPorts (覆盖) ----
+  const comPortsData = readJsonEntry('comPorts.json')
+  if (comPortsData?.data) {
+    const store = (comSettingsStorage as any).storageData
+    if (store) {
+      // 覆盖波特率
+      if (comPortsData.data.baudRates && Array.isArray(comPortsData.data.baudRates)) {
+        comSettingsStorage.saveBaudRates(comPortsData.data.baudRates)
+      }
+      // 覆盖串口设置
+      if (comPortsData.data.ports && typeof comPortsData.data.ports === 'object') {
+        for (const [comName, settings] of Object.entries(comPortsData.data.ports)) {
+          comSettingsStorage.saveSettings(comName, settings as any)
+        }
+      }
+      result.comPortsImported = true
+      logger.info('[importDataFromZip] comPorts imported (overwrite)')
+    }
+  }
+
+  // ---- 5. connections (自动新增，去重) ----
+  const connectionsData = readJsonEntry('connections.json')
+  if (connectionsData?.data && Array.isArray(connectionsData.data)) {
+    const existingConnections = connectionStorage.getAll()
+    let connsAdded = 0
+    let connsSkipped = 0
+    for (const conn of connectionsData.data) {
+      // 按 connectionType+name+host+port 去重
+      const exists = existingConnections.some(
+        (ec) =>
+          ec.connectionType === conn.connectionType &&
+          ec.name === conn.name &&
+          ec.host === conn.host &&
+          ec.port === conn.port
+      )
+      if (!exists) {
+        // 导出时密码已脱敏为 ***，导入时密码留空
+        const toAdd = { ...conn }
+        delete toAdd.id // 去掉原 ID，由 add 方法自动分配
+        if (toAdd.password) toAdd.password = '' // 密码不导入
+        try {
+          connectionStorage.add(toAdd)
+          connsAdded++
+        } catch (err: any) {
+          logger.warn(`[importDataFromZip] skip connection "${conn.name}": ${err.message}`)
+          connsSkipped++
+        }
+      } else {
+        connsSkipped++
+      }
+    }
+    result.connectionsImported = connsAdded
+    result.connectionsSkipped = connsSkipped
+    logger.info(`[importDataFromZip] connections: ${connsAdded} added, ${connsSkipped} skipped`)
+  }
+
+  // 检查是否至少有一类数据被导入
+  const hasAnyData =
+    result.settingsImported ||
+    result.comPortsImported ||
+    result.groupsImported !== undefined ||
+    result.commandsImported !== undefined ||
+    result.connectionsImported !== undefined
+
+  if (!hasAnyData) {
+    return { __invalidFormat: true }
+  }
+
+  return result
 }

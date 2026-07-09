@@ -41,9 +41,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
 
 const { t } = useI18n()
+
+const emit = defineEmits(['notifyExport'])
 
 const dialogVisible = ref(false)
 const selectedItems = ref<string[]>([])
@@ -84,16 +85,16 @@ const handleExport = async () => {
       )
       if (exportResult.success) {
         dialogVisible.value = false
-        ElMessage.success(t('exportDialog.exportSuccess'))
+        emit('notifyExport', { success: true, title: t('exportDialog.exportSuccess'), message: result.filePath })
         // 导出成功后打开并选中文件
         window.toolApi.showItemInFolder(result.filePath)
       } else {
-        ElMessage.error(`${t('exportDialog.exportFailed')}: ${exportResult.message}`)
+        emit('notifyExport', { success: false, title: t('exportDialog.exportFailed'), message: exportResult.message })
       }
     }
   } catch (error) {
     console.error(t('exportDialog.exportFailed'), error)
-    ElMessage.error(t('exportDialog.exportFailed'))
+    emit('notifyExport', { success: false, title: t('exportDialog.exportFailed'), message: String(error) })
   }
 }
 

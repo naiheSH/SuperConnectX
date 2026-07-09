@@ -51,6 +51,7 @@ declare global {
       importCommands: (filePath: string) => Promise<any>
       importFromSuperCom: (filePath: string) => Promise<any>
       exportData: (filePath: string, selections: string[]) => Promise<{ success: boolean; message?: string }>
+      importData: (filePath: string) => Promise<{ success: boolean; message?: string; settingsImported?: boolean; groupsImported?: number; groupsSkipped?: number; commandsImported?: number; commandsSkipped?: number; comPortsImported?: boolean; connectionsImported?: number; connectionsSkipped?: number }>
 
       getComSettings: (comName: string) => Promise<any>
       saveComSettings: (comName: string, settings: any) => Promise<boolean>

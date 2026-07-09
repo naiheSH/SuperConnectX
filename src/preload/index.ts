@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('storageApi', {
   importCommands: (filePath: string) => ipcRenderer.invoke('import-commands', filePath),
   importFromSuperCom: (filePath: string) => ipcRenderer.invoke('import-from-supercom', filePath),
   exportData: (filePath: string, selections: string[]) => ipcRenderer.invoke('export-data', filePath, selections),
+  importData: (filePath: string) => ipcRenderer.invoke('import-data', filePath),
 
   /* COM 串口设置 */
   getComSettings: (comName: string) => ipcRenderer.invoke('get-com-settings', comName),

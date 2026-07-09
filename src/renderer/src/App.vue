@@ -3,6 +3,8 @@
     <CustomTitleBar
       @toggle-connection-list="toggleConnectionList"
       @refreshCommands="refreshHandler"
+      @refreshConnections="loadConnections"
+      @notifyImport="handleImportNotify"
       @change-font="handleFontChange"
       @change-font-size="handleFontSizeChange"
       @open-about="isAboutDialogOpen = true"
@@ -393,6 +395,10 @@ import logoImage from './assets/icon.png'
 const { t } = useI18n()
 
 const notifyContainerRef = ref<InstanceType<typeof NotifyContainer> | null>(null)
+
+const handleImportNotify = (payload: { success: boolean; title: string; message: string }) => {
+  notifyContainerRef.value?.add(payload.title, payload.message)
+}
 
 const handleLogSplit = (data: { connId: string; oldFileName: string; newFileName: string }) => {
   const tab = connectionTabs.value.find((t) => String(t.sessionId) === String(data.connId))

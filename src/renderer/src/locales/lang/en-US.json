@@ -195,6 +195,7 @@
     "help": "Help",
     "font": "Font",
     "importCmd": "Import Commands",
+    "importData": "Import Data",
     "exportCmd": "Export Commands",
     "exportData": "Export Data",
     "importFromSuperCom": "Import from SuperCom",
@@ -340,6 +341,7 @@
     "exportSuccess": "Successfully exported {count} commands",
     "exportFailed": "Export failed",
     "importFromSuperComSuccess": "Successfully imported {imported} commands ({groups} groups) from SuperCom, skipped {skipped} duplicates",
+    "importFromSuperComSuccessTitle": "Import Success",
     "importFromSuperComFailed": "Import from SuperCom failed"
   },
   "terminal": {
@@ -529,5 +531,15 @@
     "exportBtn": "Export",
     "exportSuccess": "Data exported successfully",
     "exportFailed": "Export failed"
+  },
+  "importDialog": {
+    "importSuccess": "Data imported successfully",
+    "importSuccessTitle": "Import Success",
+    "settingsImported": "Global settings overwritten",
+    "comPortsImported": "COM port settings overwritten",
+    "groupsImported": "Groups: {added} added, {skipped} skipped",
+    "commandsImported": "Commands: {added} added, {skipped} skipped",
+    "connectionsImported": "Connections: {added} added, {skipped} skipped",
+    "invalidFormat": "Invalid ZIP format: no importable data files found"
   }
 }

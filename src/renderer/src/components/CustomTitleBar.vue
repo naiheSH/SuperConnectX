@@ -35,7 +35,7 @@
           @mouseenter="handleDropdownMouseEnter('file')"
           @mouseleave="hideFileMenu"
         >
-          <div class="menu-item" @click="importCmd">{{ t('titlebar.importCmd') }}</div>
+          <div class="menu-item" @click="importData">{{ t('titlebar.importData') }}</div>
           <div class="menu-item" @click="exportData">{{ t('titlebar.exportData') }}</div>
           <div class="menu-item" @click="importFromSuperCom">{{ t('titlebar.importFromSuperCom') }}</div>
           <div class="menu-separator"></div>
@@ -197,12 +197,12 @@
       </button>
     </div>
   </div>
-  <ExportDialog ref="exportDialogRef" />
+  <ExportDialog ref="exportDialogRef" @notifyExport="(payload) => emit('notifyImport', payload)" />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getSystemFonts, formatFontName } from '../utils/FontDetector'
 import ExportDialog from './ExportDialog.vue'
@@ -222,6 +222,8 @@ const currentFontFamily = ref('Fira Code') // 当前活动的字体
 const emit = defineEmits([
   'toggle-connection-list',
   'refreshCommands',
+  'refreshConnections',
+  'notifyImport',
   'change-font',
   'change-font-size',
   'open-about',
@@ -282,31 +284,47 @@ const hideToolsMenu = () => {
   }, 200)
 }
 
-const importCmd = async () => {
+const importData = async () => {
   showFileMenu.value = false
   try {
     const result = await window.dialogApi.openFileDialog({
-      title: t('titlebar.importCmd'),
+      title: t('titlebar.importData'),
       filters: [
-        { name: '命令文件', extensions: ['json'] },
+        { name: 'ZIP 文件', extensions: ['zip'] },
         { name: '所有文件', extensions: ['*'] }
       ]
     })
 
     if (result.filePaths && result.filePaths.length > 0) {
-      const importResult = await window.storageApi.importCommands(result.filePaths[0])
+      const importResult = await window.storageApi.importData(result.filePaths[0])
       if (importResult.success) {
-        ElMessage.success(
-          t('notification.importSuccess', { imported: importResult.imported, skipped: importResult.skipped })
-        )
+        // 构建统计消息
+        const parts: string[] = []
+        if (importResult.settingsImported) parts.push(t('importDialog.settingsImported'))
+        if (importResult.comPortsImported) parts.push(t('importDialog.comPortsImported'))
+        if (importResult.groupsImported !== undefined) {
+          parts.push(t('importDialog.groupsImported', { added: importResult.groupsImported, skipped: importResult.groupsSkipped }))
+        }
+        if (importResult.commandsImported !== undefined) {
+          parts.push(t('importDialog.commandsImported', { added: importResult.commandsImported, skipped: importResult.commandsSkipped }))
+        }
+        if (importResult.connectionsImported !== undefined) {
+          parts.push(t('importDialog.connectionsImported', { added: importResult.connectionsImported, skipped: importResult.connectionsSkipped }))
+        }
+        const message = parts.length > 0 ? parts.join(' | ') : t('importDialog.importSuccess')
+        emit('notifyImport', { success: true, title: t('importDialog.importSuccessTitle'), message })
         emit('refreshCommands')
+        emit('refreshConnections')
       } else {
-        ElMessage.error(`${t('notification.importFailed')}: ${importResult.message}`)
+        const errMsg = importResult.message === 'INVALID_FORMAT'
+          ? t('importDialog.invalidFormat')
+          : importResult.message
+        emit('notifyImport', { success: false, title: t('notification.importFailed'), message: errMsg })
       }
     }
   } catch (error) {
     console.error(t('notification.importFailed'), error)
-    ElMessage.error(t('notification.importFailed'))
+    emit('notifyImport', { success: false, title: t('notification.importFailed'), message: String(error) })
   }
 }
 
@@ -344,17 +362,17 @@ const importFromSuperCom = async () => {
             `语法高亮: ${importResult.syntaxImported} 个规则组` + (importResult.syntaxSkipped > 0 ? `, ${importResult.syntaxSkipped} 跳过` : '')
           )
         }
-        ElMessage.success(parts.join(' | '))
+        emit('notifyImport', { success: true, title: t('notification.importFromSuperComSuccessTitle'), message: parts.join(' | ') })
         emit('refreshCommands')
         // 通知语法高亮页面刷新
         window.dispatchEvent(new CustomEvent('syntax-rules-updated'))
       } else {
-        ElMessage.error(`${t('notification.importFromSuperComFailed')}: ${importResult.message}`)
+        emit('notifyImport', { success: false, title: t('notification.importFromSuperComFailed'), message: importResult.message })
       }
     }
   } catch (error) {
     console.error(t('notification.importFromSuperComFailed'), error)
-    ElMessage.error(t('notification.importFromSuperComFailed'))
+    emit('notifyImport', { success: false, title: t('notification.importFromSuperComFailed'), message: String(error) })
   }
 }
 
