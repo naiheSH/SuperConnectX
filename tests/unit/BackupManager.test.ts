@@ -26,8 +26,12 @@ vi.mock('electron', async () => {
           // Return a fake exe path inside TEST_ROOT so BackupManager uses TEST_ROOT as app dir
           return path.join(TEST_ROOT, 'fake-app', 'SuperConnectX.exe')
         }
+        // userData also returns the fake-app dir so BackupManager.getAppDataDir()
+        // points to the same location where tests create userdata/backup
+        if (name === 'userData') {
+          return path.join(TEST_ROOT, 'fake-app')
+        }
         const map: Record<string, string> = {
-          userData: path.join(TEST_ROOT, 'userdata'),
           home: os.homedir()
         }
         return map[name] ?? os.tmpdir()
