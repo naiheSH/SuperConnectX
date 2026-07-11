@@ -88,6 +88,8 @@
       :content="cmd.command"
       placement="top"
       effect="dark"
+      :hide-after="0"
+      :enterable="false"
     >
       <el-button
         type="default"
