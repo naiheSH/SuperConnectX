@@ -415,6 +415,10 @@ const handleCommandSent = (command: string) => {
 }
 
 const handleTerminalClose = (connId: string | number) => {
+  const tab = connectionTabs.value.find((t) => String(t.id) === String(connId) || String(t.sessionId) === String(connId))
+  if (tab?.connectionType === 'com' && tab.comName) {
+    delete connectedSerialPorts[tab.comName]
+  }
   closeTab(connId.toString())
 }
 

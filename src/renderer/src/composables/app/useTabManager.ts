@@ -123,11 +123,12 @@ export function useTabManager(
     const tab = connectionTabs.value.find((t) => t.id === tabId)
     if (!tab) return
 
-    // 禁止自动重连
+    // 禁止自动重连 + 断开连接（需要 await 确保 onDisconnect 事件链完成）
     if (tab.connectionType === 'ftp' || tab.connectionType === 'telnet') {
       telnetTerminalRefs[tabId]?.preventAutoReconnect?.()
     } else if (tab.connectionType === 'com') {
       comTerminalRefs[tabId]?.preventAutoReconnect?.()
+      await comTerminalRefs[tabId]?.disconnect?.()
     }
 
     // 先从列表中移除
@@ -158,6 +159,7 @@ export function useTabManager(
         telnetTerminalRefs[tabId]?.cleanup?.()
       } else if (tab.connectionType === 'com') {
         comTerminalRefs[tabId]?.preventAutoReconnect?.()
+        await comTerminalRefs[tabId]?.disconnect?.()
       }
 
       const stopPayload = JSON.parse(JSON.stringify({
