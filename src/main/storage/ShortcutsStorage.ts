@@ -21,6 +21,7 @@ export const SHORTCUT_ACTIONS: Record<string, string> = {
   'ConnectionList:toggle': '显示/隐藏连接列表',
   'SerialPort:refresh': '刷新串口列表',
   'Window:toggleFullscreen': '切换全屏',
+  'Terminal:toggleWordWrap': '自动换行',
 }
 
 const STORAGE_NAME = 'shortcuts'
@@ -75,6 +76,7 @@ export default class ShortcutsStorage extends BaseStorage<ShortcutItem> {
       { action: 'ConnectionList:toggle', keys: ['Ctrl', 'B'] },
       { action: 'SerialPort:refresh', keys: ['Ctrl', 'F5'] },
       { action: 'Window:toggleFullscreen', keys: ['F11'] },
+      { action: 'Terminal:toggleWordWrap', keys: ['Alt', 'Z'] },
     ]
   }
 }

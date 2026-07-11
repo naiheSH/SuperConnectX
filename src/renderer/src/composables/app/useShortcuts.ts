@@ -16,6 +16,7 @@ export interface ShortcutActionMap {
   moveTabToFirst: () => void
   moveTabToLast: () => void
   openSettingsAndSwitchToSyntax: () => void
+  toggleWordWrap: () => void
 }
 
 export function useShortcuts(
@@ -169,6 +170,7 @@ export function useShortcuts(
           'ConnectionList:toggle': () => actionMap.toggleConnectionList(),
           'SerialPort:refresh': () => actionMap.loadSerialPorts(),
           'Window:toggleFullscreen': () => window.windowApi.toggleFullscreenWindow(),
+          'Terminal:toggleWordWrap': () => actionMap.toggleWordWrap(),
         }
       }
     } catch (error) {

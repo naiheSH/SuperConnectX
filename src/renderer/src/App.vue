@@ -233,7 +233,8 @@ const {
     togglePinTab,
     moveTabToFirst,
     moveTabToLast,
-    openSettingsAndSwitchToSyntax: () => openSettingsAndSwitchToSyntax()
+    openSettingsAndSwitchToSyntax: () => openSettingsAndSwitchToSyntax(),
+    toggleWordWrap: handleToggleWordWrap
   },
   connectionTabs, activeTabId, hasAnyConnected,
   comTerminalRefs, telnetTerminalRefs, rightClickedTab,
@@ -354,7 +355,7 @@ const refreshHandler = () => {
   }
 }
 
-const handleToggleWordWrap = async () => {
+async function handleToggleWordWrap() {
   terminalWordWrap.value = !terminalWordWrap.value
   applyToAllTerminals(connectionTabs.value, comTerminalRefs, telnetTerminalRefs, 'setWordWrap', terminalWordWrap.value)
   await saveTerminalDisplaySettings()
