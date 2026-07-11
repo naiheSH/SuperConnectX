@@ -228,6 +228,14 @@ body {
   border-color: #d66a6a !important;
 }
 
+/* MessageBox 遮罩层支持穿透点击 */
+
+/* ElMessage 半透明 + 穿透点击 */
+.el-message {
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+}
+
 /* ==============================
    统一菜单样式变量
    ============================== */
