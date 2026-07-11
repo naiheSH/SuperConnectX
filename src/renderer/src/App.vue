@@ -79,7 +79,7 @@
           @closeAll="closeAllTabs"
           @moveToFirst="moveTabToFirst"
           @moveToLast="moveTabToLast"
-          @reorderTabs="reorderTabs"
+          @reorderTabsWithPin="reorderTabs"
           @togglePin="togglePinTab"
           @openRemarkDialog="openRemarkDialogHandler"
         />

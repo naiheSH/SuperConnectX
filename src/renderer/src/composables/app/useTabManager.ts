@@ -223,25 +223,34 @@ export function useTabManager(
 
   // ---- 拖拽排序 ----
   /**
-   * 获取目标拖拽插入位置
+   * 拖拽排序，支持跨固定/非固定区域拖拽，自动 pin/unpin
    * @param fromId 被拖拽的 tab id
-   * @param targetId 目标位置上的 tab id（释放位置）
-   * @returns 插入索引，-1 表示不合法
+   * @param targetId 目标位置上的 tab id
+   * @param dropPosition 'before' 或 'after'
+   * @param toPin 拖拽 tab 是否变为固定
    */
-  const reorderTabs = (fromId: string, targetId: string, dropPosition: string = 'after') => {
+  const reorderTabs = (fromId: string, targetId: string, dropPosition: string = 'after', toPin: boolean = false) => {
     const fromIndex = connectionTabs.value.findIndex(t => t.id === fromId)
-    let toIndex = connectionTabs.value.findIndex(t => t.id === targetId)
-    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return
+    if (fromIndex === -1) return
 
     const isFromPinned = pinnedTabs.has(fromId)
-    const isToPinned = pinnedTabs.has(targetId)
 
-    // 固定标签和非固定标签不能交叉
-    if (isFromPinned !== isToPinned) return
+    // 先处理 pin/unpin
+    if (toPin && !isFromPinned) {
+      pinnedTabs.add(fromId)
+    } else if (!toPin && isFromPinned) {
+      pinnedTabs.delete(fromId)
+    }
 
     const tab = connectionTabs.value.splice(fromIndex, 1)[0]
-    // splice 后重新计算目标索引
-    toIndex = connectionTabs.value.findIndex(t => t.id === targetId)
+
+    let toIndex = connectionTabs.value.findIndex(t => t.id === targetId)
+    if (toIndex === -1) {
+      // targetId 可能因为 splice 找不到，尝试恢复
+      connectionTabs.value.splice(fromIndex, 0, tab)
+      return
+    }
+
     // before: 插入到目标前面; after: 插入到目标后面
     const insertIndex = dropPosition === 'before' ? toIndex : toIndex + 1
     connectionTabs.value.splice(insertIndex, 0, tab)

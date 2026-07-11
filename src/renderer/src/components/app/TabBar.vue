@@ -13,8 +13,8 @@
             'drag-over': dragState.overId === tab.id,
             'drag-over-before': dragState.overId === tab.id && dragState.dropPosition === 'before'
           }"
-          :draggable="!pinnedTabs.has(tab.id)"
-          @mousedown="$emit('switchTab', tab.id); $emit('hideTabMenu')"
+          :draggable="true"
+          @mousedown="onTabMouseDown($event, tab)"
           @click="$emit('switchTab', tab.id); $emit('hideTabMenu')"
           @contextmenu="$emit('tabContextMenu', $event, tab)"
           @dragstart="onDragStart($event, tab, index)"
@@ -120,7 +120,7 @@ const emit = defineEmits<{
   moveToLast: []
   togglePin: []
   openRemarkDialog: []
-  reorderTabs: [fromId: string, targetId: string, dropPosition: string]
+  reorderTabsWithPin: [fromId: string, targetId: string, dropPosition: string, toPin: boolean]
 }>()
 
 const tabsHeaderRef = ref<HTMLElement | null>(null)
@@ -140,13 +140,16 @@ const handleTabsWheel = (e: WheelEvent) => {
   }
 }
 
+// ---- 鼠标事件 ----
+const onTabMouseDown = (e: MouseEvent, tab: any) => {
+  // 仅左键按下时切换选项卡，右键不切换
+  if (e.button !== 0) return
+  emit('switchTab', tab.id)
+  emit('hideTabMenu')
+}
+
 // ---- 拖拽事件处理 ----
 const onDragStart = (e: DragEvent, tab: any, index: number) => {
-  // 固定标签不允许拖拽
-  if (props.pinnedTabs.has(tab.id)) {
-    e.preventDefault()
-    return
-  }
   dragState.draggingId = tab.id
   dragState.draggingIndex = index
   if (e.dataTransfer) {
@@ -163,13 +166,6 @@ const onDragStart = (e: DragEvent, tab: any, index: number) => {
 const onDragOver = (e: DragEvent, tab: any, _index: number) => {
   e.preventDefault()
   if (!dragState.draggingId || dragState.draggingId === tab.id) return
-  // 固定标签和非固定标签不能交叉
-  const isFromPinned = props.pinnedTabs.has(dragState.draggingId)
-  const isToPinned = props.pinnedTabs.has(tab.id)
-  if (isFromPinned !== isToPinned) {
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'none'
-    return
-  }
   if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
 
   // 判断插入位置（鼠标在元素左半边还是右半边）
@@ -204,14 +200,9 @@ const onDrop = (e: DragEvent, tab: any) => {
     resetDragState()
     return
   }
-  // 固定标签和非固定标签不能交叉
-  const isFromPinned = props.pinnedTabs.has(dragState.draggingId)
-  const isToPinned = props.pinnedTabs.has(tab.id)
-  if (isFromPinned !== isToPinned) {
-    resetDragState()
-    return
-  }
-  emit('reorderTabs', dragState.draggingId, tab.id, dragState.dropPosition)
+  // 根据目标 tab 是否固定来决定拖拽 tab 是否固定
+  const toPin = props.pinnedTabs.has(tab.id)
+  emit('reorderTabsWithPin', dragState.draggingId, tab.id, dragState.dropPosition, toPin)
   resetDragState()
 }
 
