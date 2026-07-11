@@ -182,7 +182,7 @@ const handleTelnetClose = (_connId: number) => {
     unifiedTerminalRef.value?.appendToTerminal(`\nFTP 服务已停止\n`)
     return
   }
-  ElMessage.info('连接已关闭，将尝试重新连接...')
+  ElMessage.info(t('terminal.reconnecting'))
   unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭，将在${RETRY_INTERVAL_MS / 1000}秒后尝试重连...\n`)
   if (!stopRetry.value) {
     setTimeout(connect, 1000)
@@ -338,9 +338,9 @@ const handleFileUpload = (filePath: string, fileName: string) => {
       })
 
       if (result.success) {
-        ElMessage.success(`文件上传成功: ${fileName}`)
+        ElMessage.success(t('terminal.fileUploadSuccess', { name: fileName }))
       } else {
-        ElMessage.error(`上传失败: ${result.message}`)
+        ElMessage.error(t('terminal.uploadFailed', { message: result.message }))
       }
     } catch (error) {
       ElMessage.error(t('terminal.fileUploadFailed'))

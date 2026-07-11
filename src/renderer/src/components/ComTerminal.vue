@@ -524,7 +524,6 @@ const addBaudRate = async () => {
     } catch (error) {
       console.error('saveBaudRates error:', error)
     }
-      ElMessage.success(t('comTerminal.addBaudRateSuccess', { rate }))
   } else if (baudRates.value.includes(rate)) {
     ElMessage.warning(t('serialSettings.rateExists'))
     baudRate.value = rate
@@ -553,7 +552,6 @@ const deleteBaudRate = async (rate: number) => {
     } catch (error) {
       console.error('saveBaudRates error:', error)
     }
-    ElMessage.success(t('comTerminal.deleteBaudRateSuccess', { rate }))
   }
 }
 

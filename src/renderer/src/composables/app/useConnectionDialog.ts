@@ -54,7 +54,6 @@ export function useConnectionDialog(
       )
       await window.storageApi.deleteConnection(conn.id)
       await onConnectionsChanged()
-      ElMessage.success(t('dialog.connectionDeleted'))
     } catch (error) {
       if (error !== 'cancel') {
         console.error(t('common.operationFailed'), error)

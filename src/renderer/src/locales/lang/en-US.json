@@ -367,6 +367,16 @@
     "hexPlaceholder": "Enter HEX data (e.g.: 01 02 03)",
     "disconnectedPlaceholder": "Connect to send commands",
     "fileUploadFailed": "File upload failed",
+    "fileUploadSuccess": "File uploaded: {name}",
+    "uploadFailed": "Upload failed: {message}",
+    "reconnecting": "Connection closed, attempting to reconnect...",
+    "openLogFolderFailed": "Failed to open log folder: {message}",
+    "openLogFolderFailedWithError": "Failed to open log folder: {error}",
+    "openLogFileFailed": "Failed to open log file: {message}",
+    "openLogFileFailedWithError": "Failed to open log file: {error}",
+    "saveFailed": "Save failed: {message}",
+    "saveFailedWithError": "Save failed: {error}",
+    "unknownError": "Unknown error",
     "clearAll": "Clear All"
   },
   "presetCommands": {
@@ -407,13 +417,15 @@
     "commandAdded": "Command added",
     "commandDeleted": "Command deleted",
     "commandSaveFailed": "Save failed",
+    "commandSaveFailedDetail": "Save failed: {detail}",
     "commandDeleteFailed": "Failed to delete command",
     "commandLoadFailed": "Failed to load preset commands",
     "noCommandsInGroup": "No commands in this group",
     "stopLoopMessage": "Stopped loop: {name}",
     "startLoopMessage": "Started loop: {name} (interval: {interval}ms)",
     "deleteGroupConfirm": "Confirm delete {name} and all its commands?",
-    "deleteGroupTitle": "Delete Group"
+    "deleteGroupTitle": "Delete Group",
+    "commandSendFailed": "Failed to send command"
   },
   "commandEditor": {
     "title": "Command Editor",

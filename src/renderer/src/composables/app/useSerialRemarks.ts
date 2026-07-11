@@ -68,7 +68,6 @@ export function useSerialRemarks(comTerminalRefs: Record<string, ComTerminalRef>
       const tabId = rightClickedTab.id.toString()
       if (comTerminalRefs[tabId]?.updateRemark) {
         await comTerminalRefs[tabId].updateRemark(editingRemark.value)
-        ElMessage.success(t('dialog.remarkSaved'))
         showRemarkDialog.value = false
         return
       }
@@ -80,7 +79,6 @@ export function useSerialRemarks(comTerminalRefs: Record<string, ComTerminalRef>
         ...currentSettings,
         remark: editingRemark.value
       })
-      ElMessage.success(t('dialog.remarkSaved'))
     } catch (error) {
       console.error(t('dialog.remarkSaveFailed'), error)
       ElMessage.error(t('dialog.remarkSaveFailed'))

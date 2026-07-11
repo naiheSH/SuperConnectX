@@ -352,7 +352,6 @@ const toggleLoopSend = (cmd: any) => {
       delete loopIntervals.value[cmd.id]
     }
     loopStatus.value[cmd.id] = false
-    ElMessage.success(t('presetCommands.stopLoopMessage', { name: cmd.name }))
     return
   }
 
@@ -362,8 +361,6 @@ const toggleLoopSend = (cmd: any) => {
   loopIntervals.value[cmd.id] = setInterval(() => {
     sendPresetCommand(cmd)
   }, intervalTime)
-
-  ElMessage.success(t('presetCommands.startLoopMessage', { name: cmd.name, interval: intervalTime }))
 }
 
 // 循环运行所有命令
@@ -560,7 +557,6 @@ const deleteGroup = async (group: any) => {
         .map((cmd) => window.storageApi.deletePresetCommand(cmd.id))
     )
 
-    ElMessage.success(t('presetCommands.groupDeleted'))
     loadGroups()
     loadPresetCommands()
 
@@ -606,7 +602,6 @@ const saveGroup = async () => {
         groupId: currentEditingGroup.value.groupId,
         ...groupData
       })
-      ElMessage.success(t('presetCommands.groupUpdated'))
     } else {
       const newGroup = await window.storageApi.addCommandGroup(groupData)
 
@@ -626,12 +621,7 @@ const saveGroup = async () => {
             await window.storageApi.addPresetCommand(cmd)
           }
 
-          ElMessage.success(t('presetCommands.groupAddedWithCopy', { n: newCommands.length }))
-        } else {
-          ElMessage.success(t('presetCommands.groupAdded'))
         }
-      } else {
-        ElMessage.success(t('presetCommands.groupAdded'))
       }
 
       // 自动选中新创建的组
@@ -711,18 +701,16 @@ const savePresetCommand = async () => {
       }
       console.log('Update command - updatedCmd:', updatedCmd)
       await window.storageApi.updatePresetCommand(JSON.parse(JSON.stringify(updatedCmd)))
-      ElMessage.success(t('presetCommands.commandUpdated'))
     } else {
       console.log('Add command - pureFormData:', pureFormData)
       await window.storageApi.addPresetCommand(JSON.parse(JSON.stringify(pureFormData)))
-      ElMessage.success(t('presetCommands.commandAdded'))
     }
 
     loadPresetCommands()
     isPresetDialogOpen.value = false
   } catch (error) {
     console.error('Failed to save command:', error)
-    ElMessage.error(t('presetCommands.commandSaveFailed') + '：' + (error as Error).message)
+    ElMessage.error(t('presetCommands.commandSaveFailedDetail', { detail: (error as Error).message }))
   }
 }
 
@@ -730,7 +718,6 @@ const deletePresetCommand = async (id: number) => {
   contextMenuVisible.value = false
   try {
     await window.storageApi.deletePresetCommand(id)
-    ElMessage.success(t('presetCommands.commandDeleted'))
     loadPresetCommands()
   } catch (error) {
     console.error('Failed to delete command:', error)
@@ -790,7 +777,7 @@ const sendPresetCommand = async (cmd: any) => {
       ElMessage.error(result.message || t('terminal.commandSendFailed'))
     }
   } catch (error) {
-    ElMessage.error('命令发送失败')
+    ElMessage.error(t('presetCommands.commandSendFailed'))
     console.error('Failed to send:', error)
   }
 }

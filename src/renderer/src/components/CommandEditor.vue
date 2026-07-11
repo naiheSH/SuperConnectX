@@ -347,13 +347,11 @@ const saveGroup = async () => {
         name: groupForm.name,
         connectionType: groupForm.connectionType
       })
-      ElMessage.success(t('commandEditor.groupUpdated'))
     } else {
       await window.storageApi.addCommandGroup({
         name: groupForm.name,
         connectionType: groupForm.connectionType
       })
-      ElMessage.success(t('commandEditor.groupCreated'))
     }
     showGroupDialog.value = false
     resetGroupForm()
@@ -382,7 +380,6 @@ const deleteGroup = async (group: CommandGroup) => {
       cancelButtonClass: 'el-button--danger'
     })
     await window.storageApi.deleteCommandGroup(group.groupId)
-    ElMessage.success(t('commandEditor.groupDeleted'))
     if (selectedGroupId.value === group.groupId) {
       selectedGroupId.value = null
       commands.value = []
@@ -464,7 +461,6 @@ const deleteCommand = async (command: PresetCommand) => {
       cancelButtonClass: 'el-button--danger'
     })
     await window.storageApi.deletePresetCommand(command.id)
-    ElMessage.success(t('commandEditor.commandDeleted'))
     await loadCommands()
     // 通知其他组件刷新命令列表
     eventBus.emit('presetCommandsChanged', props.connectionType)

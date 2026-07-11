@@ -1,5 +1,6 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 export interface TerminalConnection {
   id: number
@@ -68,6 +69,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     connectionType
   } = options
 
+  const { t } = useI18n()
   const conn = options.connection
 
   // 状态
@@ -137,10 +139,10 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     try {
       const result = await window.connectApi.openConnectLog(conn.sessionId, 'folder')
       if (!result.success) {
-        ElMessage.error(`打开日志文件夹失败：${result.message}`)
+        ElMessage.error(t('terminal.openLogFolderFailed', { message: result.message }))
       }
     } catch (error) {
-      ElMessage.error('打开日志文件夹失败：' + (error instanceof Error ? error.message : '未知错误'))
+      ElMessage.error(t('terminal.openLogFolderFailedWithError', { error: error instanceof Error ? error.message : t('terminal.unknownError') }))
     }
   }
 
@@ -149,10 +151,10 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     try {
       const result = await window.connectApi.openConnectLog(conn.sessionId, 'file')
       if (!result.success) {
-        ElMessage.error(`打开日志文件失败：${result.message}`)
+        ElMessage.error(t('terminal.openLogFileFailed', { message: result.message }))
       }
     } catch (error) {
-      ElMessage.error('打开日志文件失败：' + (error instanceof Error ? error.message : '未知错误'))
+      ElMessage.error(t('terminal.openLogFileFailedWithError', { error: error instanceof Error ? error.message : t('terminal.unknownError') }))
     }
   }
 
@@ -168,14 +170,13 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
       if (result.filePath) {
         const copyResult = await window.connectApi.copyLogFile(conn.sessionId, result.filePath)
         if (copyResult.success) {
-          ElMessage.success('日志保存成功')
           window.toolApi.showItemInFolder(result.filePath)
         } else {
-          ElMessage.error('保存失败：' + (copyResult.message || '未知错误'))
+          ElMessage.error(t('terminal.saveFailed', { message: copyResult.message || t('terminal.unknownError') }))
         }
       }
     } catch (error) {
-      ElMessage.error('保存失败：' + (error instanceof Error ? error.message : '未知错误'))
+      ElMessage.error(t('terminal.saveFailedWithError', { error: error instanceof Error ? error.message : t('terminal.unknownError') }))
     }
   }
 
@@ -220,7 +221,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
           command: command.trim()
         })
       } catch (error) {
-        ElMessage.error('命令发送失败')
+        ElMessage.error(t('terminal.commandSendFailed'))
         console.error('Failed to send:', error)
       }
     }
