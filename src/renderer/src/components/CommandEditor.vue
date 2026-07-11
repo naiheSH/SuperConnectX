@@ -137,32 +137,6 @@
       </template>
     </el-dialog>
 
-    <!-- 命令编辑对话框 -->
-    <el-dialog v-model="showCommandDialog" :title="isEditingCommand ? t('commandEditor.editCommandTitle') : t('commandEditor.addCommandTitle')" width="500px">
-      <el-form :model="commandForm" label-width="80px" @submit.prevent @keydown.enter="saveCommand">
-        <el-form-item :label="t('commandEditor.columnSeqNum')">
-          <el-input-number v-model="commandForm.seqNum" :min="1" :max="999" size="small" />
-        </el-form-item>
-        <el-form-item :label="t('commandEditor.commandName')">
-          <el-input v-model="commandForm.name" :placeholder="t('commandEditor.commandNamePlaceholder')" />
-        </el-form-item>
-        <el-form-item :label="t('commandEditor.columnDelay')">
-          <el-input-number v-model="commandForm.delay" :min="0" :step="100" size="small" />
-        </el-form-item>
-        <el-form-item :label="t('commandEditor.commandContent')">
-          <el-input
-            v-model="commandForm.command"
-            type="textarea"
-            :rows="4"
-            :placeholder="t('commandEditor.commandContentPlaceholder')"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button class="btn-cancel" style="width: auto !important" size="small" @click="showCommandDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button size="small" class="btn-primary" style="width: auto !important" @click="saveCommand">{{ t('common.confirm') }}</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -200,11 +174,8 @@ const groups = ref<CommandGroup[]>([])
 const commands = ref<PresetCommand[]>([])
 const selectedGroupId = ref<number | null>(null)
 const showGroupDialog = ref(false)
-const showCommandDialog = ref(false)
 const isEditingGroup = ref(false)
-const isEditingCommand = ref(false)
 const editingGroupId = ref<number | null>(null)
-const editingCommandId = ref<number | null>(null)
 const currentRow = ref<PresetCommand | null>(null)
 const groupNameInputRef = ref<HTMLInputElement | null>(null)
 
@@ -225,15 +196,6 @@ const groupForm = reactive({
   name: '',
   connectionType: 'telnet'
 })
-
-const commandForm = reactive({
-  name: '',
-  command: '',
-  delay: 0,
-  seqNum: 1
-})
-
-const isInsertingAbove = ref(false)
 
 const filteredGroups = computed(() => {
   // 先按协议类型过滤
@@ -435,76 +397,61 @@ const deleteGroup = async (group: CommandGroup) => {
   }
 }
 
-const addCommand = () => {
-  isEditingCommand.value = false
-  editingCommandId.value = null
-  isInsertingAbove.value = false
-  resetCommandForm()
-  showCommandDialog.value = true
-}
+const addCommand = async () => {
+  if (!selectedGroupId.value) return
 
-const insertCommandAbove = () => {
-  if (currentRow.value) {
-    isEditingCommand.value = false
-    editingCommandId.value = null
-    isInsertingAbove.value = true
-    commandForm.name = ''
-    commandForm.command = ''
-    commandForm.delay = 0
-    commandForm.seqNum = currentRow.value.seqNum
-    showCommandDialog.value = true
-  }
-}
-
-const saveCommand = async () => {
-  if (!commandForm.name || !commandForm.command) {
-    ElMessage.warning(t('commandEditor.pleaseFillContent'))
-    return
-  }
   try {
-    if (isEditingCommand.value && editingCommandId.value) {
-      await window.storageApi.updatePresetCommand({
-        id: editingCommandId.value,
-        name: commandForm.name,
-        command: commandForm.command,
-        delay: commandForm.delay,
-        seqNum: commandForm.seqNum,
-        groupId: selectedGroupId.value
-      })
-      ElMessage.success(t('commandEditor.commandUpdated'))
-    } else {
-      // 如果是插入命令，需要把被插入位置及之后的命令序号+1
-      if (isInsertingAbove.value) {
-        const insertSeq = commandForm.seqNum
-        for (const cmd of commands.value) {
-          if ((cmd.seqNum ?? 999) >= insertSeq) {
-            await window.storageApi.updatePresetCommand({
-              id: cmd.id,
-              name: cmd.name,
-              command: cmd.command,
-              delay: cmd.delay,
-              seqNum: (cmd.seqNum ?? 999) + 1,
-              groupId: cmd.groupId
-            })
-          }
-        }
-      }
-      await window.storageApi.addPresetCommand({
-        name: commandForm.name,
-        command: commandForm.command,
-        delay: commandForm.delay,
-        seqNum: commandForm.seqNum,
-        groupId: selectedGroupId.value
-      })
-      ElMessage.success(t('commandEditor.commandAdded'))
-    }
-    showCommandDialog.value = false
-    resetCommandForm()
+    const seqNum = commands.value.length + 1
+    const result = await window.storageApi.addPresetCommand({
+      name: '',
+      command: '',
+      delay: 0,
+      seqNum: seqNum,
+      groupId: selectedGroupId.value
+    })
+    // 立即刷新表格，获取数据库中的真实数据
     await loadCommands()
     // 通知其他组件刷新命令列表
     eventBus.emit('presetCommandsChanged', props.connectionType)
   } catch (error) {
-    ElMessage.error(t('commandEditor.commandSaveFailed'))
+    console.error('Failed to add command:', error)
+  }
+}
+
+const insertCommandAbove = async () => {
+  if (!currentRow.value || !selectedGroupId.value) return
+
+  try {
+    const insertSeq = currentRow.value.seqNum
+
+    // 把被插入位置及之后的命令序号+1
+    for (const cmd of commands.value) {
+      if ((cmd.seqNum ?? 999) >= insertSeq) {
+        await window.storageApi.updatePresetCommand({
+          id: cmd.id,
+          name: cmd.name,
+          command: cmd.command,
+          delay: cmd.delay,
+          seqNum: (cmd.seqNum ?? 999) + 1,
+          groupId: cmd.groupId
+        })
+      }
+    }
+
+    await window.storageApi.addPresetCommand({
+      name: '',
+      command: '',
+      delay: 0,
+      seqNum: insertSeq,
+      groupId: selectedGroupId.value
+    })
+
+    // 重新加载命令列表
+    await loadCommands()
+    // 通知其他组件刷新命令列表
+    eventBus.emit('presetCommandsChanged', props.connectionType)
+  } catch (error) {
+    console.error('Failed to insert command:', error)
   }
 }
 
@@ -533,16 +480,6 @@ const resetGroupForm = () => {
   groupForm.connectionType = props.connectionType
   isEditingGroup.value = false
   editingGroupId.value = null
-}
-
-const resetCommandForm = () => {
-  commandForm.name = ''
-  commandForm.command = ''
-  commandForm.delay = 0
-  commandForm.seqNum = commands.value.length + 1
-  isEditingCommand.value = false
-  editingCommandId.value = null
-  isInsertingAbove.value = false
 }
 
 onMounted(() => {
