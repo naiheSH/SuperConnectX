@@ -25,7 +25,7 @@
       @closeAll="$emit('closeAll')"
       @moveToFirst="$emit('moveToFirst')"
       @moveToLast="$emit('moveToLast')"
-      @reorderTabsWithPin="$emit('reorderTabsWithPin', $event[0], $event[1], $event[2], $event[3])"
+      @reorderTabsWithPin="(fromId: any, targetId: any, pos: any, toPin: any) => $emit('reorderTabsWithPin', fromId, targetId, pos, toPin)"
       @splitToNewPanel="$emit('splitToNewPanel')"
       @togglePin="$emit('togglePin')"
       @openRemarkDialog="$emit('openRemarkDialog')"
