@@ -126,26 +126,27 @@ export function useTabManager(
     // 禁止自动重连 + 断开连接（需要 await 确保 onDisconnect 事件链完成）
     if (tab.connectionType === 'ftp' || tab.connectionType === 'telnet') {
       telnetTerminalRefs[tabId]?.preventAutoReconnect?.()
+      telnetTerminalRefs[tabId]?.cleanup?.()
     } else if (tab.connectionType === 'com') {
       comTerminalRefs[tabId]?.preventAutoReconnect?.()
       await comTerminalRefs[tabId]?.disconnect?.()
     }
 
-    // 先从列表中移除
-    connectionTabs.value = connectionTabs.value.filter((t) => t.id !== tabId)
-
-    if (activeTabId.value === tabId && connectionTabs.value.length > 0) {
-      activeTabId.value = connectionTabs.value[connectionTabs.value.length - 1].id.toString()
-    }
-
-    pinnedTabs.delete(tabId)
-
-    // 断开连接
+    // 断开连接（IPC）
     const stopPayload = JSON.parse(JSON.stringify({
       ...fromRawConnection(tab),
       sessionId: tab.sessionId
     }))
     await window.connectApi.stopConnect(stopPayload).catch(() => {})
+
+    pinnedTabs.delete(tabId)
+
+    // 从列表中移除
+    connectionTabs.value = connectionTabs.value.filter((t) => t.id !== tabId)
+
+    if (activeTabId.value === tabId && connectionTabs.value.length > 0) {
+      activeTabId.value = connectionTabs.value[connectionTabs.value.length - 1].id.toString()
+    }
   }
 
   const closeTab = async (tabId: string, force = false) => {

@@ -79,24 +79,24 @@
               :panel-tabs="getPanel0Tabs()"
               :active-tab-id="splitState.panels[0].activeTabId || activeTabId"
               :pinned-tabs="pinnedTabs"
-              :show-tab-menu="showTabMenu"
+              :show-tab-menu="isPanelShowTabMenu('panel-0')"
               :tab-menu-position="tabMenuPosition"
               :right-clicked-tab="rightClickedTab"
-              :has-any-connected="hasAnyConnected"
+              :has-any-connected="getPanelHasAnyConnected('panel-0')"
               :serial-remarks="serialRemarks"
               :get-connection-status="getConnectionStatus"
               @switchTab="(id: any) => { switchPanelTab('panel-0', id.toString()); originalSwitchTabById(id) }"
               @hideTabMenu="hideTabMenu"
               @tabsNavContextMenu="handleTabsNavContextMenu"
-              @tabContextMenu="handleTabContextMenu"
+              @tabContextMenu="(e: any, tab: any) => { rightClickedPanelId = 'panel-0'; handleTabContextMenu(e, tab) }"
               @togglePinByButton="togglePinTabByButton"
-              @disconnectAll="disconnectAllTabs"
-              @connectAll="connectAllTabs"
+              @disconnectAll="disconnectAllTabsForPanel"
+              @connectAll="connectAllTabsForPanel"
               @closeSingle="closeSingleTab"
-              @closeOther="closeOtherTabs"
-              @closeLeft="closeLeftTabs"
-              @closeRight="closeRightTabs"
-              @closeAll="closeAllTabs"
+              @closeOther="closeOtherTabsForPanel"
+              @closeLeft="closeLeftTabsForPanel"
+              @closeRight="closeRightTabsForPanel"
+              @closeAll="closeAllTabsForPanel"
               @moveToFirst="moveTabToFirst"
               @moveToLast="moveTabToLast"
               @reorderTabsWithPin="(fromId: any, targetId: any, pos: any, toPin: any) => reorderTabs(fromId, targetId, pos, toPin)"
@@ -118,24 +118,24 @@
               :panel-tabs="getPanelTabs(panel)"
               :active-tab-id="panel.activeTabId"
               :pinned-tabs="pinnedTabs"
-              :show-tab-menu="showTabMenu"
+              :show-tab-menu="isPanelShowTabMenu(panel.id)"
               :tab-menu-position="tabMenuPosition"
               :right-clicked-tab="rightClickedTab"
-              :has-any-connected="hasAnyConnected"
+              :has-any-connected="getPanelHasAnyConnected(panel.id)"
               :serial-remarks="serialRemarks"
               :get-connection-status="getConnectionStatus"
               @switchTab="(id: any) => { switchPanelTab(panel.id, id.toString()); originalSwitchTabById(id) }"
               @hideTabMenu="hideTabMenu"
               @tabsNavContextMenu="handleTabsNavContextMenu"
-              @tabContextMenu="handleTabContextMenu"
+              @tabContextMenu="(e: any, tab: any) => { rightClickedPanelId = panel.id; handleTabContextMenu(e, tab) }"
               @togglePinByButton="togglePinTabByButton"
-              @disconnectAll="disconnectAllTabs"
-              @connectAll="connectAllTabs"
+              @disconnectAll="disconnectAllTabsForPanel"
+              @connectAll="connectAllTabsForPanel"
               @closeSingle="closeSingleTab"
-              @closeOther="closeOtherTabs"
-              @closeLeft="closeLeftTabs"
-              @closeRight="closeRightTabs"
-              @closeAll="closeAllTabs"
+              @closeOther="closeOtherTabsForPanel"
+              @closeLeft="closeLeftTabsForPanel"
+              @closeRight="closeRightTabsForPanel"
+              @closeAll="closeAllTabsForPanel"
               @moveToFirst="moveTabToFirst"
               @moveToLast="moveTabToLast"
               @reorderTabsWithPin="(fromId: any, targetId: any, pos: any, toPin: any) => reorderTabs(fromId, targetId, pos, toPin)"
@@ -269,6 +269,28 @@ const lastSentCommand = ref('')
 const connectedSerialPorts = reactive<Record<string, boolean>>({})
 const comTerminalRefs = reactive<Record<string, any>>({})
 const telnetTerminalRefs = reactive<Record<string, any>>({})
+// 连接状态变化计数器：当任何终端的连接状态变化时 +1，用于驱动 computed 重新计算
+const connectionChangeCounter = ref(0)
+
+// 监听 comTerminalRefs 和 telnetTerminalRefs 中任何终端实例的 isConnected 变化
+// 由于组件实例上的属性不是响应式的，通过轮询方式检测变化并更新 counter
+let _prevConnectedSnapshot = ''
+const _pollConnectionStates = () => {
+  const parts: string[] = []
+  for (const key of Object.keys(comTerminalRefs)) {
+    parts.push(`com:${key}:${comTerminalRefs[key]?.isConnected ?? false}`)
+  }
+  for (const key of Object.keys(telnetTerminalRefs)) {
+    parts.push(`telnet:${key}:${telnetTerminalRefs[key]?.isConnected ?? false}`)
+  }
+  const snapshot = parts.join('|')
+  if (snapshot !== _prevConnectedSnapshot) {
+    _prevConnectedSnapshot = snapshot
+    connectionChangeCounter.value++
+  }
+}
+// 每 500ms 检查一次连接状态变化
+const _pollTimer = setInterval(_pollConnectionStates, 500)
 
 // SuperSplit & 面板 refs
 const superSplitRef = ref<InstanceType<typeof SuperSplit> | null>(null)
@@ -290,7 +312,7 @@ const {
   switchTabById, handleTabContextMenu, handleTabsNavContextMenu, hideTabMenu,
   getConnectionStatus, hasAnyConnected,
   connectAllTabs, disconnectAllTabs,
-  closeTab, closeSingleTab,
+  closeTab, closeTabOnly, closeSingleTab,
   closeOtherTabs, closeLeftTabs, closeRightTabs, closeAllTabs,
   reorderTabs, moveTabToFirst, moveTabToLast,
   togglePinTabByButton, togglePinTab,
@@ -308,6 +330,16 @@ const {
   updateSplitRatio,
   onTabClosed
 } = useSplitPanel(activeTabId.value)
+
+// 记录右键菜单所在的面板 ID
+const rightClickedPanelId = ref('panel-0')
+
+// 判断右键菜单是否应该在指定面板显示
+// 两个面板共享 showTabMenu ref，但只有右键所在面板才应显示菜单
+// 否则 panel-1 的菜单会覆盖 panel-0 的菜单（DOM 中 panel-1 在后面）
+const isPanelShowTabMenu = (panelId: string) => {
+  return showTabMenu.value && rightClickedPanelId.value === panelId
+}
 
 // 当 connectionTabs 变化时，同步 tabIds 到面板
 watch(connectionTabs, (tabs) => {
@@ -341,9 +373,30 @@ watch(connectionTabs, (tabs) => {
   }
 
   // 移除所有空面板（但至少保留 panel-0）
+  // 注意：分屏时 panel-0 的 tabIds 仍包含其他面板的 tab，需要按实际显示来判断是否为空
   for (let i = splitState.panels.length - 1; i >= 1; i--) {
     if (splitState.panels[i].tabIds.length === 0) {
       splitState.panels.splice(i, 1)
+    }
+  }
+
+  // 如果 panel-0 实际显示无 tab（分屏时排除属于其他面板的 tab 后为空），则合并
+  if (splitState.panels.length > 1) {
+    const panel0DisplayTabs = getPanel0Tabs()
+    if (panel0DisplayTabs.length === 0) {
+      // panel-0 显示为空，把所有 tab 合并到 panel-1，移除 panel-0
+      const panel1 = splitState.panels[1]
+      // 清理 panel-0 中已不存在的 tab（已在上面清理过，这里确保 panel-0 的 tabIds 不干扰）
+      splitState.panels.splice(0, 1)  // 移除 panel-0
+      // 重新编号：第一个面板现在是 panel-1，把它改名为 panel-0
+      panel1.id = 'panel-0'
+      // 确保有 activeTabId
+      if (!panel1.activeTabId && panel1.tabIds.length > 0) {
+        panel1.activeTabId = panel1.tabIds[0]
+      }
+      if (panel1.activeTabId) {
+        activeTabId.value = panel1.activeTabId
+      }
     }
   }
 
@@ -393,6 +446,134 @@ const isTabActiveInItsPanel = (tabId: string): boolean => {
   const panel = splitState.panels.find(p => p.id === panelId)
   if (!panel) return false
   return panel.activeTabId === tabId
+}
+
+// ---- 分屏面板限定的右键菜单命令 ----
+// 获取当前右键菜单所在面板实际显示的 tabIds（分屏时排除属于其他面板的 tab）
+const getRightClickedPanelTabIds = (): string[] => {
+  const panelId = rightClickedPanelId.value
+  if (panelId === 'panel-0') {
+    // panel-0 在分屏时，tabIds 仍包含所有 tab，需要用 getPanel0Tabs 过滤
+    return getPanel0Tabs().map(t => t.id.toString())
+  }
+  const panel = splitState.panels.find(p => p.id === panelId)
+  return panel ? panel.tabIds : []
+}
+
+// 计算某个面板是否有已连接的 tab
+// connectionChangeCounter 作为强制刷新依赖，解决 comTerminalRefs 中 isConnected 变化
+// 无法被 reactive 深层追踪的问题（组件实例上的属性不是响应式的）
+// 获取某个面板实际显示的 tabIds（分屏时 panel-0 排除属于其他面板的 tab）
+const getPanelDisplayTabIds = (panelId: string): string[] => {
+  if (panelId === 'panel-0') {
+    return getPanel0Tabs().map(t => t.id.toString())
+  }
+  const panel = splitState.panels.find(p => p.id === panelId)
+  return panel ? panel.tabIds : []
+}
+
+const panelHasAnyConnected = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _ = connectionChangeCounter.value  // 依赖此 counter 驱动重新计算
+  const result: Record<string, boolean> = {}
+  for (const panel of splitState.panels) {
+    const displayTabIds = getPanelDisplayTabIds(panel.id)
+    result[panel.id] = displayTabIds.some(tabId => {
+      const tab = connectionTabs.value.find(t => t.id.toString() === tabId)
+      if (!tab) return false
+      return getConnectionStatus(tab) === 'connected'
+    })
+  }
+  return result
+})
+
+const getPanelHasAnyConnected = (panelId: string): boolean => {
+  return panelHasAnyConnected.value[panelId] ?? false
+}
+
+const disconnectAllTabsForPanel = async () => {
+  const panelTabIds = new Set(getRightClickedPanelTabIds())
+  for (const tab of connectionTabs.value) {
+    if (!panelTabIds.has(tab.id.toString())) continue
+    if (tab.connectionType === 'com' && !comTerminalRefs[tab.id]?.isConnected) {
+      // skip disconnected
+    } else if ((tab.connectionType === 'telnet' || tab.connectionType === 'ftp') && !telnetTerminalRefs[tab.id]?.isConnected) {
+      // skip disconnected
+    } else {
+      if (tab.connectionType === 'com') {
+        comTerminalRefs[tab.id]?.preventAutoReconnect?.()
+        comTerminalRefs[tab.id]?.disconnect?.()
+      } else {
+        telnetTerminalRefs[tab.id]?.preventAutoReconnect?.()
+        telnetTerminalRefs[tab.id]?.disconnect?.()
+      }
+    }
+  }
+  hideTabMenu()
+}
+
+const connectAllTabsForPanel = async () => {
+  const panelTabIds = new Set(getRightClickedPanelTabIds())
+  for (const tab of connectionTabs.value) {
+    if (!panelTabIds.has(tab.id.toString())) continue
+    if (tab.connectionType === 'com' && !comTerminalRefs[tab.id]?.isConnected) {
+      comTerminalRefs[tab.id]?.reconnect?.()
+    } else if ((tab.connectionType === 'telnet' || tab.connectionType === 'ftp') && !telnetTerminalRefs[tab.id]?.isConnected) {
+      telnetTerminalRefs[tab.id]?.reconnect?.()
+    }
+  }
+  hideTabMenu()
+}
+
+const closeOtherTabsForPanel = async () => {
+  if (!rightClickedTab.value) return
+  const panelTabIds = new Set(getRightClickedPanelTabIds())
+  const clickedId = rightClickedTab.value.id.toString()
+  const tabsToClose = connectionTabs.value.filter(t =>
+    t.id.toString() !== clickedId && panelTabIds.has(t.id.toString())
+  )
+  for (const tab of tabsToClose) {
+    await closeTabOnly(tab.id.toString())
+  }
+  hideTabMenu()
+}
+
+const closeLeftTabsForPanel = async () => {
+  if (!rightClickedTab.value) return
+  const panelTabIds = new Set(getRightClickedPanelTabIds())
+  const clickedId = rightClickedTab.value.id.toString()
+  const currentIndex = connectionTabs.value.findIndex(t => t.id.toString() === clickedId)
+  const tabsToClose = connectionTabs.value.slice(0, currentIndex).filter(t =>
+    panelTabIds.has(t.id.toString())
+  )
+  for (const tab of tabsToClose) {
+    await closeTabOnly(tab.id.toString())
+  }
+  hideTabMenu()
+}
+
+const closeRightTabsForPanel = async () => {
+  if (!rightClickedTab.value) return
+  const panelTabIds = new Set(getRightClickedPanelTabIds())
+  const clickedId = rightClickedTab.value.id.toString()
+  const currentIndex = connectionTabs.value.findIndex(t => t.id.toString() === clickedId)
+  const tabsToClose = connectionTabs.value.slice(currentIndex + 1).filter(t =>
+    panelTabIds.has(t.id.toString())
+  )
+  for (const tab of tabsToClose) {
+    await closeTabOnly(tab.id.toString())
+  }
+  hideTabMenu()
+}
+
+const closeAllTabsForPanel = async () => {
+  const panelTabIds = new Set(getRightClickedPanelTabIds())
+  for (const tab of [...connectionTabs.value]) {
+    if (panelTabIds.has(tab.id.toString())) {
+      await closeTabOnly(tab.id.toString())
+    }
+  }
+  hideTabMenu()
 }
 
 const handleSplitToNewPanel = () => {
@@ -809,6 +990,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  clearInterval(_pollTimer)
   window.removeEventListener('shortcuts-updated', handleShortcutsUpdated)
   window.removeEventListener('settings-updated', handleSettingsUpdated)
   window.removeEventListener('terminal-text-cleared', handleTerminalTextCleared)
