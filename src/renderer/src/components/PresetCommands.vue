@@ -30,6 +30,7 @@
       @command="handleGroupCommand"
       placement="bottom-start"
       popper-class="group-dropdown-popper"
+      trigger="click"
     >
       <el-button type="default" size="small" class="group-selector">
         <span class="group-selector-text">{{ selectedGroupName || t('presetCommands.noGroup') }}</span>
