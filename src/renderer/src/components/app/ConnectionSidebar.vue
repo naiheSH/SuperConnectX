@@ -294,8 +294,7 @@ const toggleGroupExpanded = (type: string) => {
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  transition: border-color 0.2s ease, margin-top 0.2s ease, margin-bottom 0.2s ease !important;
-  will-change: margin-top;
+  transition: border-color 0.2s ease !important;
 }
 
 .connection-card :deep(.el-card__body) {
@@ -305,8 +304,6 @@ const toggleGroupExpanded = (type: string) => {
 
 .connection-card:hover {
   border: 1px solid rgb(64, 158, 255) !important;
-  margin-top: 10px;
-  margin-bottom: 2px;
 }
 
 .connection-info {
@@ -448,7 +445,6 @@ const toggleGroupExpanded = (type: string) => {
 .serial-port-card:hover {
   border: 1px solid #409eff !important;
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3) !important;
-  transform: translateY(-1px) !important;
 }
 
 .serial-remark {
