@@ -181,6 +181,7 @@ let previewModel: monaco.editor.ITextModel | null = null
 let previewStyleEl: HTMLStyleElement | null = null
 let previewDecorationIds: string[] = []
 let previewApplyTimer: ReturnType<typeof setTimeout> | null = null
+let isSwitchingGroup = false
 const regexCache = new Map<string, RegExp | null>()
 const syntaxClassMap = new Map<string, string>()
 
@@ -434,12 +435,14 @@ const previewPending = ref(false)
 
 // 表达式/文本变化：标记待更新，需手动点击"立即预览"
 const onPatternChanged = () => {
+  if (isSwitchingGroup) return
   saveGroups()
   previewPending.value = true
 }
 
 // 颜色/字体样式变化：立即应用预览
 const onStyleChanged = () => {
+  if (isSwitchingGroup) return
   saveGroups()
   schedulePreviewApply()
 }
@@ -478,6 +481,8 @@ const initPreviewEditor = () => {
   previewModel.onDidChangeContent(() => {
     if (!activeGroup.value || !previewModel) return
     activeGroup.value.previewText = previewModel.getValue()
+    // 切换组期间不保存，避免未修改就触发 saveGroups
+    if (isSwitchingGroup) return
     saveGroups()
     // 预览文本变化时也标记待更新
     previewPending.value = true
@@ -624,6 +629,7 @@ const setPreviewText = (text: string) => {
 // 当切换组时，更新预览文本并自动应用高亮
 watch(activeGroup, (newGroup) => {
   if (!previewModel) return
+  isSwitchingGroup = true
   if (newGroup) {
     setPreviewText(newGroup.previewText || '')
     // 切换组时自动应用高亮（规则未变，只是换了组）
@@ -633,6 +639,10 @@ watch(activeGroup, (newGroup) => {
     setPreviewText('')
     previewPending.value = false
   }
+  // 下一个 tick 后重置标记
+  nextTick(() => {
+    isSwitchingGroup = false
+  })
 })
 
 onMounted(async () => {
