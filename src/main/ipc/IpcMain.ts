@@ -225,6 +225,22 @@ export default class IpcMain {
       return AppUpdater.getInstance().cachedUpdateInfo
     })
 
+    // 托盘菜单操作 IPC
+    ipcMain.on('tray-menu-action', (_event, action: string) => {
+      if (action === 'show-window') {
+        if (windows.mainWindow) {
+          if (windows.mainWindow.isMinimized()) {
+            windows.mainWindow.restore()
+          }
+          windows.mainWindow.show()
+          windows.mainWindow.focus()
+        }
+      } else if (action === 'quit-app') {
+        (app as any).isQuitting = true
+        app.quit()
+      }
+    })
+
     logger.info(`init IpcMain done`)
   }
 
