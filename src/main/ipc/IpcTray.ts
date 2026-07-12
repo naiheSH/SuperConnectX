@@ -36,18 +36,22 @@ export default class IpcTray {
     }
 
     const iconPath = this.getIconPath()
-    let icon = nativeImage.createFromPath(iconPath)
+    const icon = nativeImage.createFromPath(iconPath)
 
     if (icon.isEmpty()) {
-      logger.warn(`Tray icon not found at: ${iconPath}, using default 16x16 icon`)
-      // 创建一张简单的 16x16 占位图标，避免托盘图标完全空白
-      icon = nativeImage.createEmpty()
-    }
-    
-    // Windows 上使用 16x16 或 32x32 的图标
-    if (process.platform === 'win32') {
-      this.tray = new Tray(icon.resize({ width: 16, height: 16 }))
+      logger.warn(`Tray icon not found at: ${iconPath}, using default icon`)
+      this.tray = new Tray(nativeImage.createEmpty())
+    } else if (process.platform === 'darwin') {
+      // macOS: 使用 16x16 模板图标（系统会自动根据明暗主题调整颜色）
+      const trayIcon = icon.resize({ width: 16, height: 16 })
+      trayIcon.setTemplateImage(true)
+      this.tray = new Tray(trayIcon)
+    } else if (process.platform === 'win32') {
+      // Windows: 直接使用原始图标，让系统自动选择最佳分辨率
+      // .ico 文件内嵌多尺寸，不需要手动 resize
+      this.tray = new Tray(icon)
     } else {
+      // Linux: 使用适当尺寸的图标
       this.tray = new Tray(icon.resize({ width: 22, height: 22 }))
     }
 
