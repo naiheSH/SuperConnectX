@@ -63,7 +63,7 @@ body {
 .el-dialog__header {
   background-color: var(--dialog-bg) !important;
   padding: 16px 24px !important;
-  color: white !important;
+  color: var(--text-dialog-title) !important;
 }
 .el-dialog__footer {
   background-color: var(--dialog-bg) !important;
@@ -208,7 +208,7 @@ body {
 .el-message-box__btns .el-button--primary {
   background-color: var(--btn-primary-bg) !important;
   border: none !important;
-  color: var(--text-white) !important;
+  color: var(--btn-primary-text) !important;
 }
 
 .el-message-box__btns .el-button--primary:hover {
@@ -548,7 +548,7 @@ input[type="number"] {
   width: 100% !important;
   background-color: var(--btn-primary-bg) !important;
   border: none !important;
-  color: var(--text-white) !important;
+  color: var(--btn-primary-text) !important;
 }
 
 .btn-primary:hover {
@@ -763,7 +763,7 @@ input[type="number"] {
 .el-color-footer__btn.el-button {
   background-color: var(--btn-primary-bg) !important;
   border: none !important;
-  color: var(--text-white) !important;
+  color: var(--btn-primary-text) !important;
 }
 
 .el-color-footer__btn.el-button:hover {
@@ -778,7 +778,7 @@ input[type="number"] {
 .el-color-picker-panel__footer .el-button--primary {
   background-color: var(--btn-primary-bg) !important;
   border: none !important;
-  color: var(--text-white) !important;
+  color: var(--btn-primary-text) !important;
 }
 
 .el-color-picker-panel__footer .el-button--primary:hover {
@@ -844,16 +844,17 @@ input[type="number"] {
 }
 
 /* ==============================
-   Tooltip 统一样式（强制暗色背景）
+   Tooltip 统一样式
    ============================== */
 .el-tooltip__popper,
 .el-tooltip__popper.is-dark,
-.el-tooltip__popper.is-light {
+.el-tooltip__popper.is-light,
+.el-popper.is-dark.el-tooltip__popper {
   background-color: var(--bg-tooltip) !important;
   border: 1px solid var(--border-secondary) !important;
   border-radius: 6px !important;
   box-shadow: var(--dialog-box-shadow) !important;
-  color: var(--text-secondary) !important;
+  color: var(--text-primary) !important;
   font-size: 13px !important;
   padding: 6px 12px !important;
   max-width: 300px !important;

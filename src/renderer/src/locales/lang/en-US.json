@@ -210,7 +210,10 @@
     "checkUpdate": "Check for Updates",
     "wordWrap": "Word Wrap",
     "lineNumbers": "Line Numbers",
-    "logEditable": "Editable Log"
+    "logEditable": "Editable Log",
+    "theme": "Theme",
+    "darkTheme": "Dark",
+    "lightTheme": "Light"
   },
   "sidebar": {
     "newConnection": "New Connection",

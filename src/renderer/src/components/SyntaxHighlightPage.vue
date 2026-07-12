@@ -144,6 +144,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as monaco from 'monaco-editor'
 import { Plus, Delete } from '@element-plus/icons-vue'
+import { getMonacoTheme } from '../utils/MonacoTheme'
 
 const { t } = useI18n()
 
@@ -178,6 +179,7 @@ const previewEditorContainer = ref<HTMLElement | null>(null)
 const previewFocused = ref(false)
 let previewEditor: monaco.editor.IStandaloneCodeEditor | null = null
 let previewModel: monaco.editor.ITextModel | null = null
+let themeObserver: MutationObserver | null = null
 let previewStyleEl: HTMLStyleElement | null = null
 let previewDecorationIds: string[] = []
 let previewApplyTimer: ReturnType<typeof setTimeout> | null = null
@@ -465,7 +467,7 @@ const initPreviewEditor = () => {
     lineNumbers: 'on',
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
-    theme: 'vs-dark',
+    theme: getMonacoTheme(),
     automaticLayout: true,
     hover: { enabled: false },
     occurrencesHighlight: 'off',
@@ -659,6 +661,14 @@ onMounted(async () => {
   document.addEventListener('contextmenu', () => {
     contextMenuVisible.value = false
   })
+
+  // 监听主题切换，动态更新 Monaco Editor 主题
+  themeObserver = new MutationObserver(() => {
+    if (previewEditor) {
+      monaco.editor.setTheme(getMonacoTheme())
+    }
+  })
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
 })
 
 onUnmounted(() => {
@@ -682,9 +692,10 @@ onUnmounted(() => {
   regexCache.clear()
   syntaxClassMap.clear()
   document.removeEventListener('click', closeContextMenuOnClickOutside)
-  document.removeEventListener('contextmenu', () => {
-    contextMenuVisible.value = false
-  })
+  if (themeObserver) {
+    themeObserver.disconnect()
+    themeObserver = null
+  }
 })
 </script>
 

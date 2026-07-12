@@ -210,7 +210,10 @@
     "checkUpdate": "检查更新",
     "wordWrap": "自动换行",
     "lineNumbers": "显示行号",
-    "logEditable": "日志可编辑"
+    "logEditable": "日志可编辑",
+    "theme": "皮肤设置",
+    "darkTheme": "深色模式",
+    "lightTheme": "浅色模式"
   },
   "sidebar": {
     "newConnection": "新建连接",

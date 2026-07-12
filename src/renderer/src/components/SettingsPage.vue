@@ -1016,6 +1016,15 @@ const handleSettingsUpdated = (event: Event) => {
   color: var(--settings-baudrate-tag-color);
 }
 
+.baudrate-tag :deep(.el-tag__close) {
+  color: var(--settings-baudrate-tag-color);
+}
+
+.baudrate-tag :deep(.el-tag__close:hover) {
+  background-color: var(--settings-baudrate-tag-hover);
+  color: var(--settings-baudrate-tag-color);
+}
+
 .baudrate-tag:hover {
   background: var(--settings-baudrate-tag-hover);
 }

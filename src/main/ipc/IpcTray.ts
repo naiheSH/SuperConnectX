@@ -6,6 +6,7 @@ export default class IpcTray {
   private static sInstance: IpcTray
   private tray: Tray | null = null
   private trayMenuWindow: BrowserWindow | null = null
+  private currentTheme: string = 'dark'
 
   constructor() {
   }
@@ -93,12 +94,20 @@ export default class IpcTray {
     logger.info('Tray created successfully')
   }
 
-  private showTrayMenuWindow(mainWindow: BrowserWindow, bounds: Electron.Rectangle): void {
+  private async showTrayMenuWindow(mainWindow: BrowserWindow, bounds: Electron.Rectangle): Promise<void> {
     // 如果菜单窗口已存在，先关闭
     if (this.trayMenuWindow && !this.trayMenuWindow.isDestroyed()) {
       this.trayMenuWindow.close()
       this.trayMenuWindow = null
       return
+    }
+
+    // 从主窗口获取当前主题
+    try {
+      const theme = await mainWindow.webContents.executeJavaScript('document.documentElement.getAttribute("data-theme") || "dark"')
+      this.currentTheme = theme
+    } catch {
+      this.currentTheme = 'dark'
     }
 
     const menuWidth = 180
@@ -139,7 +148,7 @@ export default class IpcTray {
       resizable: false,
       focusable: true,
       show: false,
-      backgroundColor: '#2d2d2d',
+      backgroundColor: this.currentTheme === 'light' ? '#ffffff' : '#2d2d2d',
       webPreferences: {
         sandbox: false,
         contextIsolation: false,
@@ -162,6 +171,17 @@ export default class IpcTray {
   }
 
   private getTrayMenuHTML(): string {
+    const isLight = this.currentTheme === 'light'
+    const bgColor = isLight ? '#ffffff' : '#2d2d2d'
+    const textColor = isLight ? '#333333' : '#e0e0e0'
+    const borderColor = isLight ? '#d0d0d0' : '#3a3a3a'
+    const hoverBg = isLight ? '#e8f4fd' : '#094771'
+    const hoverColor = isLight ? '#0e639c' : '#ffffff'
+    const dividerColor = isLight ? '#e0e0e0' : '#3a3a3a'
+    const dangerColor = isLight ? '#d46060' : '#f56c6c'
+    const dangerHoverBg = isLight ? '#d46060' : '#f56c6c'
+    const dangerHoverColor = '#ffffff'
+
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -177,21 +197,21 @@ export default class IpcTray {
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
     font-size: 13px;
-    color: #e0e0e0;
-    background: #2d2d2d;
+    color: ${textColor};
+    background: ${bgColor};
   }
   .tray-menu {
     width: 100%;
     height: 100%;
-    background: #2d2d2d;
-    border: 1px solid #3a3a3a;
+    background: ${bgColor};
+    border: 1px solid ${borderColor};
     border-radius: 8px;
     padding: 4px 0;
     overflow: hidden;
   }
   .menu-item {
     padding: 8px 16px;
-    color: #e0e0e0;
+    color: ${textColor};
     cursor: pointer;
     white-space: nowrap;
     transition: background-color 0.15s ease;
@@ -201,11 +221,11 @@ export default class IpcTray {
     user-select: none;
   }
   .menu-item:hover {
-    background-color: #094771;
-    color: #fff;
+    background-color: ${hoverBg};
+    color: ${hoverColor};
   }
   .menu-item:active {
-    background-color: #073a5c;
+    background-color: ${isLight ? '#cce5ff' : '#073a5c'};
   }
   .menu-item .icon {
     width: 16px;
@@ -217,15 +237,15 @@ export default class IpcTray {
   }
   .menu-divider {
     height: 1px;
-    background-color: #3a3a3a;
+    background-color: ${dividerColor};
     margin: 4px 0;
   }
   .menu-item.danger {
-    color: #f56c6c;
+    color: ${dangerColor};
   }
   .menu-item.danger:hover {
-    background-color: #f56c6c;
-    color: #fff;
+    background-color: ${dangerHoverBg};
+    color: ${dangerHoverColor};
   }
 </style>
 </head>

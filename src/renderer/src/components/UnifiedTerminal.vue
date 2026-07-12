@@ -188,6 +188,7 @@ import PresetCommands from './PresetCommands.vue'
 import TerminalControl from './TerminalControl.vue'
 import { parseAnsiToSegments } from '../utils/AnsiParser'
 import { AnsiDecorationManager } from '../utils/AnsiDecorationManager'
+import { getMonacoTheme } from '../utils/MonacoTheme'
 
 const maxClearSizeMB = ref(30)
 
@@ -425,6 +426,7 @@ let historyFilterInput = '' // 导航时的过滤基准，避免选中改变输�
 let showCommandHistory = true // 是否显示历史命令弹窗
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 let editorModel: monaco.editor.ITextModel | null = null
+let themeObserver: MutationObserver | null = null
 let syntaxDecorationIds: string[] = []
 let enableSyntaxHighlight = true
 let syntaxRuleGroups: SyntaxRuleGroup[] = []
@@ -490,7 +492,7 @@ const initEditor = async () => {
     lineNumbers: 'on',
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
-    theme: 'vs-dark',
+    theme: getMonacoTheme(),
     automaticLayout: true,
     hover: { enabled: false },
     occurrencesHighlight: 'off',
@@ -1246,6 +1248,14 @@ onMounted(async () => {
   window.addEventListener('syntax-rules-updated', handleSyntaxRulesUpdated)
   // 点击外部关闭CRC菜单
   document.addEventListener('click', handleClickOutsideCrc)
+
+  // 监听主题切换，动态更新 Monaco Editor 主题
+  themeObserver = new MutationObserver(() => {
+    if (editor) {
+      monaco.editor.setTheme(getMonacoTheme())
+    }
+  })
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
 })
 
 // 垂直分隔条拖拽逻辑
@@ -1297,6 +1307,10 @@ onUnmounted(() => {
   window.removeEventListener('settings-updated', handleSettingsUpdated)
   window.removeEventListener('syntax-rules-updated', handleSyntaxRulesUpdated)
   document.removeEventListener('click', handleClickOutsideCrc)
+  if (themeObserver) {
+    themeObserver.disconnect()
+    themeObserver = null
+  }
 
   // Clean up syntax highlight styles (only for this instance)
   const oldStyles = document.querySelectorAll(`style[data-syntax-instance="${syntaxInstanceId}"]`)

@@ -1062,6 +1062,10 @@ const handleSettingsUpdated = (event: Event) => {
 
 // ---- Lifecycle ----
 onMounted(() => {
+  // 初始化主题
+  const savedTheme = localStorage.getItem('app-theme') || 'dark'
+  document.documentElement.setAttribute('data-theme', savedTheme)
+
   loadSidebarState()
   loadConnections()
   loadSerialPorts()
@@ -1176,7 +1180,7 @@ onUnmounted(() => {
   height: 100%;
   margin-left: 5px;
   background-color: transparent;
-  color: white;
+  color: var(--statusbar-text);
   font-size: 11px;
   padding: 0px 10px;
   display: flex;
