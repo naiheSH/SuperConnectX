@@ -3,9 +3,9 @@ import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 export interface TerminalConnection {
-  id: number
+  id: string | number
   connectionType: string
-  sessionId: string
+  sessionId: string | number
   comName?: string
   host?: string
   port?: number
@@ -137,7 +137,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
   // 打开日志所在文件夹
   const openLogFolder = async () => {
     try {
-      const result = await window.connectApi.openConnectLog(conn.sessionId, 'folder')
+      const result = await window.connectApi.openConnectLog(String(conn.sessionId), 'folder')
       if (!result.success) {
         ElMessage.error(t('terminal.openLogFolderFailed', { message: result.message }))
       }
@@ -149,7 +149,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
   // 用系统默认应用打开日志文件
   const openLogFile = async () => {
     try {
-      const result = await window.connectApi.openConnectLog(conn.sessionId, 'file')
+      const result = await window.connectApi.openConnectLog(String(conn.sessionId), 'file')
       if (!result.success) {
         ElMessage.error(t('terminal.openLogFileFailed', { message: result.message }))
       }
@@ -168,7 +168,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
         filters: [{ name: '日志文件', extensions: ['log', 'txt'] }]
       })
       if (result.filePath) {
-        const copyResult = await window.connectApi.copyLogFile(conn.sessionId, result.filePath)
+        const copyResult = await window.connectApi.copyLogFile(String(conn.sessionId), result.filePath)
         if (copyResult.success) {
           window.toolApi.showItemInFolder(result.filePath)
         } else {

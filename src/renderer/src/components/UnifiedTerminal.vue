@@ -194,13 +194,13 @@ const maxClearSizeMB = ref(30)
 
 const props = withDefaults(defineProps<{
   connection: {
-    id: number
+    id: string | number
     connectionType: string
     comName?: string
     host?: string
     port?: number
     name?: string
-    sessionId: string
+    sessionId: string | number
     [key: string]: any
   }
   isConnected?: boolean

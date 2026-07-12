@@ -275,7 +275,6 @@ const currentFontFamily = ref('Fira Code') // 当前活动的字体
 // ---- 皮肤切换 ----
 const showThemePanel = ref(false)
 const currentTheme = ref(localStorage.getItem('app-theme') || 'dark')
-const themeSwitcherRef = ref<HTMLElement | null>(null)
 
 const applyTheme = (theme: string) => {
   currentTheme.value = theme

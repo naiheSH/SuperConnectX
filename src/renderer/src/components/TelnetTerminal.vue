@@ -38,12 +38,12 @@ const RETRY_INTERVAL_MS = 3000
 const emit = defineEmits(['onClose', 'commandSent', 'openCommandEditor', 'fontLoaded', 'openSyntaxHighlight'])
 const props = defineProps<{
   connection: {
-    id: number
+    id: string | number
     connectionType: string
-    host: string
-    port: number
+    host?: string
+    port?: number
     name?: string
-    sessionId: string
+    sessionId: string | number
     ftpMode?: string
   }
   onClose?: () => void
@@ -215,7 +215,7 @@ const connect = async () => {
       const connId = (props.connection as any).connectionId || props.connection.id
       const result = await window.connectApi.startConnectById(
         connId,
-        props.connection.sessionId,
+        String(props.connection.sessionId),
         // 传递运行时字段（不包含密码，密码由后端从存储中解密）
         JSON.parse(JSON.stringify({
           ...fromRawConnection(props.connection),

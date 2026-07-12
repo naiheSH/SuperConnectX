@@ -177,7 +177,7 @@ const { t } = useI18n()
 const emit = defineEmits(['onClose', 'commandSent', 'onConnect', 'onDisconnect', 'openCommandEditor', 'remarkUpdated', 'fontLoaded', 'openSyntaxHighlight'])
 const props = withDefaults(defineProps<{
   connection: {
-    id: number
+    id: string | number
     connectionType: string
     comName?: string
     baudRate?: number
@@ -189,7 +189,7 @@ const props = withDefaults(defineProps<{
     port?: number
     username?: string
     password?: string
-    sessionId: string
+    sessionId: string | number
     remark?: string
   }
   autoConnect?: boolean
@@ -576,7 +576,7 @@ const handleConnect = async () => {
     })
 
     if (result.success) {
-      currentSessionId.value = props.connection.sessionId
+      currentSessionId.value = String(props.connection.sessionId)
       isConnected.value = true
       isConnecting.value = false
       unifiedTerminalRef.value?.appendToTerminal(`\n${t('comTerminal.connectSuccess')}\n`)

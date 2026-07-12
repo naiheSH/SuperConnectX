@@ -453,7 +453,7 @@ const addCommand = async () => {
 
   try {
     const seqNum = commands.value.length + 1
-    const result = await window.storageApi.addPresetCommand({
+    await window.storageApi.addPresetCommand({
       name: '',
       command: '',
       delay: 0,

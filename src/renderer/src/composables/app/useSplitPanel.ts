@@ -3,7 +3,7 @@
  * 管理面板的拆分、调整大小、合并
  */
 
-import { ref, reactive, computed } from 'vue'
+import { reactive, computed } from 'vue'
 
 export interface Panel {
   id: string
@@ -18,7 +18,7 @@ export interface SplitState {
   isSplitting: boolean
 }
 
-export function useSplitPanel(defaultTabId: string) {
+export function useSplitPanel(_defaultTabId: string) {
   const splitState = reactive<SplitState>({
     panels: [
       { id: 'panel-0', activeTabId: '', tabIds: [] }

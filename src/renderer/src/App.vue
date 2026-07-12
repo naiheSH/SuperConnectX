@@ -163,8 +163,8 @@
                 :auto-connect="true"
                 @onClose="handleTerminalClose(tab.id)"
                 @commandSent="handleCommandSent"
-                @onConnect="() => { connectedSerialPorts[tab.comName] = true }"
-                @onDisconnect="() => { delete connectedSerialPorts[tab.comName] }"
+                @onConnect="() => { if (tab.comName) connectedSerialPorts[tab.comName] = true }"
+                @onDisconnect="() => { if (tab.comName) delete connectedSerialPorts[tab.comName] }"
                 @openCommandEditor="openCommandEditorTab"
                 @openSyntaxHighlight="openSettingsAndSwitchToSyntax"
                 @remarkUpdated="(data: any) => { if (data.comName) serialRemarks[data.comName] = data.remark }"
@@ -295,7 +295,7 @@ const _pollConnectionStates = () => {
 const _pollTimer = setInterval(_pollConnectionStates, 500)
 
 // SuperSplit & 面板 refs
-const superSplitRef = ref<InstanceType<typeof SuperSplit> | null>(null)
+// const superSplitRef = ref<InstanceType<typeof SuperSplit> | null>(null)  // 预留，暂未使用
 const panelRefs = reactive<Record<string, InstanceType<typeof TerminalPanel> | null>>({})
 
 // ---- Sidebar ----
@@ -315,7 +315,6 @@ const {
   getConnectionStatus, hasAnyConnected,
   connectAllTabs, disconnectAllTabs,
   closeTab, closeTabOnly, closeSingleTab,
-  closeOtherTabs, closeLeftTabs, closeRightTabs, closeAllTabs,
   reorderTabs, moveTabToFirst, moveTabToLast,
   togglePinTabByButton, togglePinTab,
   connectToServer, connectToSerialPort,
@@ -325,9 +324,8 @@ const {
 // ---- Split Panel ----
 const {
   splitState,
-  panelCount,
   splitPanel,
-  removePanel,
+  // removePanel,  // 预留，handleMergePanel 中使用
   switchPanelTab,
   updateSplitRatio,
   onTabClosed
@@ -479,8 +477,8 @@ const getPanelDisplayTabIds = (panelId: string): string[] => {
 }
 
 const panelHasAnyConnected = computed(() => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _ = connectionChangeCounter.value  // 依赖此 counter 驱动重新计算
+  // 依赖此 counter 驱动重新计算
+  void connectionChangeCounter.value
   const result: Record<string, boolean> = {}
   for (const panel of splitState.panels) {
     const displayTabIds = getPanelDisplayTabIds(panel.id)
@@ -741,8 +739,9 @@ const moveTabToPanel = (tabId: string, sourcePanelId: string, targetZone: string
 }
 
 /**
- * 合并面板：把所有 tab 移回 panel-0
+ * 合并面板：把所有 tab 移回 panel-0（预留功能）
  */
+/*
 const handleMergePanel = () => {
   if (splitState.panels.length <= 1) return
 
@@ -760,6 +759,7 @@ const handleMergePanel = () => {
     activeTabId.value = splitState.panels[0].activeTabId
   }
 }
+*/
 
 const saveSerialRemarkHandler = () => {
   saveSerialRemark(rightClickedTab.value)

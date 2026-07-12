@@ -273,13 +273,13 @@ const presetForm = ref<{
 const props = defineProps<{
   isConnected: boolean
   connection: {
-    id: number
+    id: string | number
     host?: string
     port?: number
     name?: string
     connectionType?: string
     comName?: string
-    sessionId: string
+    sessionId: string | number
   }
 }>()
 
