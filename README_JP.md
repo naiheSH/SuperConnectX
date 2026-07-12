@@ -10,9 +10,9 @@
 [![Fork](https://img.shields.io/github/forks/SuperStudio/SuperConnectX?label=Fork%20this%20repo)](https://github.com/SuperStudio/SuperConnectX/fork)
 
 
-SuperConnectX is a **super terminal tool** supporting COM, Telnet, and other terminal connections, fully developed using **vibe coding**.
+SuperConnectXは、COMやTelnetなどの端末接続をサポートする**スーパー端末ツール**で、完全に**Vibe Coding**で開発されています。
 
-Download: [Click here](https://github.com/SuperStudio/SuperConnectX/releases)
+ダウンロード：[こちらからダウンロード](https://github.com/SuperStudio/SuperConnectX/releases)
 
 
 ![image-20260531221403478](Image/image-20260531221403478.png)
@@ -20,43 +20,43 @@ Download: [Click here](https://github.com/SuperStudio/SuperConnectX/releases)
 
 ![star-history](https://api.star-history.com/svg?repos=SuperStudio/SuperConnectX&type=Date)
 
-# Features
+# 機能の革新
 
-1. Serial port functionality fully inherited from [SuperCom](https://github.com/SuperStudio/SuperCom)
+1. シリアルポート機能は [SuperCom](https://github.com/SuperStudio/SuperCom) から完全に継承
 
-2. Telnet support
+2. Telnet機能に対応
 
-# Highlights
+# ソフトウェアの特徴
 
-## Syntax Highlighting
+## シンタックスハイライト
 
 <img src="Image/image-20260712223054054.png" alt="image-20260712223054054" style="zoom:80%;" />
 
 <img src="Image/image-20260712223112569.png" alt="image-20260712223112569" style="zoom:80%;" />
 
-## Split Panels
+## 画面分割
 
 <img src="Image/image-20260712223133963.png" alt="image-20260712223133963" style="zoom:80%;" />
 
-Tab drag and drop support
+タブのドラッグ＆ドロップに対応
 
 <img src="Image/image-20260712223431638.png" alt="image-20260712223431638" style="zoom:80%;" />
 
-## Command Editor
+## コマンドエディタ
 
 <img src="Image/image-20260712223209692.png" alt="image-20260712223209692" style="zoom:80%;" />
 
-## Serial CRC Checksum
+## シリアルCRCチェック
 
 <img src="Image/image-20260712223233500.png" alt="image-20260712223233500" style="zoom:80%;" />
 
-## Themes - Dark & Light Mode
+## テーマ - ダーク / ライトモード
 
 <img src="Image/image-20260712212608912.png" alt="image-20260712212608912" style="zoom:80%;" />
 
 <img src="Image/image-20260712212627051.png" alt="image-20260712212627051" style="zoom:80%;" />
 
-## Multiple Connection Types
+## 複数接続のサポート
 
 COM / Telnet / FTP
 
@@ -66,62 +66,62 @@ COM / Telnet / FTP
 
 <img src="Image/image-20260712222929409.png" alt="image-20260712222929409" style="zoom:80%;" />
 
-## Keyboard Shortcuts
+## ショートカットキー
 
 <img src="Image/image-20260712222946297.png" alt="image-20260712222946297" style="zoom:80%;" />
 
-## Import / Export Data
+## データのインポート / エクスポート
 
 <img src="Image/image-20260712223001191.png" alt="image-20260712223001191" style="zoom:80%;" />
 
-## Fonts, Line Wrapping & More
+## フォント、折り返しなど
 
 <img src="Image/image-20260712223024396.png" alt="image-20260712223024396" style="zoom:80%;" />
 
 
 
-## Auto Update
+## 自動更新
 
 <img src="Image/image-20260712223343355.png" alt="image-20260712223343355" style="zoom:80%;" />
 
-# Development
+# 開発方法
 
-## Environment Setup
+## 環境設定
 
-Install dependencies
+依存関係のインストール
 
 ```bash
 npm install
 ```
 
-Run
+実行
 
 ```bash
 npm run dev
 ```
 
-## Contributing
+## 開発への参加
 
-Install the CodeBuddy extension in VS Code, or use any other agent for vibe coding.
+VS CodeでCodeBuddy拡張機能をインストールするか、他のエージェントを使用してVibe Codingを行ってください。
 
 <img src="Image/image-20260531221642675.png" alt="image-20260531221642675" style="zoom: 80%;" />
 
-# Release
+# バージョンリリース
 
-## Auto-generate Release Notes
+## リリースノートの自動生成
 
-Paste the content from `skills/version-generate.md` into the vibe coding dialog.
+`skills/version-generate.md` の内容をVibe Codingのダイアログに貼り付けてください。
 
-## Code Check
+## コードチェック
 
-Run `npm run typecheck`
+`npm run typecheck` を実行してください。
 
-## Local Build
+## ローカルビルド
 
-Run `build.bat`
+`build.bat` を実行してください。
 
-## CI/CD Build
+## CI/CD ビルド
 
-Run `release.bat` and GitHub Actions will start automatically. Once the build completes, the latest releases will be generated.
+`release.bat` を実行すると、GitHub Actionsが自動的に起動し、ビルド完了後に最新のリリースが自動生成されます。
 
 <img src="Image/image-20260531222201852.png" alt="image-20260531222201852" style="zoom:80%;" />
