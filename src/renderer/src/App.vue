@@ -70,6 +70,7 @@
           :is-split="splitState.panels.length > 1"
           :split-ratio="splitState.splitRatio"
           @updateSplitRatio="updateSplitRatio"
+          @tabDropToPane="handleTabDropToPane"
         >
           <!-- 左面板：panel-0 -->
           <template #left>
@@ -251,6 +252,7 @@ import logoImage from './assets/icon.png'
 import { useConnectionSidebar } from './composables/app/useConnectionSidebar'
 import { useTabManager } from './composables/app/useTabManager'
 import { useSplitPanel } from './composables/app/useSplitPanel'
+import type { Panel } from './composables/app/useSplitPanel'
 import { useSerialRemarks } from './composables/app/useSerialRemarks'
 import { useShortcuts } from './composables/app/useShortcuts'
 import { useTerminalDisplay } from './composables/app/useTerminalDisplay'
@@ -341,6 +343,40 @@ const isPanelShowTabMenu = (panelId: string) => {
   return showTabMenu.value && rightClickedPanelId.value === panelId
 }
 
+/**
+ * 检查并合并空面板：如果 panel-0 实际显示无 tab，或只剩一个面板，自动取消分屏
+ * 注意：此函数定义在 watch 之前，因为 watch 设置了 immediate: true 会立即调用
+ */
+const checkAndMergeEmptyPanels = () => {
+  // 移除所有空面板（非 panel-0）
+  for (let i = splitState.panels.length - 1; i >= 1; i--) {
+    if (splitState.panels[i].tabIds.length === 0) {
+      splitState.panels.splice(i, 1)
+    }
+  }
+
+  // 如果 panel-0 实际显示无 tab（分屏时排除属于其他面板的 tab 后为空），则合并
+  if (splitState.panels.length > 1) {
+    const panel0DisplayTabs = getPanel0Tabs()
+    if (panel0DisplayTabs.length === 0) {
+      // panel-0 显示为空，移除 panel-0，右侧面板成为唯一面板
+      splitState.panels.splice(0, 1)  // 移除 panel-0
+      // 重新编号：第一个面板改名为 panel-0
+      if (splitState.panels.length > 0) {
+        splitState.panels[0].id = 'panel-0'
+        if (!splitState.panels[0].activeTabId && splitState.panels[0].tabIds.length > 0) {
+          splitState.panels[0].activeTabId = splitState.panels[0].tabIds[0]
+        }
+      }
+    }
+  }
+
+  // 如果只剩一个面板，取消分屏
+  if (splitState.panels.length === 1) {
+    splitState.splitRatio = 1
+  }
+}
+
 // 当 connectionTabs 变化时，同步 tabIds 到面板
 watch(connectionTabs, (tabs) => {
   const allIds = tabs.map(t => t.id.toString())
@@ -372,38 +408,8 @@ watch(connectionTabs, (tabs) => {
     }
   }
 
-  // 移除所有空面板（但至少保留 panel-0）
-  // 注意：分屏时 panel-0 的 tabIds 仍包含其他面板的 tab，需要按实际显示来判断是否为空
-  for (let i = splitState.panels.length - 1; i >= 1; i--) {
-    if (splitState.panels[i].tabIds.length === 0) {
-      splitState.panels.splice(i, 1)
-    }
-  }
-
-  // 如果 panel-0 实际显示无 tab（分屏时排除属于其他面板的 tab 后为空），则合并
-  if (splitState.panels.length > 1) {
-    const panel0DisplayTabs = getPanel0Tabs()
-    if (panel0DisplayTabs.length === 0) {
-      // panel-0 显示为空，把所有 tab 合并到 panel-1，移除 panel-0
-      const panel1 = splitState.panels[1]
-      // 清理 panel-0 中已不存在的 tab（已在上面清理过，这里确保 panel-0 的 tabIds 不干扰）
-      splitState.panels.splice(0, 1)  // 移除 panel-0
-      // 重新编号：第一个面板现在是 panel-1，把它改名为 panel-0
-      panel1.id = 'panel-0'
-      // 确保有 activeTabId
-      if (!panel1.activeTabId && panel1.tabIds.length > 0) {
-        panel1.activeTabId = panel1.tabIds[0]
-      }
-      if (panel1.activeTabId) {
-        activeTabId.value = panel1.activeTabId
-      }
-    }
-  }
-
-  // 如果只剩一个面板，取消分屏
-  if (splitState.panels.length === 1) {
-    splitState.splitRatio = 1
-  }
+  // 检查并合并空面板
+  checkAndMergeEmptyPanels()
 }, { immediate: true, deep: true })
 
 // ---- Serial Remarks ----
@@ -624,6 +630,114 @@ const handleSplitToNewPanel = () => {
   }
 
   hideTabMenu()
+}
+
+/**
+ * 拖拽 tab 到面板区域进行分屏/移动
+ * @param tabId 被拖拽的 tab ID
+ * @param sourcePanelId 来源面板 ID
+ * @param targetZone 目标区域：'left' | 'right' | 'split-right'
+ */
+const handleTabDropToPane = (tabId: string, sourcePanelId: string, targetZone: string) => {
+  const tab = connectionTabs.value.find(t => t.id.toString() === tabId)
+  if (!tab) return
+
+  if (!isSplit.value && targetZone === 'split-right') {
+    // 未分屏，拖到右侧 → 进行分屏
+    performSplitWithTab(tabId, sourcePanelId)
+  } else if (isSplit.value) {
+    // 已分屏，拖到另一个面板 → 移动 tab 到该面板
+    moveTabToPanel(tabId, sourcePanelId, targetZone)
+  }
+}
+
+/**
+ * 执行分屏：将指定 tab 移到新面板
+ */
+const performSplitWithTab = (tabId: string, _sourcePanelId: string) => {
+  const currentPanel = splitState.panels[0]
+  if (currentPanel.tabIds.length <= 1) return
+
+  // 创建新面板
+  splitPanel('panel-0', 'horizontal')
+
+  // 新面板：拥有被拖拽的 tab
+  const newPanel = splitState.panels[splitState.panels.length - 1]
+  if (newPanel) {
+    newPanel.activeTabId = tabId
+    newPanel.tabIds = [tabId]
+  }
+
+  // panel-0 切换到另一个 tab
+  const srcPanel = splitState.panels[0]
+  if (srcPanel.tabIds.length > 1) {
+    const otherTab = srcPanel.tabIds.find(id => id !== tabId)
+    if (otherTab) {
+      srcPanel.activeTabId = otherTab
+    }
+  }
+
+  // 同步 activeTabId
+  if (splitState.panels[0].activeTabId) {
+    activeTabId.value = splitState.panels[0].activeTabId
+  }
+}
+
+/**
+ * 在已分屏状态下，移动 tab 到另一个面板
+ */
+const moveTabToPanel = (tabId: string, sourcePanelId: string, targetZone: string) => {
+  // 找到源面板和目标面板
+  const sourcePanel = splitState.panels.find(p => p.id === sourcePanelId)
+  if (!sourcePanel) return
+
+  // 确定目标面板：如果 targetZone 是 'left'，目标为 panel-0；否则为第一个非 panel-0 面板
+  let targetPanel: Panel | undefined
+  if (targetZone === 'left') {
+    targetPanel = splitState.panels[0]
+  } else {
+    // 找到与源面板不同的非 panel-0 面板（如果没有就用 panel-1）
+    targetPanel = splitState.panels.find(p => p.id !== sourcePanelId && p.id !== 'panel-0')
+    if (!targetPanel) {
+      targetPanel = splitState.panels.find(p => p.id !== sourcePanelId)
+    }
+  }
+  if (!targetPanel || targetPanel.id === sourcePanel.id) return
+
+  // 从源面板移除（但 panel-0 保留所有 tab 作为备份，仅从非 panel-0 面板移除）
+  if (sourcePanel.id !== 'panel-0') {
+    const idx = sourcePanel.tabIds.indexOf(tabId)
+    if (idx >= 0) sourcePanel.tabIds.splice(idx, 1)
+  }
+
+  // 添加到目标面板
+  if (!targetPanel.tabIds.includes(tabId)) {
+    targetPanel.tabIds.push(tabId)
+  }
+  targetPanel.activeTabId = tabId
+
+  // 更新源面板的 activeTabId：如果拖走的是当前选中的 tab，自动选中第一个
+  if (sourcePanel.activeTabId === tabId) {
+    // panel-0 保留所有 tabIds（作为备份），需要用 getPanel0Tabs 过滤
+    const sourceTabs = sourcePanel.id === 'panel-0'
+      ? getPanel0Tabs()
+      : sourcePanel.tabIds.map(id => connectionTabs.value.find(t => t.id.toString() === id)).filter(Boolean)
+    sourcePanel.activeTabId = sourceTabs.length > 0 ? sourceTabs[0]!.id.toString() : ''
+  }
+
+  // 如果源面板（非 panel-0）变空，移除该面板
+  if (sourcePanel.id !== 'panel-0' && sourcePanel.tabIds.length === 0) {
+    const idx = splitState.panels.indexOf(sourcePanel)
+    if (idx >= 0) splitState.panels.splice(idx, 1)
+  }
+
+  // 检查是否需要自动合并：panel-0 实际显示为空 或 只剩一个面板
+  checkAndMergeEmptyPanels()
+
+  // 同步 activeTabId
+  if (splitState.panels[0]?.activeTabId) {
+    activeTabId.value = splitState.panels[0].activeTabId
+  }
 }
 
 /**

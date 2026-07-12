@@ -11,6 +11,7 @@
       :has-any-connected="hasAnyConnected"
       :serial-remarks="serialRemarks"
       :get-connection-status="getConnectionStatus"
+      :panel-id="panelId"
       @switchTab="(id) => $emit('switchTab', id)"
       @hideTabMenu="$emit('hideTabMenu')"
       @tabsNavContextMenu="$emit('tabsNavContextMenu', $event)"

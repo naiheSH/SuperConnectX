@@ -242,7 +242,8 @@
     "unpin": "取消固定",
     "editRemark": "编辑备注",
     "tabPinned": "此选项卡已固定，请先取消固定",
-    "splitToNewPanel": "分屏显示"
+    "splitToNewPanel": "分屏显示",
+    "dragToSplit": "拖拽到此处分屏"
   },
 
 

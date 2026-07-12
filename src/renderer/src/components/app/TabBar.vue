@@ -103,6 +103,7 @@ const props = defineProps<{
   hasAnyConnected: boolean
   serialRemarks: Record<string, string>
   getConnectionStatus: (tab: any) => string
+  panelId: string
 }>()
 
 const emit = defineEmits<{
@@ -158,6 +159,11 @@ const onDragStart = (e: DragEvent, tab: any, index: number) => {
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', tab.id)
+    // 自定义 MIME 类型，用于跨组件识别 tab 拖拽（仅 drop 时可读）
+    e.dataTransfer.setData('application/x-scx-tab', tab.id)
+    e.dataTransfer.setData('application/x-scx-source-panel', props.panelId || 'panel-0')
+    // window 临时变量：dragover 中无法读取自定义 MIME 类型，通过此变量桥接
+    ;(window as any).__scxDragSourcePanelId = props.panelId || 'panel-0'
     // 设置拖拽图像为半透明
     const el = e.target as HTMLElement
     if (el) {

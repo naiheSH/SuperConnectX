@@ -242,7 +242,8 @@
     "unpin": "Unpin",
     "editRemark": "Edit Remark",
     "tabPinned": "This tab is pinned, please unpin first",
-    "splitToNewPanel": "Split to New Panel"
+    "splitToNewPanel": "Split to New Panel",
+    "dragToSplit": "Drop here to split"
   },
 
 
