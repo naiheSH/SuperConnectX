@@ -61,6 +61,11 @@
           :empty-text="t('commandEditor.emptyText')"
           @row-click="handleRowClick"
         >
+          <el-table-column :label="t('commandEditor.columnDrag')" width="60" align="center">
+            <template #default>
+              <el-icon class="drag-handle"><Rank /></el-icon>
+            </template>
+          </el-table-column>
           <el-table-column :label="t('commandEditor.columnAction')" width="80" align="center">
             <template #default="{ row }">
               <el-tooltip :content="t('commandEditor.deleteCommand')" placement="top" effect="dark" :enterable="false">
@@ -141,9 +146,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import Sortable from 'sortablejs'
 import eventBus from '../utils/EventBus'
 
 const { t } = useI18n()
@@ -178,6 +184,7 @@ const isEditingGroup = ref(false)
 const editingGroupId = ref<number | null>(null)
 const currentRow = ref<PresetCommand | null>(null)
 const groupNameInputRef = ref<HTMLInputElement | null>(null)
+const sortableInstance = ref<Sortable | null>(null)
 
 const openGroupDialog = () => {
   resetGroupForm()
@@ -290,6 +297,10 @@ const loadCommands = async () => {
     } catch {
       // ignore
     }
+
+    // 初始化拖拽排序（等待 DOM 更新）
+    await nextTick()
+    initSortable()
   } catch (error) {
     console.error('Failed to load commands:', error)
   }
@@ -306,6 +317,49 @@ const saveCurrentCommandId = () => {
 const handleRowClick = (row: PresetCommand) => {
   currentRow.value = row
   saveCurrentCommandId()
+}
+
+// SortableJS 拖拽排序
+const initSortable = () => {
+  const tableEl = document.querySelector('.command-table .el-table__body-wrapper tbody')
+  if (!tableEl) return
+
+  // 销毁旧实例
+  if (sortableInstance.value) {
+    sortableInstance.value.destroy()
+  }
+
+  sortableInstance.value = Sortable.create(tableEl as HTMLElement, {
+    handle: '.drag-handle',
+    animation: 200,
+    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    onEnd: async (evt) => {
+      const { oldIndex, newIndex } = evt
+      if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+
+      const list = [...commands.value]
+      const [movedItem] = list.splice(oldIndex, 1)
+      list.splice(newIndex, 0, movedItem)
+
+      // 重新分配 seqNum
+      const updates = list.map((cmd, i) => ({
+        id: cmd.id,
+        name: cmd.name,
+        command: cmd.command,
+        delay: cmd.delay,
+        seqNum: i + 1,
+        groupId: cmd.groupId
+      }))
+
+      for (const update of updates) {
+        await window.storageApi.updatePresetCommand(update)
+      }
+      commands.value = list
+      eventBus.emit('presetCommandsChanged', props.connectionType)
+    }
+  })
 }
 
 const updateCommand = async (row: PresetCommand) => {
@@ -480,6 +534,13 @@ const resetGroupForm = () => {
 
 onMounted(() => {
   loadGroups()
+})
+
+onBeforeUnmount(() => {
+  if (sortableInstance.value) {
+    sortableInstance.value.destroy()
+    sortableInstance.value = null
+  }
 })
 </script>
 
@@ -721,6 +782,43 @@ onMounted(() => {
 
 .command-table .el-table :deep(.stripe-row) {
   background: #252526 !important;
+}
+
+/* 拖拽手柄样式 */
+.drag-handle {
+  cursor: grab;
+  color: #888;
+  font-size: 16px;
+  transition: color 0.2s;
+  vertical-align: middle;
+}
+
+.drag-handle:hover {
+  color: #409eff;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: #409eff;
+}
+
+/* SortableJS 拖拽动画样式 */
+:deep(.sortable-ghost) {
+  opacity: 0.4;
+  background: #094771 !important;
+}
+
+:deep(.sortable-ghost td) {
+  background: #094771 !important;
+}
+
+:deep(.sortable-drag) {
+  opacity: 0.9;
+  background: #2d2d2d !important;
+}
+
+:deep(.sortable-drag td) {
+  background: #2d2d2d !important;
 }
 
 /* 隐藏表格空状态下的分隔线 */

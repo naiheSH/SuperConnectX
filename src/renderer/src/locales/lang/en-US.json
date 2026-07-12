@@ -439,6 +439,7 @@
     "insertCommand": "Insert Command",
     "emptyText": "No commands, click the button above to add",
     "columnAction": "Actions",
+    "columnDrag": "Sort",
     "columnSeqNum": "Order",
     "columnName": "Name",
     "columnDelay": "Delay (ms)",

@@ -439,6 +439,7 @@
     "insertCommand": "插入命令",
     "emptyText": "暂无命令，请点击上方按钮添加",
     "columnAction": "操作",
+    "columnDrag": "排序",
     "columnSeqNum": "序号",
     "columnName": "名称",
     "columnDelay": "延时(ms)",
