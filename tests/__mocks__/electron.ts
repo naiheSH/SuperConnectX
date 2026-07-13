@@ -23,6 +23,13 @@ export const app = {
   }
 }
 
+// safeStorage mock：测试环境中模拟为不可用，让 SafeStorageString 回退到 APP 加密模式
+export const safeStorage = {
+  isEncryptionAvailable: () => false,
+  encryptString: (_plaintext: string) => Buffer.from('mock-encrypted'),
+  decryptString: (_encrypted: Buffer) => 'mock-decrypted'
+}
+
 // 导出其他可能被引用的 electron 子模块（空对象，按需扩展）
 export const BrowserWindow = {}
 export const ipcMain = {
