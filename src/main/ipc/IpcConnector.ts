@@ -111,14 +111,16 @@ export default class IpcConnector {
     })
 
     // start-connect-by-id（从存储中解密密码）
-    ipcMain.handle('start-connect-by-id', async (_, { id, sessionId, extraFields }: { id: number; sessionId: number; extraFields?: any }) => {
+    ipcMain.handle('start-connect-by-id', async (_, { id, sessionId, extraFields }: { id: number; sessionId: string | number; extraFields?: any }) => {
       logger.info(`start connect by id: ${id}, sessionId: ${sessionId}`)
       const storedConn = this.connectionStorage.getByIdWithPassword(id)
       if (!storedConn) {
         logger.error(`connection not found for id: ${id}`)
         return { success: false, message: `连接不存在 (id: ${id})` }
       }
-      const conn = { ...(extraFields || {}), ...storedConn, sessionId }
+      // 统一 sessionId 为 number 类型（与 stop-connect 等其他 handler 保持一致）
+      const numericSessionId = typeof sessionId === 'string' ? parseInt(sessionId, 10) : sessionId
+      const conn = { ...(extraFields || {}), ...storedConn, sessionId: numericSessionId }
       if (storedConn.password) {
         conn.password = storedConn.password
       }
