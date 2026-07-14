@@ -176,7 +176,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
         filters: [{ name: '日志文件', extensions: ['log', 'txt'] }]
       })
       if (result.filePath) {
-        const copyResult = await window.connectApi.copyLogFile(conn.sessionId, result.filePath)
+        const copyResult = await window.connectApi.copyLogFile(String(conn.sessionId), result.filePath)
         if (copyResult.success) {
           ElMessage.success('日志保存成功')
           window.toolApi.showItemInFolder(result.filePath)
