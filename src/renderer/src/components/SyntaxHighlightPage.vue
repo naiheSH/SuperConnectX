@@ -62,19 +62,19 @@
                   </td>
                   <td class="col-style">
                     <div class="style-edit-cell">
-                      <el-tooltip :content="t('syntaxSettings.foreground')" placement="top" effect="dark">
+                      <el-tooltip :content="t('syntaxSettings.foreground')" placement="top" effect="dark" :enterable="false">
                         <span class="color-picker-wrap"><el-color-picker v-model="rule.foreground" size="small" :predefine="predefineColors" @change="onStyleChanged" /></span>
                       </el-tooltip>
-                      <el-tooltip :content="t('syntaxSettings.background')" placement="top" effect="dark">
+                      <el-tooltip :content="t('syntaxSettings.background')" placement="top" effect="dark" :enterable="false">
                         <span class="color-picker-wrap"><el-color-picker v-model="rule.background" size="small" class="bg-color-picker" :predefine="predefineColors" @change="onStyleChanged" /></span>
                       </el-tooltip>
-                      <el-tooltip :content="t('syntaxSettings.bold')" placement="top" effect="dark">
+                      <el-tooltip :content="t('syntaxSettings.bold')" placement="top" effect="dark" :enterable="false">
                         <span class="style-toggle" :class="{ active: rule.bold }" @click="rule.bold = !rule.bold; onStyleChanged()">B</span>
                       </el-tooltip>
-                      <el-tooltip :content="t('syntaxSettings.italic')" placement="top" effect="dark">
+                      <el-tooltip :content="t('syntaxSettings.italic')" placement="top" effect="dark" :enterable="false">
                         <span class="style-toggle" :class="{ active: rule.italic }" @click="rule.italic = !rule.italic; onStyleChanged()">I</span>
                       </el-tooltip>
-                      <el-tooltip :content="t('syntaxSettings.underline')" placement="top" effect="dark">
+                      <el-tooltip :content="t('syntaxSettings.underline')" placement="top" effect="dark" :enterable="false">
                         <span class="style-toggle" :class="{ active: rule.underline }" @click="rule.underline = !rule.underline; onStyleChanged()">U</span>
                       </el-tooltip>
                     </div>
@@ -144,6 +144,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as monaco from 'monaco-editor'
 import { Plus, Delete } from '@element-plus/icons-vue'
+import { getMonacoTheme } from '../utils/MonacoTheme'
 
 const { t } = useI18n()
 
@@ -178,9 +179,11 @@ const previewEditorContainer = ref<HTMLElement | null>(null)
 const previewFocused = ref(false)
 let previewEditor: monaco.editor.IStandaloneCodeEditor | null = null
 let previewModel: monaco.editor.ITextModel | null = null
+let themeObserver: MutationObserver | null = null
 let previewStyleEl: HTMLStyleElement | null = null
 let previewDecorationIds: string[] = []
 let previewApplyTimer: ReturnType<typeof setTimeout> | null = null
+let isSwitchingGroup = false
 const regexCache = new Map<string, RegExp | null>()
 const syntaxClassMap = new Map<string, string>()
 
@@ -434,12 +437,14 @@ const previewPending = ref(false)
 
 // 表达式/文本变化：标记待更新，需手动点击"立即预览"
 const onPatternChanged = () => {
+  if (isSwitchingGroup) return
   saveGroups()
   previewPending.value = true
 }
 
 // 颜色/字体样式变化：立即应用预览
 const onStyleChanged = () => {
+  if (isSwitchingGroup) return
   saveGroups()
   schedulePreviewApply()
 }
@@ -462,7 +467,7 @@ const initPreviewEditor = () => {
     lineNumbers: 'on',
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
-    theme: 'vs-dark',
+    theme: getMonacoTheme(),
     automaticLayout: true,
     hover: { enabled: false },
     occurrencesHighlight: 'off',
@@ -478,6 +483,8 @@ const initPreviewEditor = () => {
   previewModel.onDidChangeContent(() => {
     if (!activeGroup.value || !previewModel) return
     activeGroup.value.previewText = previewModel.getValue()
+    // 切换组期间不保存，避免未修改就触发 saveGroups
+    if (isSwitchingGroup) return
     saveGroups()
     // 预览文本变化时也标记待更新
     previewPending.value = true
@@ -539,8 +546,8 @@ const applyPreviewSyntax = () => {
       syntaxClassMap.set(styleKey, className)
     }
 
-    // 检测退化正则：模式以 '|' 结尾（右侧为空，会产生海量空匹配）
-    if (rule.matchType === 'regex' && /\|$/.test(rule.pattern.trim())) {
+    // 检测退化正则：以 | 开头/结尾、连续 ||，会导致空匹配死循环
+    if (rule.matchType === 'regex' && /(^\||\|$|\|\|)/.test(rule.pattern.trim())) {
       continue
     }
 
@@ -624,6 +631,7 @@ const setPreviewText = (text: string) => {
 // 当切换组时，更新预览文本并自动应用高亮
 watch(activeGroup, (newGroup) => {
   if (!previewModel) return
+  isSwitchingGroup = true
   if (newGroup) {
     setPreviewText(newGroup.previewText || '')
     // 切换组时自动应用高亮（规则未变，只是换了组）
@@ -633,6 +641,10 @@ watch(activeGroup, (newGroup) => {
     setPreviewText('')
     previewPending.value = false
   }
+  // 下一个 tick 后重置标记
+  nextTick(() => {
+    isSwitchingGroup = false
+  })
 })
 
 onMounted(async () => {
@@ -649,6 +661,14 @@ onMounted(async () => {
   document.addEventListener('contextmenu', () => {
     contextMenuVisible.value = false
   })
+
+  // 监听主题切换，动态更新 Monaco Editor 主题
+  themeObserver = new MutationObserver(() => {
+    if (previewEditor) {
+      monaco.editor.setTheme(getMonacoTheme())
+    }
+  })
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
 })
 
 onUnmounted(() => {
@@ -672,9 +692,10 @@ onUnmounted(() => {
   regexCache.clear()
   syntaxClassMap.clear()
   document.removeEventListener('click', closeContextMenuOnClickOutside)
-  document.removeEventListener('contextmenu', () => {
-    contextMenuVisible.value = false
-  })
+  if (themeObserver) {
+    themeObserver.disconnect()
+    themeObserver = null
+  }
 })
 </script>
 
@@ -683,7 +704,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #1e1e1e;
+  background: var(--syntax-page-bg);
 }
 
 .syntax-page-body {
@@ -695,8 +716,8 @@ onUnmounted(() => {
 /* 左侧面板 */
 .syntax-left-panel {
   width: 200px;
-  background: #252526;
-  border-right: 1px solid #3c3c3c;
+  background: var(--syntax-left-panel-bg);
+  border-right: 1px solid var(--syntax-left-panel-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -707,11 +728,11 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  border-bottom: 1px solid #3c3c3c;
+  border-bottom: 1px solid var(--syntax-left-panel-border);
 }
 
 .left-panel-title {
-  color: #e0e0e0;
+  color: var(--syntax-left-panel-title);
   font-size: 13px;
   font-weight: 600;
 }
@@ -732,15 +753,15 @@ onUnmounted(() => {
 }
 
 .group-list-item:hover {
-  background: #2a2d2e;
+  background: var(--syntax-group-item-hover);
 }
 
 .group-list-item.active {
-  background: #094771;
+  background: var(--syntax-group-item-active);
 }
 
 .group-list-name {
-  color: #e0e0e0;
+  color: var(--syntax-group-name);
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -748,9 +769,9 @@ onUnmounted(() => {
 }
 
 .group-list-count {
-  color: #888;
+  color: var(--syntax-group-count);
   font-size: 11px;
-  background: #3c3c3c;
+  background: var(--syntax-group-count-bg);
   padding: 1px 6px;
   border-radius: 10px;
   min-width: 18px;
@@ -758,8 +779,8 @@ onUnmounted(() => {
 }
 
 .group-list-item.active .group-list-count {
-  background: rgba(255,255,255,0.2);
-  color: #fff;
+  background: var(--syntax-group-count-active-bg);
+  color: var(--syntax-group-count-active-color);
 }
 
 /* 右侧面板 */
@@ -775,13 +796,13 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  border-bottom: 1px solid #3c3c3c;
-  background: #252526;
+  border-bottom: 1px solid var(--syntax-right-header-border);
+  background: var(--syntax-right-header-bg);
   flex-shrink: 0;
 }
 
 .right-panel-title {
-  color: #e0e0e0;
+  color: var(--syntax-right-title);
   font-size: 14px;
   font-weight: 600;
 }
@@ -811,23 +832,23 @@ onUnmounted(() => {
 }
 
 .rules-table th {
-  background: #2a2a2a;
-  color: #aaa;
+  background: var(--syntax-table-header-bg);
+  color: var(--syntax-table-header-color);
   font-size: 12px;
   font-weight: 600;
   padding: 8px 10px;
   text-align: left;
-  border-bottom: 1px solid #3c3c3c;
+  border-bottom: 1px solid var(--syntax-table-header-border);
 }
 
 .rules-table td {
   padding: 10px 10px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--syntax-table-row-border);
   vertical-align: middle;
 }
 
 .rules-table tbody tr:hover {
-  background: #2a2a2a;
+  background: var(--syntax-table-row-hover);
 }
 
 .col-del {
@@ -837,8 +858,8 @@ onUnmounted(() => {
 
 .col-del :deep(.el-button--danger.is-text:hover),
 .col-del :deep(.el-button--danger.is-text:focus) {
-  background-color: #f56c6c;
-  color: #fff;
+  background-color: var(--syntax-rule-delete-bg);
+  color: var(--syntax-rule-delete-color);
 }
 
 .col-type {
@@ -872,8 +893,8 @@ onUnmounted(() => {
   height: 22px;
   font-size: 11px;
   font-weight: 700;
-  color: #666;
-  background: #333;
+  color: var(--syntax-style-toggle-color);
+  background: var(--syntax-style-toggle-bg);
   border-radius: 3px;
   cursor: pointer;
   user-select: none;
@@ -881,17 +902,17 @@ onUnmounted(() => {
 }
 
 .style-toggle:hover {
-  background: #444;
-  color: #aaa;
+  background: var(--syntax-style-toggle-hover-bg);
+  color: var(--syntax-style-toggle-hover-color);
 }
 
 .style-toggle.active {
-  background: #2E5CC7;
-  color: #fff;
+  background: var(--syntax-style-toggle-active-bg);
+  color: var(--syntax-style-toggle-active-color);
 }
 
 .empty-hint {
-  color: #808080;
+  color: var(--syntax-empty-hint);
   font-size: 13px;
   padding: 24px;
   text-align: center;
@@ -904,16 +925,16 @@ onUnmounted(() => {
   flex-shrink: 0;
   height: 200px;
   margin: 16px 16px 16px 16px;
-  border: 1px solid #3c3c3c;
+  border: 1px solid var(--syntax-left-panel-border);
   border-radius: 6px;
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
-  background: #1e1e1e;
+  background: var(--syntax-preview-bg);
 }
 
 .preview-section.preview-focused {
-  border-color: #2E5CC7;
-  box-shadow: 0 0 0 1px #2E5CC7;
+  border-color: var(--syntax-preview-focus-border);
+  box-shadow: 0 0 0 1px var(--syntax-preview-focus-border);
 }
 
 .preview-header {
@@ -921,13 +942,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
-  background: #252526;
-  border-bottom: 1px solid #3c3c3c;
+  background: var(--syntax-preview-header);
+  border-bottom: 1px solid var(--syntax-left-panel-border);
   flex-shrink: 0;
 }
 
 .preview-title {
-  color: #aaa;
+  color: var(--syntax-table-header-color);
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -942,15 +963,15 @@ onUnmounted(() => {
 }
 
 .apply-preview-btn.has-changes {
-  border-color: #f0a020 !important;
-  color: #f0a020 !important;
+  border-color: var(--syntax-preview-apply-border) !important;
+  color: var(--syntax-preview-apply-color) !important;
   background-color: transparent !important;
 }
 
 .apply-preview-btn.has-changes:hover {
-  background: rgba(240, 160, 32, 0.15) !important;
-  border-color: #f0a020 !important;
-  color: #f0a020 !important;
+  background: var(--syntax-preview-apply-hover-bg) !important;
+  border-color: var(--syntax-preview-apply-border) !important;
+  color: var(--syntax-preview-apply-color) !important;
 }
 
 .preview-editor {
@@ -972,13 +993,13 @@ onUnmounted(() => {
 
 .syntax-left-panel .left-panel-list::-webkit-scrollbar-thumb,
 .rules-table-wrapper::-webkit-scrollbar-thumb {
-  background: #424242;
+  background: var(--scrollbar-thumb-light);
   border-radius: 3px;
 }
 
 .syntax-left-panel .left-panel-list::-webkit-scrollbar-thumb:hover,
 .rules-table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--scrollbar-thumb);
 }
 
 /* 匹配类型下拉框：默认边框透明，悬浮/焦点时有边框 */
@@ -1037,7 +1058,7 @@ onUnmounted(() => {
 
 /* 背景颜色选择器默认显示边框（避免与背景色融为一体） */
 :deep(.bg-color-picker .el-color-picker__trigger) {
-  border: 1px solid #555 !important;
+  border: 1px solid var(--scrollbar-thumb) !important;
 }
 
 :deep(.bg-color-picker .el-color-picker__trigger:hover),

@@ -12,7 +12,7 @@
       @on-reconnect="handleReconnect"
       @on-open-log-folder="openLogFolder"
       @on-open-log-file="openLogFile"
-      @on-save-log="saveLogFile"
+      @on-save-log="saveLogFileAs"
       @on-send="handleSend"
       @on-command-sent="handleCommandSent"
       @on-file-upload="handleFileUpload"
@@ -38,12 +38,12 @@ const RETRY_INTERVAL_MS = 3000
 const emit = defineEmits(['onClose', 'commandSent', 'openCommandEditor', 'fontLoaded', 'openSyntaxHighlight'])
 const props = defineProps<{
   connection: {
-    id: number
+    id: string | number
     connectionType: string
-    host: string
-    port: number
+    host?: string
+    port?: number
     name?: string
-    sessionId: string
+    sessionId: string | number
     ftpMode?: string
   }
   onClose?: () => void
@@ -119,7 +119,7 @@ const terminal = useTerminal({
   saveFontSettings
 })
 
-const { openLogFolder, openLogFile, saveLogFile, cleanup: terminalCleanup } = terminal
+const { openLogFolder, openLogFile, saveLogFileAs, cleanup: terminalCleanup } = terminal
 
 const formatReceivedData = (content: string, timestamp?: string): string => {
   if (!terminal.showTimestamp.value || !timestamp) {
@@ -196,7 +196,7 @@ const handleTelnetClose = (_connId: number) => {
     unifiedTerminalRef.value?.appendToTerminal(`\nFTP 服务已停止\n`)
     return
   }
-  ElMessage.info('连接已关闭，将尝试重新连接...')
+  ElMessage.info(t('terminal.reconnecting'))
   unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭，将在${RETRY_INTERVAL_MS / 1000}秒后尝试重连...\n`)
   if (!stopRetry.value) {
     setTimeout(connect, 1000)
@@ -229,7 +229,7 @@ const connect = async () => {
       const connId = (props.connection as any).connectionId || props.connection.id
       const result = await window.connectApi.startConnectById(
         connId,
-        props.connection.sessionId,
+        String(props.connection.sessionId),
         // 传递运行时字段（不包含密码，密码由后端从存储中解密）
         JSON.parse(JSON.stringify({
           ...fromRawConnection(props.connection),
@@ -351,9 +351,9 @@ const handleFileUpload = (filePath: string, fileName: string) => {
       })
 
       if (result.success) {
-        ElMessage.success(`文件上传成功: ${fileName}`)
+        ElMessage.success(t('terminal.fileUploadSuccess', { name: fileName }))
       } else {
-        ElMessage.error(`上传失败: ${result.message}`)
+        ElMessage.error(t('terminal.uploadFailed', { message: result.message }))
       }
     } catch (error) {
       ElMessage.error(t('terminal.fileUploadFailed'))
@@ -425,8 +425,8 @@ onMounted(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  background: #1e1e1e;
-  color: #fff;
+  background: var(--bg-primary);
+  color: var(--text-white);
   font-family: 'Fira Code', 'Consolas', monospace;
   border-radius: 0px;
   overflow: hidden;

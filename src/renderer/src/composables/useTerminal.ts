@@ -1,10 +1,11 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 export interface TerminalConnection {
-  id: number
+  id: string | number
   connectionType: string
-  sessionId: string
+  sessionId: string | number
   comName?: string
   host?: string
   port?: number
@@ -42,7 +43,8 @@ export interface UseTerminalReturn {
   // 方法
   openLogFolder: () => Promise<void>
   openLogFile: () => Promise<void>
-  saveLogFile: () => Promise<void>
+  saveLogFileAs: () => Promise<void>
+  rotateLogFile: () => Promise<void>
   handleClose: () => Promise<void>
   handleSend: (command: string, originalInput?: string) => Promise<void>
   reconnect: () => void
@@ -68,6 +70,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     connectionType
   } = options
 
+  const { t } = useI18n()
   const conn = options.connection
 
   // 状态
@@ -135,29 +138,29 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
   // 打开日志所在文件夹
   const openLogFolder = async () => {
     try {
-      const result = await window.connectApi.openConnectLog(conn.sessionId, 'folder')
+      const result = await window.connectApi.openConnectLog(String(conn.sessionId), 'folder')
       if (!result.success) {
-        ElMessage.error(`打开日志文件夹失败：${result.message}`)
+        ElMessage.error(t('terminal.openLogFolderFailed', { message: result.message }))
       }
     } catch (error) {
-      ElMessage.error('打开日志文件夹失败：' + (error instanceof Error ? error.message : '未知错误'))
+      ElMessage.error(t('terminal.openLogFolderFailedWithError', { error: error instanceof Error ? error.message : t('terminal.unknownError') }))
     }
   }
 
   // 用系统默认应用打开日志文件
   const openLogFile = async () => {
     try {
-      const result = await window.connectApi.openConnectLog(conn.sessionId, 'file')
+      const result = await window.connectApi.openConnectLog(String(conn.sessionId), 'file')
       if (!result.success) {
-        ElMessage.error(`打开日志文件失败：${result.message}`)
+        ElMessage.error(t('terminal.openLogFileFailed', { message: result.message }))
       }
     } catch (error) {
-      ElMessage.error('打开日志文件失败：' + (error instanceof Error ? error.message : '未知错误'))
+      ElMessage.error(t('terminal.openLogFileFailedWithError', { error: error instanceof Error ? error.message : t('terminal.unknownError') }))
     }
   }
 
-  // 保存日志文件
-  const saveLogFile = async () => {
+  // 保存日志到用户选择的位置
+  const saveLogFileAs = async () => {
     try {
       const namePart = connectionType === 'telnet' ? `${conn.host}_${conn.port}` : conn.comName
       const safeNamePart = String(namePart || 'unknown').replace(/[\\/*?:"<>|]/g, '-')
@@ -183,6 +186,20 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
       }
     } catch (error) {
       ElMessage.error('保存失败：' + (error instanceof Error ? error.message : '未知错误'))
+    }
+  }
+
+  // 日志归档：将当前日志重命名为新文件，并开始写入新文件
+  const rotateLogFile = async () => {
+    try {
+      const result = await window.connectApi.rotateLogFile(String(conn.sessionId))
+      if (result.success) {
+        ElMessage.success(t('terminal.logRotateSuccess', { oldName: result.oldFileName, newName: result.newFileName }))
+      } else {
+        ElMessage.error(t('terminal.saveFailed', { message: result.message || t('terminal.unknownError') }))
+      }
+    } catch (error) {
+      ElMessage.error(t('terminal.saveFailedWithError', { error: error instanceof Error ? error.message : t('terminal.unknownError') }))
     }
   }
 
@@ -227,7 +244,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
           command: command.trim()
         })
       } catch (error) {
-        ElMessage.error('命令发送失败')
+        ElMessage.error(t('terminal.commandSendFailed'))
         console.error('Failed to send:', error)
       }
     }
@@ -292,7 +309,8 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     totalTxSize,
     openLogFolder,
     openLogFile,
-    saveLogFile,
+    saveLogFileAs,
+    rotateLogFile,
     handleClose,
     handleSend,
     reconnect,

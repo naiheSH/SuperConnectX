@@ -45,7 +45,11 @@ export default class IpcMain {
         title: 'SuperConnectX',
         autoHideMenuBar: false, // 显示菜单栏（方便操作）
         backgroundColor: '#1e1e1e', // 防止最小化时白色闪烁（Windows 11）
-        ...(process.platform === 'linux' ? { icon: join(__dirname, '../../build/icon.png') } : {}),
+        ...(process.platform === 'win32'
+          ? { icon: join(__dirname, '../../build/icon.ico') }
+          : process.platform === 'linux'
+            ? { icon: join(__dirname, '../../build/icon.png') }
+            : {}),
         // 禁用后台节流，防止切回前台时卡顿
         webPreferences: {
           preload: join(__dirname, '../preload/index.js'),
@@ -223,6 +227,22 @@ export default class IpcMain {
 
     ipcMain.handle('get-cached-update-info', () => {
       return AppUpdater.getInstance().cachedUpdateInfo
+    })
+
+    // 托盘菜单操作 IPC
+    ipcMain.on('tray-menu-action', (_event, action: string) => {
+      if (action === 'show-window') {
+        if (windows.mainWindow) {
+          if (windows.mainWindow.isMinimized()) {
+            windows.mainWindow.restore()
+          }
+          windows.mainWindow.show()
+          windows.mainWindow.focus()
+        }
+      } else if (action === 'quit-app') {
+        (app as any).isQuitting = true
+        app.quit()
+      }
     })
 
     logger.info(`init IpcMain done`)

@@ -50,6 +50,8 @@ declare global {
       exportCommands: (filePath: string) => Promise<any>
       importCommands: (filePath: string) => Promise<any>
       importFromSuperCom: (filePath: string) => Promise<any>
+      exportData: (filePath: string, selections: string[]) => Promise<{ success: boolean; message?: string }>
+      importData: (filePath: string) => Promise<{ success: boolean; message?: string; settingsImported?: boolean; groupsImported?: number; groupsSkipped?: number; commandsImported?: number; commandsSkipped?: number; comPortsImported?: boolean; connectionsImported?: number; connectionsSkipped?: number }>
 
       getComSettings: (comName: string) => Promise<any>
       saveComSettings: (comName: string, settings: any) => Promise<boolean>
@@ -87,6 +89,7 @@ declare global {
       openConnectLog: (sessionId: string, mode?: 'folder' | 'file') => Promise<{ success: boolean; message?: string; filePath?: string }>
       getLogFilePath: (sessionId: string) => Promise<{ success: boolean; filePath?: string; message?: string }>
       copyLogFile: (sessionId: string, destPath: string) => Promise<{ success: boolean; message?: string }>
+      rotateLogFile: (sessionId: string) => Promise<{ success: boolean; message?: string; oldFileName?: string; newFileName?: string }>
       listSerialPorts: () => Promise<SerialPortInfo[]>
       writeToLog: (sessionId: string, content: string) => Promise<any>
     }
@@ -103,6 +106,7 @@ declare global {
       getAppResource: () => Promise<any>
       openExternalUrl: (url: string) => Promise<any>
       openAppDir: () => Promise<any>
+      openUserDataDir: () => Promise<any>
       writeFile: (options: { path: string; content: string }) => Promise<{ success: boolean }>
       readFile: (options: { path: string }) => Promise<{ success: boolean; content?: string; message?: string }>
       showItemInFolder: (filePath: string) => Promise<void>

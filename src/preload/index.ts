@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('storageApi', {
   exportCommands: (filePath: string) => ipcRenderer.invoke('export-commands', filePath),
   importCommands: (filePath: string) => ipcRenderer.invoke('import-commands', filePath),
   importFromSuperCom: (filePath: string) => ipcRenderer.invoke('import-from-supercom', filePath),
+  exportData: (filePath: string, selections: string[]) => ipcRenderer.invoke('export-data', filePath, selections),
+  importData: (filePath: string) => ipcRenderer.invoke('import-data', filePath),
 
   /* COM 串口设置 */
   getComSettings: (comName: string) => ipcRenderer.invoke('get-com-settings', comName),
@@ -89,6 +91,7 @@ contextBridge.exposeInMainWorld('connectApi', {
   openConnectLog: (sessionId: string, mode: 'folder' | 'file' = 'folder') => ipcRenderer.invoke('open-connect-log', sessionId, mode),
   getLogFilePath: (sessionId: string) => ipcRenderer.invoke('get-log-file-path', sessionId),
   copyLogFile: (sessionId: string, destPath: string) => ipcRenderer.invoke('copy-log-file', { sessionId, destPath }),
+  rotateLogFile: (sessionId: string) => ipcRenderer.invoke('rotate-log-file', sessionId),
   listSerialPorts: () => ipcRenderer.invoke('list-serial-ports'),
   writeToLog: (sessionId: string, content: string) => ipcRenderer.invoke('write-to-log', { sessionId, content })
 })
@@ -113,6 +116,7 @@ contextBridge.exposeInMainWorld('toolApi', {
   getAppResource: () => ipcRenderer.invoke('get-app-resource'),
   openExternalUrl: (url: string) => ipcRenderer.invoke('open-external-url', url),
   openAppDir: () => ipcRenderer.invoke('open-app-dir'),
+  openUserDataDir: () => ipcRenderer.invoke('open-user-data-dir'),
   writeFile: ({ path: filePath, content }: { path: string; content: string }) =>
     ipcRenderer.invoke('write-file', { path: filePath, content }),
   readFile: ({ path: filePath }: { path: string }) =>

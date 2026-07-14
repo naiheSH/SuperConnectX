@@ -5,6 +5,8 @@
 3. **手动构建自动生成 Release** - 手动运行 workflow 时会创建 `manual-*` 预发布版本，并上传可直接下载的 Release 资产。
 4. **Linux 安装包支持** - Linux 构建支持 `.AppImage`、`.deb`、`.snap`。
 5. **AI 上下文文档** - 新增 `AI_CONTEXT.md`，记录项目背景、构建方式、常见问题和本次修改内容。
+6. **系统密钥链加密** - 密码加密方案升级为 Electron safeStorage，Windows/macOS 使用操作系统原生密钥链加密存储，Linux 回退到 AES-256-GCM 加密，安全性大幅提升
+7. **日志归档功能** - 新增日志手动归档功能（rotateLogFile），可将当前日志归档保留旧文件，同时创建新日志文件继续写入，方便日志管理和回溯
 
 ### 日志优化
 
@@ -22,6 +24,16 @@
 3. **修复 npm cache workflow 问题** - 移除 `setup-node` 的 npm cache 配置，避免无 lockfile 时 CI 失败。
 4. **升级 CI Node 版本** - workflow 使用 Node 24，避免 GitHub Actions Node 20 deprecated warning。
 5. **修复 Ubuntu 托盘图标资源** - 将 `icon.png` 加入打包资源，避免 Ubuntu 状态栏托盘图标显示异常。
+6. **串口显示优化** - 串口侧边栏端口名称固定宽度并省略截断，备注信息独立行显示并支持 tooltip 悬停查看，标签栏备注同样增加省略号和 tooltip 支持
+7. **类型统一** - 统一 sessionId 为 string 类型，消除 number/string 混用导致的类型不一致问题
+
+### 优化修复
+
+1. **Telnet 连接修复** - Telnet 连接不再强制要求输入用户名，简化连接流程；修复 Telnet 点击断开后实际未断开的问题，确保断开操作可靠生效
+2. **正则表达式卡死修复** - 修复正则表达式输入 `|` 字符导致应用卡死的问题，增加退化正则检测（以 `|` 开头/结尾、连续 `||`）和空匹配保护，防止死循环
+3. **编译修复** - 修复 TypeScript type check 编译报错
+4. **串口过滤优化** - Linux 系统过滤掉系统虚拟串口，只显示真实设备
+5. **asarUnpack 配置** - serialport 原生模块解压到 asar 外部，解决打包后串口无法打开的问题
 
 ### 提交记录
 

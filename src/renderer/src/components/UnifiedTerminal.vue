@@ -76,7 +76,6 @@
             inline-prompt
             size="small"
             class="terminal-switch-inline"
-            :disabled="!isConnected"
           />
           <el-switch
             width="50"
@@ -86,18 +85,15 @@
             inline-prompt
             size="small"
             class="terminal-switch-inline"
-            :disabled="!isConnected"
           />
         </div>
         <div class="input-wrapper" @click="commandInput?.focus()">
           <textarea
             v-model="currentCommand"
             @keydown="handleInputKeydown"
-            :placeholder="isConnected ? (hexMode ? t('terminal.hexPlaceholder') : (placeholder || t('terminal.inputPrompt'))) : t('terminal.disconnectedPlaceholder')"
+            :placeholder="hexMode ? t('terminal.hexPlaceholder') : (placeholder || t('terminal.inputPrompt'))"
             ref="commandInput"
             class="command-input"
-            :class="{ 'not-connected': !isConnected }"
-            :disabled="!isConnected"
             @input="onInputChange"
             @focus="onInputFocus"
             @blur="onInputBlur"
@@ -114,7 +110,7 @@
               @mouseenter="historySelectedIndex = index"
             >
               <span class="history-item-text">{{ item }}</span>
-              <el-tooltip :content="t('historySettings.deleteCommand')" placement="top" effect="dark">
+              <el-tooltip :content="t('historySettings.deleteCommand')" placement="top" effect="dark" :enterable="false">
                 <span class="history-item-delete" @mousedown.prevent.stop="deleteHistoryItem(item)">×</span>
               </el-tooltip>
             </div>
@@ -126,7 +122,6 @@
           size="small"
           class="btn-primary upload-btn"
           @click="handleFtpFileUpload"
-          :disabled="!isConnected"
         >
           {{ t('terminal.upload') }}
         </el-button>
@@ -135,7 +130,6 @@
           size="small"
           class="btn-primary send-btn"
           @click="handleSendCommand"
-          :disabled="!isConnected"
         >
           {{ t('terminal.send') }}
         </el-button>
@@ -194,18 +188,19 @@ import PresetCommands from './PresetCommands.vue'
 import TerminalControl from './TerminalControl.vue'
 import { parseAnsiToSegments } from '../utils/AnsiParser'
 import { AnsiDecorationManager } from '../utils/AnsiDecorationManager'
+import { getMonacoTheme } from '../utils/MonacoTheme'
 
 const maxClearSizeMB = ref(30)
 
 const props = withDefaults(defineProps<{
   connection: {
-    id: number
+    id: string | number
     connectionType: string
     comName?: string
     host?: string
     port?: number
     name?: string
-    sessionId: string
+    sessionId: string | number
     [key: string]: any
   }
   isConnected?: boolean
@@ -431,6 +426,7 @@ let historyFilterInput = '' // 导航时的过滤基准，避免选中改变输�
 let showCommandHistory = true // 是否显示历史命令弹窗
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 let editorModel: monaco.editor.ITextModel | null = null
+let themeObserver: MutationObserver | null = null
 let syntaxDecorationIds: string[] = []
 let enableSyntaxHighlight = true
 let syntaxRuleGroups: SyntaxRuleGroup[] = []
@@ -496,7 +492,7 @@ const initEditor = async () => {
     lineNumbers: 'on',
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
-    theme: 'vs-dark',
+    theme: getMonacoTheme(),
     automaticLayout: true,
     hover: { enabled: false },
     occurrencesHighlight: 'off',
@@ -641,7 +637,7 @@ const appendToTerminal = (content: string) => {
 const buildRegexFromRule = (rule: SyntaxSubRule): RegExp | null => {
   const cacheKey = `${rule.matchType}|${rule.pattern}|${rule.caseSensitive}`
   const cached = regexCache.get(cacheKey)
-  if (cached) return cached
+  if (cached !== undefined) return cached
 
   try {
     let regex: RegExp | null = null
@@ -651,8 +647,13 @@ const buildRegexFromRule = (rule: SyntaxSubRule): RegExp | null => {
       const escaped = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
       regex = new RegExp(escaped.join('|'), rule.caseSensitive ? 'g' : 'gi')
     } else {
-      // 空 pattern 会创建空正则导致死循环
       if (!rule.pattern) return null
+      // 检测退化正则：以 | 开头/结尾、连续 ||，会导致空匹配死循环
+      const trimmed = rule.pattern.trim()
+      if (/^\||\|$/.test(trimmed) || /\|\|/.test(trimmed)) {
+        regexCache.set(cacheKey, null)
+        return null
+      }
       regex = new RegExp(rule.pattern, rule.caseSensitive ? 'g' : 'gi')
     }
     if (regex) {
@@ -667,7 +668,7 @@ const buildRegexFromRule = (rule: SyntaxSubRule): RegExp | null => {
 let syntaxClassCounter = 0
 const syntaxClassMap = new Map<string, string>()
 // 正则缓存，避免每次重建 RegExp 对象
-const regexCache = new Map<string, RegExp>()
+const regexCache = new Map<string, RegExp | null>()
 // 每个实例的唯一标识，避免多选项卡之间的样式冲突
 const syntaxInstanceId = `syntax-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -763,7 +764,12 @@ const applySyntaxWithClasses = () => {
       let match: RegExpExecArray | null
       while ((match = regex.exec(newText)) !== null) {
         const matchStr = match[0]
-        if (!matchStr) continue
+        // 空匹配保护：退化正则的每个位置都可能产生空匹配，跳过并前进
+        if (!matchStr) {
+          regex.lastIndex++
+          if (regex.lastIndex > newText.length) break
+          continue
+        }
         const globalIndex = newTextOffset + match.index
         const startPos = editorModel.getPositionAt(globalIndex)
         const endPos = editorModel.getPositionAt(globalIndex + matchStr.length)
@@ -1252,6 +1258,14 @@ onMounted(async () => {
   window.addEventListener('syntax-rules-updated', handleSyntaxRulesUpdated)
   // 点击外部关闭CRC菜单
   document.addEventListener('click', handleClickOutsideCrc)
+
+  // 监听主题切换，动态更新 Monaco Editor 主题
+  themeObserver = new MutationObserver(() => {
+    if (editor) {
+      monaco.editor.setTheme(getMonacoTheme())
+    }
+  })
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
 })
 
 // 垂直分隔条拖拽逻辑
@@ -1303,6 +1317,10 @@ onUnmounted(() => {
   window.removeEventListener('settings-updated', handleSettingsUpdated)
   window.removeEventListener('syntax-rules-updated', handleSyntaxRulesUpdated)
   document.removeEventListener('click', handleClickOutsideCrc)
+  if (themeObserver) {
+    themeObserver.disconnect()
+    themeObserver = null
+  }
 
   // Clean up syntax highlight styles (only for this instance)
   const oldStyles = document.querySelectorAll(`style[data-syntax-instance="${syntaxInstanceId}"]`)
@@ -1400,8 +1418,8 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  background: #1e1e1e;
-  color: #fff;
+  background: var(--terminal-bg);
+  color: var(--text-white);
   font-family: 'Fira Code', 'Consolas', monospace;
   overflow: hidden;
 }
@@ -1413,7 +1431,7 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   padding: 15px;
   white-space: pre-wrap;
   line-height: 1.5;
-  background-color: #1e1e1e;
+  background-color: var(--terminal-output-bg);
   position: relative;
   border: 1px solid transparent;
   transition: border-color 0.2s;
@@ -1433,11 +1451,11 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .rx-tx-overlay .rx {
-  color: #4ade80;
+  color: var(--terminal-rx);
 }
 
 .rx-tx-overlay .tx {
-  color: #60a5fa;
+  color: var(--terminal-tx);
 }
 
 .bottom-controls {
@@ -1449,7 +1467,7 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 
 .vertical-splitter {
   height: 6px;
-  background-color: #2a2a2a;
+  background-color: var(--vertical-splitter-bg);
   cursor: ns-resize;
   display: flex;
   align-items: center;
@@ -1459,29 +1477,29 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .vertical-splitter:hover {
-  background-color: #409eff;
+  background-color: var(--vertical-splitter-hover);
 }
 
 .splitter-handle {
   width: 30px;
   height: 3px;
   border-radius: 2px;
-  background-color: #555;
+  background-color: var(--vertical-splitter-handle);
   transition: background-color 0.2s;
 }
 
 .vertical-splitter:hover .splitter-handle {
-  background-color: #fff;
+  background-color: var(--vertical-splitter-handle-hover);
 }
 
 .terminal-output:focus-within {
-  border-color: var(--focus-border-color);
+  border-color: var(--terminal-output-focus-border);
 }
 
 .preset-commands-row {
   padding: 2px;
-  background-color: #252526;
-  border-bottom: 1px solid #333;
+  background-color: var(--preset-commands-row-bg);
+  border-bottom: 1px solid var(--preset-commands-row-border);
   border-radius: 6px;
   margin: 2px 4px;
 }
@@ -1509,7 +1527,7 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .prompt {
-  color: #cccccc;
+  color: var(--terminal-prompt);
   font-weight: bold;
   white-space: nowrap;
   margin-left: 10px;
@@ -1520,10 +1538,10 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 .command-input {
   width: 100%;
   height: 100%;
-  background: #2a2a2a;
+  background: var(--command-input-bg);
   border: 1px solid transparent;
   border-radius: 4px;
-  color: #fff;
+  color: var(--text-white);
   outline: none;
   font-family: monospace;
   font-size: 14px;
@@ -1534,18 +1552,14 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .command-input:focus {
-  border-color: #409eff;
+  border-color: var(--command-input-focus-border);
 }
 
 .command-input::placeholder {
-  color: #666;
+  color: var(--command-input-placeholder);
 }
 
-.command-input:disabled,
-.command-input.not-connected {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
+
 
 .input-controls {
   display: flex;
@@ -1571,20 +1585,20 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 
 .terminal-switch :deep(.el-switch__core) {
   height: 20px;
-  background-color: #131315 !important;
+  background-color: var(--switch-off-bg) !important;
   border-color: transparent !important;
 }
 
 .terminal-switch :deep(.el-switch__core:hover) {
-  background-color: #2A2A2C !important;
+  background-color: var(--switch-off-hover) !important;
 }
 
 .terminal-switch :deep(.el-switch.is-checked .el-switch__core) {
-  background-color: #2E5CC7 !important;
+  background-color: var(--switch-on-bg) !important;
 }
 
 .terminal-switch :deep(.el-switch.is-checked .el-switch__core:hover) {
-  background-color: #2E5CC7 !important;
+  background-color: var(--switch-on-bg) !important;
 }
 
 .input-controls :deep(.el-switch__label) {
@@ -1608,10 +1622,7 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 
 
 
-.send-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+
 
 .scroll-wrapper {
   position: absolute;
@@ -1632,16 +1643,16 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background-color: rgba(50, 50, 51, 0.8) !important;
-  border-color: #555 !important;
-  color: #fff !important;
+  background-color: var(--scroll-btn-bg) !important;
+  border-color: var(--scroll-btn-border) !important;
+  color: var(--scroll-btn-color) !important;
   margin: 0 !important;
   padding: 0 !important;
   transition: all 0.2s ease;
 }
 
 .scroll-btn:hover {
-  background-color: rgba(70, 70, 72, 0.9) !important;
+  background-color: var(--scroll-btn-hover-bg) !important;
   transform: scale(1.05);
 }
 
@@ -1665,11 +1676,11 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .terminal-output.show-scrollbar::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--terminal-output-scrollbar-thumb);
 }
 
 .terminal-output.show-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--terminal-output-scrollbar-hover);
 }
 
 /* 隐藏所有 Monaco Editor 滚动条 */
@@ -1707,26 +1718,26 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   bottom: 100%;
   left: 0;
   right: 0;
-  background: #2d2d2d;
-  border: 1px solid #3c3c3c;
+  background: var(--history-bg);
+  border: 1px solid var(--history-border);
   border-radius: 4px;
   max-height: 240px;
   overflow-y: auto;
   z-index: 100;
   margin-bottom: 2px;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--history-shadow);
 }
 
 .history-item {
   padding: 6px 10px;
   cursor: pointer;
-  color: #ccc;
+  color: var(--history-item-color);
   font-size: 12px;
   font-family: 'Fira Code', 'Consolas', monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--history-item-border);
   display: flex;
   align-items: center;
 }
@@ -1736,13 +1747,13 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .history-item:hover {
-  background: #094771;
-  color: #fff;
+  background: var(--history-item-hover-bg);
+  color: var(--history-item-hover-color);
 }
 
 .history-item-active {
-  background: #094771;
-  color: #fff;
+  background: var(--history-item-hover-bg);
+  color: var(--history-item-hover-color);
 }
 
 .history-item-text {
@@ -1761,7 +1772,7 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   margin-left: 6px;
   flex-shrink: 0;
   border-radius: 3px;
-  color: #888;
+  color: var(--history-delete-color);
   font-size: 14px;
   cursor: pointer;
   text-align: center;
@@ -1774,8 +1785,8 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .history-item-delete:hover {
-  background: #c43e3e;
-  color: #fff;
+  background: var(--history-delete-hover-bg);
+  color: var(--history-delete-hover-color);
 }
 
 .history-popup::-webkit-scrollbar {
@@ -1783,16 +1794,16 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .history-popup::-webkit-scrollbar-track {
-  background: #2d2d2d;
+  background: var(--history-scrollbar-track);
 }
 
 .history-popup::-webkit-scrollbar-thumb {
-  background: #555;
+  background: var(--history-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .history-popup::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: var(--history-scrollbar-thumb-hover);
 }
 
 /* CRC 按钮 */
@@ -1816,11 +1827,11 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   bottom: calc(100% + 4px);
   left: 0;
   min-width: 200px;
-  background: #2d2d2d;
-  border: 1px solid #3c3c3c;
+  background: var(--crc-menu-bg);
+  border: 1px solid var(--crc-menu-border);
   border-radius: 6px;
   z-index: 200;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--crc-menu-shadow);
   padding: 8px 12px;
   display: flex;
   flex-direction: column;
@@ -1829,7 +1840,7 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 
 /* CRC 菜单内 switch 样式覆盖 */
 .crc-menu :deep(.terminal-switch .el-switch__core) {
-  background-color: #131315 !important;
+  background-color: var(--switch-off-bg) !important;
   border-color: transparent !important;
   width: 36px !important;
   height: 18px !important;
@@ -1844,12 +1855,12 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .crc-menu :deep(.terminal-switch .el-switch__core:hover) {
-  background-color: #2A2A2C !important;
+  background-color: var(--switch-off-hover) !important;
 }
 
 .crc-menu :deep(.terminal-switch.is-checked .el-switch__core) {
-  background-color: #2E5CC7 !important;
-  border-color: #2E5CC7 !important;
+  background-color: var(--switch-on-bg) !important;
+  border-color: var(--switch-on-bg) !important;
 }
 
 .crc-menu-item {
@@ -1861,7 +1872,7 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 
 .crc-menu-label {
   font-size: 12px;
-  color: #ccc;
+  color: var(--crc-label);
   white-space: nowrap;
 }
 
@@ -1875,7 +1886,7 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   align-items: center;
   padding: 4px 8px 4px 0;
   margin-top: 4px;
-  border-top: 1px solid #3c3c3c;
+  border-top: 1px solid var(--crc-bar-border);
   gap: 8px;
   flex-wrap: wrap;
 }
@@ -1889,22 +1900,22 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
 }
 
 .crc-inline-label {
-  color: #999;
+  color: var(--crc-result-label);
 }
 
 .crc-inline-value {
-  color: #4ec9b0;
+  color: var(--crc-result-value);
   font-weight: 600;
 }
 
 .crc-inline-error {
   font-size: 12px;
-  color: #f48771;
+  color: var(--crc-result-error);
 }
 
 .crc-inline-empty {
   font-size: 12px;
-  color: #666;
+  color: var(--crc-result-empty);
 }
 
 .terminal-input {

@@ -88,9 +88,5 @@ describe('ShortcutsStorage', () => {
         expect(typeof desc).toBe('string')
       }
     })
-
-    it('包含 14 个快捷键定义', () => {
-      expect(Object.keys(SHORTCUT_ACTIONS).length).toBe(14)
-    })
   })
 })

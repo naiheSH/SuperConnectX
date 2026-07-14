@@ -55,15 +55,20 @@
           stripe
           style="width: 100%; height: 100%"
           row-key="id"
-          :header-cell-style="{ background: '#2d2d2d', color: '#e0e0e0', fontWeight: '600' }"
+          :header-cell-style="{ background: 'var(--cmdeditor-table-header-bg)', color: 'var(--cmdeditor-table-header-text)', fontWeight: '600' }"
           :row-class-name="tableRowClassName"
           :highlight-current-row="true"
           :empty-text="t('commandEditor.emptyText')"
           @row-click="handleRowClick"
         >
+          <el-table-column :label="t('commandEditor.columnDrag')" width="60" align="center">
+            <template #default>
+              <el-icon class="drag-handle"><Rank /></el-icon>
+            </template>
+          </el-table-column>
           <el-table-column :label="t('commandEditor.columnAction')" width="80" align="center">
             <template #default="{ row }">
-              <el-tooltip :content="t('commandEditor.deleteCommand')" placement="top" effect="dark">
+              <el-tooltip :content="t('commandEditor.deleteCommand')" placement="top" effect="dark" :enterable="false">
                 <el-button type="danger" size="small" circle @click="deleteCommand(row)">
                   <el-icon><Delete /></el-icon>
                 </el-button>
@@ -137,39 +142,14 @@
       </template>
     </el-dialog>
 
-    <!-- 命令编辑对话框 -->
-    <el-dialog v-model="showCommandDialog" :title="isEditingCommand ? t('commandEditor.editCommandTitle') : t('commandEditor.addCommandTitle')" width="500px">
-      <el-form :model="commandForm" label-width="80px" @submit.prevent @keydown.enter="saveCommand">
-        <el-form-item :label="t('commandEditor.columnSeqNum')">
-          <el-input-number v-model="commandForm.seqNum" :min="1" :max="999" size="small" />
-        </el-form-item>
-        <el-form-item :label="t('commandEditor.commandName')">
-          <el-input v-model="commandForm.name" :placeholder="t('commandEditor.commandNamePlaceholder')" />
-        </el-form-item>
-        <el-form-item :label="t('commandEditor.columnDelay')">
-          <el-input-number v-model="commandForm.delay" :min="0" :step="100" size="small" />
-        </el-form-item>
-        <el-form-item :label="t('commandEditor.commandContent')">
-          <el-input
-            v-model="commandForm.command"
-            type="textarea"
-            :rows="4"
-            :placeholder="t('commandEditor.commandContentPlaceholder')"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button class="btn-cancel" style="width: auto !important" size="small" @click="showCommandDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button size="small" class="btn-primary" style="width: auto !important" @click="saveCommand">{{ t('common.confirm') }}</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import Sortable from 'sortablejs'
 import eventBus from '../utils/EventBus'
 
 const { t } = useI18n()
@@ -200,13 +180,11 @@ const groups = ref<CommandGroup[]>([])
 const commands = ref<PresetCommand[]>([])
 const selectedGroupId = ref<number | null>(null)
 const showGroupDialog = ref(false)
-const showCommandDialog = ref(false)
 const isEditingGroup = ref(false)
-const isEditingCommand = ref(false)
 const editingGroupId = ref<number | null>(null)
-const editingCommandId = ref<number | null>(null)
 const currentRow = ref<PresetCommand | null>(null)
 const groupNameInputRef = ref<HTMLInputElement | null>(null)
+const sortableInstance = ref<Sortable | null>(null)
 
 const openGroupDialog = () => {
   resetGroupForm()
@@ -225,15 +203,6 @@ const groupForm = reactive({
   name: '',
   connectionType: 'telnet'
 })
-
-const commandForm = reactive({
-  name: '',
-  command: '',
-  delay: 0,
-  seqNum: 1
-})
-
-const isInsertingAbove = ref(false)
 
 const filteredGroups = computed(() => {
   // 先按协议类型过滤
@@ -328,6 +297,10 @@ const loadCommands = async () => {
     } catch {
       // ignore
     }
+
+    // 初始化拖拽排序（等待 DOM 更新）
+    await nextTick()
+    initSortable()
   } catch (error) {
     console.error('Failed to load commands:', error)
   }
@@ -344,6 +317,49 @@ const saveCurrentCommandId = () => {
 const handleRowClick = (row: PresetCommand) => {
   currentRow.value = row
   saveCurrentCommandId()
+}
+
+// SortableJS 拖拽排序
+const initSortable = () => {
+  const tableEl = document.querySelector('.command-table .el-table__body-wrapper tbody')
+  if (!tableEl) return
+
+  // 销毁旧实例
+  if (sortableInstance.value) {
+    sortableInstance.value.destroy()
+  }
+
+  sortableInstance.value = Sortable.create(tableEl as HTMLElement, {
+    handle: '.drag-handle',
+    animation: 200,
+    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    onEnd: async (evt) => {
+      const { oldIndex, newIndex } = evt
+      if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+
+      const list = [...commands.value]
+      const [movedItem] = list.splice(oldIndex, 1)
+      list.splice(newIndex, 0, movedItem)
+
+      // 重新分配 seqNum
+      const updates = list.map((cmd, i) => ({
+        id: cmd.id,
+        name: cmd.name,
+        command: cmd.command,
+        delay: cmd.delay,
+        seqNum: i + 1,
+        groupId: cmd.groupId
+      }))
+
+      for (const update of updates) {
+        await window.storageApi.updatePresetCommand(update)
+      }
+      commands.value = list
+      eventBus.emit('presetCommandsChanged', props.connectionType)
+    }
+  })
 }
 
 const updateCommand = async (row: PresetCommand) => {
@@ -385,13 +401,11 @@ const saveGroup = async () => {
         name: groupForm.name,
         connectionType: groupForm.connectionType
       })
-      ElMessage.success(t('commandEditor.groupUpdated'))
     } else {
       await window.storageApi.addCommandGroup({
         name: groupForm.name,
         connectionType: groupForm.connectionType
       })
-      ElMessage.success(t('commandEditor.groupCreated'))
     }
     showGroupDialog.value = false
     resetGroupForm()
@@ -420,7 +434,6 @@ const deleteGroup = async (group: CommandGroup) => {
       cancelButtonClass: 'el-button--danger'
     })
     await window.storageApi.deleteCommandGroup(group.groupId)
-    ElMessage.success(t('commandEditor.groupDeleted'))
     if (selectedGroupId.value === group.groupId) {
       selectedGroupId.value = null
       commands.value = []
@@ -435,76 +448,61 @@ const deleteGroup = async (group: CommandGroup) => {
   }
 }
 
-const addCommand = () => {
-  isEditingCommand.value = false
-  editingCommandId.value = null
-  isInsertingAbove.value = false
-  resetCommandForm()
-  showCommandDialog.value = true
-}
+const addCommand = async () => {
+  if (!selectedGroupId.value) return
 
-const insertCommandAbove = () => {
-  if (currentRow.value) {
-    isEditingCommand.value = false
-    editingCommandId.value = null
-    isInsertingAbove.value = true
-    commandForm.name = ''
-    commandForm.command = ''
-    commandForm.delay = 0
-    commandForm.seqNum = currentRow.value.seqNum
-    showCommandDialog.value = true
-  }
-}
-
-const saveCommand = async () => {
-  if (!commandForm.name || !commandForm.command) {
-    ElMessage.warning(t('commandEditor.pleaseFillContent'))
-    return
-  }
   try {
-    if (isEditingCommand.value && editingCommandId.value) {
-      await window.storageApi.updatePresetCommand({
-        id: editingCommandId.value,
-        name: commandForm.name,
-        command: commandForm.command,
-        delay: commandForm.delay,
-        seqNum: commandForm.seqNum,
-        groupId: selectedGroupId.value
-      })
-      ElMessage.success(t('commandEditor.commandUpdated'))
-    } else {
-      // 如果是插入命令，需要把被插入位置及之后的命令序号+1
-      if (isInsertingAbove.value) {
-        const insertSeq = commandForm.seqNum
-        for (const cmd of commands.value) {
-          if ((cmd.seqNum ?? 999) >= insertSeq) {
-            await window.storageApi.updatePresetCommand({
-              id: cmd.id,
-              name: cmd.name,
-              command: cmd.command,
-              delay: cmd.delay,
-              seqNum: (cmd.seqNum ?? 999) + 1,
-              groupId: cmd.groupId
-            })
-          }
-        }
-      }
-      await window.storageApi.addPresetCommand({
-        name: commandForm.name,
-        command: commandForm.command,
-        delay: commandForm.delay,
-        seqNum: commandForm.seqNum,
-        groupId: selectedGroupId.value
-      })
-      ElMessage.success(t('commandEditor.commandAdded'))
-    }
-    showCommandDialog.value = false
-    resetCommandForm()
+    const seqNum = commands.value.length + 1
+    await window.storageApi.addPresetCommand({
+      name: '',
+      command: '',
+      delay: 0,
+      seqNum: seqNum,
+      groupId: selectedGroupId.value
+    })
+    // 立即刷新表格，获取数据库中的真实数据
     await loadCommands()
     // 通知其他组件刷新命令列表
     eventBus.emit('presetCommandsChanged', props.connectionType)
   } catch (error) {
-    ElMessage.error(t('commandEditor.commandSaveFailed'))
+    console.error('Failed to add command:', error)
+  }
+}
+
+const insertCommandAbove = async () => {
+  if (!currentRow.value || !selectedGroupId.value) return
+
+  try {
+    const insertSeq = currentRow.value.seqNum
+
+    // 把被插入位置及之后的命令序号+1
+    for (const cmd of commands.value) {
+      if ((cmd.seqNum ?? 999) >= insertSeq) {
+        await window.storageApi.updatePresetCommand({
+          id: cmd.id,
+          name: cmd.name,
+          command: cmd.command,
+          delay: cmd.delay,
+          seqNum: (cmd.seqNum ?? 999) + 1,
+          groupId: cmd.groupId
+        })
+      }
+    }
+
+    await window.storageApi.addPresetCommand({
+      name: '',
+      command: '',
+      delay: 0,
+      seqNum: insertSeq,
+      groupId: selectedGroupId.value
+    })
+
+    // 重新加载命令列表
+    await loadCommands()
+    // 通知其他组件刷新命令列表
+    eventBus.emit('presetCommandsChanged', props.connectionType)
+  } catch (error) {
+    console.error('Failed to insert command:', error)
   }
 }
 
@@ -517,7 +515,6 @@ const deleteCommand = async (command: PresetCommand) => {
       cancelButtonClass: 'el-button--danger'
     })
     await window.storageApi.deletePresetCommand(command.id)
-    ElMessage.success(t('commandEditor.commandDeleted'))
     await loadCommands()
     // 通知其他组件刷新命令列表
     eventBus.emit('presetCommandsChanged', props.connectionType)
@@ -535,18 +532,15 @@ const resetGroupForm = () => {
   editingGroupId.value = null
 }
 
-const resetCommandForm = () => {
-  commandForm.name = ''
-  commandForm.command = ''
-  commandForm.delay = 0
-  commandForm.seqNum = commands.value.length + 1
-  isEditingCommand.value = false
-  editingCommandId.value = null
-  isInsertingAbove.value = false
-}
-
 onMounted(() => {
   loadGroups()
+})
+
+onBeforeUnmount(() => {
+  if (sortableInstance.value) {
+    sortableInstance.value.destroy()
+    sortableInstance.value = null
+  }
 })
 </script>
 
@@ -554,21 +548,21 @@ onMounted(() => {
 .command-editor {
   display: flex;
   height: 100%;
-  background: #1e1e1e;
-  color: #e0e0e0;
+  background: var(--cmdeditor-bg);
+  color: var(--cmdeditor-table-header-text);
 }
 
 .sidebar {
   width: 250px;
-  background: #2d2d2d;
-  border-right: 1px solid #3c3c3c;
+  background: var(--cmdeditor-sidebar-bg);
+  border-right: 1px solid var(--cmdeditor-sidebar-border);
   display: flex;
   flex-direction: column;
 }
 
 .sidebar-header {
   padding: 12px;
-  border-bottom: 1px solid #3c3c3c;
+  border-bottom: 1px solid var(--cmdeditor-sidebar-border);
 }
 
 .add-group-btn {
@@ -585,7 +579,7 @@ onMounted(() => {
 
 .sidebar-search {
   padding: 8px 12px;
-  border-bottom: 1px solid #3c3c3c;
+  border-bottom: 1px solid var(--cmdeditor-sidebar-border);
 }
 
 .sidebar-list {
@@ -600,16 +594,16 @@ onMounted(() => {
 }
 
 .sidebar-list::-webkit-scrollbar-track {
-  background: #2d2d2d;
+  background: var(--cmdeditor-sidebar-bg);
 }
 
 .sidebar-list::-webkit-scrollbar-thumb {
-  background: #555;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 .sidebar-list::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: var(--scrollbar-thumb-hover);
 }
 
 .sidebar-item {
@@ -621,11 +615,11 @@ onMounted(() => {
 }
 
 .sidebar-item:hover {
-  background: #383838;
+  background: var(--cmdeditor-sidebar-item-hover);
 }
 
 .sidebar-item.active {
-  background: #094771;
+  background: var(--cmdeditor-sidebar-item-active);
 }
 
 .sidebar-item .group-name {
@@ -637,8 +631,7 @@ onMounted(() => {
 
 .sidebar-item .group-type {
   font-size: 10px;
-  color: #888;
-  margin-left: 8px;
+  color: var(--cmdeditor-sidebar-group-type);
 }
 
 .sidebar-item .group-actions {
@@ -657,7 +650,7 @@ onMounted(() => {
 }
 
 .sidebar-item .group-actions .el-icon:hover {
-  color: #fff;
+  color: var(--cmdeditor-sidebar-action-hover);
 }
 
 .main-content {
@@ -669,7 +662,7 @@ onMounted(() => {
 
 .toolbar {
   padding: 12px;
-  border-bottom: 1px solid #3c3c3c;
+  border-bottom: 1px solid var(--cmdeditor-sidebar-border);
   display: flex;
   gap: 8px;
 }
@@ -691,8 +684,8 @@ onMounted(() => {
 
 .command-table .el-table {
   height: 100%;
-  background: #1e1e1e;
-  color: #e0e0e0;
+  background: var(--cmdeditor-bg);
+  color: var(--cmdeditor-table-header-text);
   border-radius: 0;
   border: none !important;
   box-shadow: none !important;
@@ -745,13 +738,13 @@ onMounted(() => {
 }
 
 .command-table .el-table :deep(.el-table__header) {
-  background: #2d2d2d !important;
+  background: var(--cmdeditor-table-header-bg) !important;
   border-bottom: none !important;
 }
 
 .command-table .el-table :deep(.el-table__header th) {
-  background: #2d2d2d !important;
-  color: #e0e0e0;
+  background: var(--cmdeditor-table-header-bg) !important;
+  color: var(--cmdeditor-table-header-text);
   font-weight: 600;
   padding: 12px 8px;
   border: none !important;
@@ -764,30 +757,67 @@ onMounted(() => {
 }
 
 .command-table .el-table :deep(.el-table__body) {
-  background: #1e1e1e !important;
+  background: var(--cmdeditor-table-body-bg) !important;
 }
 
 .command-table .el-table :deep(.el-table__body td) {
-  background: #1e1e1e !important;
+  background: var(--cmdeditor-table-body-bg) !important;
   padding: 10px 8px;
   border: none !important;
   border-bottom: none !important;
 }
 
 .command-table .el-table :deep(.el-table__body tr) {
-  background: #1e1e1e !important;
+  background: var(--cmdeditor-table-body-bg) !important;
 }
 
 .command-table .el-table :deep(.el-table__body .el-table__row--striped) {
-  background: #252526 !important;
+  background: var(--cmdeditor-table-stripe-bg) !important;
 }
 
 .command-table .el-table :deep(.el-table__body .el-table__row--striped td) {
-  background: #252526 !important;
+  background: var(--cmdeditor-table-stripe-bg) !important;
 }
 
 .command-table .el-table :deep(.stripe-row) {
-  background: #252526 !important;
+  background: var(--cmdeditor-table-stripe-bg) !important;
+}
+
+/* 拖拽手柄样式 */
+.drag-handle {
+  cursor: grab;
+  color: var(--cmdeditor-drag-handle-color);
+  font-size: 16px;
+  transition: color 0.2s;
+  vertical-align: middle;
+}
+
+.drag-handle:hover {
+  color: var(--cmdeditor-drag-handle-hover);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: var(--cmdeditor-drag-handle-hover);
+}
+
+/* SortableJS 拖拽动画样式 */
+:deep(.sortable-ghost) {
+  opacity: 0.4;
+  background: var(--cmdeditor-table-hover-bg) !important;
+}
+
+:deep(.sortable-ghost td) {
+  background: var(--cmdeditor-table-hover-bg) !important;
+}
+
+:deep(.sortable-drag) {
+  opacity: 0.9;
+  background: var(--cmdeditor-table-header-bg) !important;
+}
+
+:deep(.sortable-drag td) {
+  background: var(--cmdeditor-table-header-bg) !important;
 }
 
 /* 隐藏表格空状态下的分隔线 */
@@ -798,7 +828,7 @@ onMounted(() => {
 /* 选中行背景 */
 .command-table .el-table :deep(.el-table__body tr:hover > td),
 .command-table .el-table :deep(.el-table__body .current-row > td) {
-  background: #094771 !important;
+  background: var(--cmdeditor-table-hover-bg) !important;
 }
 
 /* 单元格输入框统一样式 */
@@ -842,7 +872,7 @@ onMounted(() => {
 }
 
 .command-table .el-table :deep(.cell-input .el-input__inner) {
-  color: #e0e0e0;
+  color: var(--cmdeditor-table-header-text);
 }
 
 .command-table .el-table :deep(.cell-seqnum) {
@@ -873,13 +903,13 @@ onMounted(() => {
 }
 
 .command-table .el-table :deep(.cell-seqnum .el-input__inner) {
-  color: #7ec699;
+  color: var(--cmdeditor-seqnum-color);
   text-align: center;
   width: 20px;
 }
 
 .command-table .el-table :deep(.cell-command .el-input__inner) {
-  color: #ce9178;
+  color: var(--cmdeditor-command-color);
   font-family: 'Consolas', 'Monaco', monospace;
 }
 
@@ -888,18 +918,18 @@ onMounted(() => {
 }
 
 .command-table .el-table__empty-text {
-  color: #888;
+  color: var(--cmdeditor-empty-text);
   padding: 40px 0;
 }
 
 .cmd-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--cmdeditor-cmd-name);
 }
 
 .cmd-delay {
   font-family: 'Consolas', 'Monaco', monospace;
-  color: #7ec699;
+  color: var(--cmdeditor-seqnum-color);
 }
 
 .command-content {
@@ -914,8 +944,8 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: 'Consolas', 'Monaco', monospace;
-  color: #ce9178;
-  background: #2d2d2d;
+  color: var(--cmdeditor-command-color);
+  background: var(--cmdeditor-command-bg);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -927,39 +957,39 @@ onMounted(() => {
 }
 
 .command-table::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: var(--cmdeditor-table-body-bg);
 }
 
 .command-table::-webkit-scrollbar-thumb {
-  background: #555;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 .command-table::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* 对话框样式 */
 :deep(.el-dialog) {
-  background: #2d2d2d;
-  border: 1px solid #444;
+  background: var(--cmdeditor-dialog-bg);
+  border: 1px solid var(--cmdeditor-dialog-border);
 }
 
 :deep(.el-dialog__header) {
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--cmdeditor-dialog-border);
 }
 
 :deep(.el-dialog__title) {
-  color: #e0e0e0;
+  color: var(--cmdeditor-table-header-text);
 }
 
 :deep(.el-form-item__label) {
-  color: #e0e0e0;
+  color: var(--cmdeditor-table-header-text);
 }
 
 :deep(.el-input__wrapper) {
-  background: #3a3a3a;
-  box-shadow: 0 0 0 1px #444 inset;
+  background: var(--cmdeditor-dialog-input-bg);
+  box-shadow: 0 0 0 1px var(--cmdeditor-dialog-input-border) inset;
 }
 
 :deep(.el-input__wrapper:hover) {
@@ -971,13 +1001,13 @@ onMounted(() => {
 }
 
 :deep(.el-input__inner) {
-  color: #e0e0e0;
+  color: var(--cmdeditor-table-header-text);
 }
 
 :deep(.el-textarea__inner) {
-  background: #3a3a3a;
-  box-shadow: 0 0 0 1px #444 inset;
-  color: #e0e0e0;
+  background: var(--cmdeditor-dialog-input-bg);
+  box-shadow: 0 0 0 1px var(--cmdeditor-dialog-input-border) inset;
+  color: var(--cmdeditor-table-header-text);
   resize: vertical;
 }
 
@@ -990,6 +1020,6 @@ onMounted(() => {
 }
 
 :deep(.el-select .el-input__wrapper) {
-  background: #3a3a3a;
+  background: var(--cmdeditor-dialog-input-bg);
 }
 </style>

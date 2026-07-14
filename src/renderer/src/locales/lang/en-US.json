@@ -195,9 +195,12 @@
     "help": "Help",
     "font": "Font",
     "importCmd": "Import Commands",
+    "importData": "Import Data",
     "exportCmd": "Export Commands",
+    "exportData": "Export Data",
     "importFromSuperCom": "Import from SuperCom",
     "openAppDir": "Open App Directory",
+    "openUserDataDir": "Open User Data Folder",
     "exit": "Exit",
     "exitConfirm": "Are you sure you want to exit SuperConnectX?",
     "doc": "Documentation",
@@ -207,7 +210,10 @@
     "checkUpdate": "Check for Updates",
     "wordWrap": "Word Wrap",
     "lineNumbers": "Line Numbers",
-    "logEditable": "Editable Log"
+    "logEditable": "Editable Log",
+    "theme": "Theme",
+    "darkTheme": "Dark",
+    "lightTheme": "Light"
   },
   "sidebar": {
     "newConnection": "New Connection",
@@ -238,8 +244,12 @@
     "pin": "Pin",
     "unpin": "Unpin",
     "editRemark": "Edit Remark",
-    "tabPinned": "This tab is pinned, please unpin first"
+    "tabPinned": "This tab is pinned, please unpin first",
+    "splitToNewPanel": "Split to New Panel",
+    "dragToSplit": "Drop here to split"
   },
+
+
   "dialog": {
     "newConnection": "New Connection",
     "editRemark": "Edit Remark",
@@ -338,6 +348,7 @@
     "exportSuccess": "Successfully exported {count} commands",
     "exportFailed": "Export failed",
     "importFromSuperComSuccess": "Successfully imported {imported} commands ({groups} groups) from SuperCom, skipped {skipped} duplicates",
+    "importFromSuperComSuccessTitle": "Import Success",
     "importFromSuperComFailed": "Import from SuperCom failed"
   },
   "terminal": {
@@ -351,7 +362,7 @@
     "openLogFile": "Open Log File",
     "showTimestamp": "Timestamp",
     "showLog": "Show Log",
-    "saveLogAs": "Save Log As",
+    "logRotate": "Rotate Log",
     "syntaxHighlight": "Syntax Highlight",
     "editSyntaxRules": "Edit Syntax Rules",
     "commandSendFailed": "Failed to send command",
@@ -363,6 +374,17 @@
     "hexPlaceholder": "Enter HEX data (e.g.: 01 02 03)",
     "disconnectedPlaceholder": "Connect to send commands",
     "fileUploadFailed": "File upload failed",
+    "fileUploadSuccess": "File uploaded: {name}",
+    "uploadFailed": "Upload failed: {message}",
+    "reconnecting": "Connection closed, attempting to reconnect...",
+    "openLogFolderFailed": "Failed to open log folder: {message}",
+    "openLogFolderFailedWithError": "Failed to open log folder: {error}",
+    "openLogFileFailed": "Failed to open log file: {message}",
+    "openLogFileFailedWithError": "Failed to open log file: {error}",
+    "saveFailed": "Save failed: {message}",
+    "saveFailedWithError": "Save failed: {error}",
+    "logRotateSuccess": "Log rotated: {oldName} → {newName}",
+    "unknownError": "Unknown error",
     "clearAll": "Clear All"
   },
   "presetCommands": {
@@ -403,13 +425,15 @@
     "commandAdded": "Command added",
     "commandDeleted": "Command deleted",
     "commandSaveFailed": "Save failed",
+    "commandSaveFailedDetail": "Save failed: {detail}",
     "commandDeleteFailed": "Failed to delete command",
     "commandLoadFailed": "Failed to load preset commands",
     "noCommandsInGroup": "No commands in this group",
     "stopLoopMessage": "Stopped loop: {name}",
     "startLoopMessage": "Started loop: {name} (interval: {interval}ms)",
     "deleteGroupConfirm": "Confirm delete {name} and all its commands?",
-    "deleteGroupTitle": "Delete Group"
+    "deleteGroupTitle": "Delete Group",
+    "commandSendFailed": "Failed to send command"
   },
   "commandEditor": {
     "title": "Command Editor",
@@ -419,6 +443,7 @@
     "insertCommand": "Insert Command",
     "emptyText": "No commands, click the button above to add",
     "columnAction": "Actions",
+    "columnDrag": "Sort",
     "columnSeqNum": "Order",
     "columnName": "Name",
     "columnDelay": "Delay (ms)",
@@ -509,5 +534,33 @@
     "openWebsite": "Download",
     "error": "Update Error",
     "unknownError": "Unknown error"
+  },
+  "exportDialog": {
+    "title": "Export Data",
+    "description": "Select the data categories to export. Selected items will be packed into a ZIP file.",
+    "settings": "Global Settings",
+    "settingsDesc": "Language, display, backup settings + syntax highlight rule groups",
+    "commandGroups": "Command Groups",
+    "commandGroupsDesc": "All command group information",
+    "commands": "Preset Commands",
+    "commandsDesc": "All preset commands (name, content, delay, order)",
+    "comPorts": "COM Port Settings",
+    "comPortsDesc": "Serial port configs (baud rate, data bits, etc.) + custom baud rate list",
+    "connections": "Connection Configs",
+    "connectionsDesc": "All saved connections (passwords are masked)",
+    "noSelection": "Please select at least one item",
+    "exportBtn": "Export",
+    "exportSuccess": "Data exported successfully",
+    "exportFailed": "Export failed"
+  },
+  "importDialog": {
+    "importSuccess": "Data imported successfully",
+    "importSuccessTitle": "Import Success",
+    "settingsImported": "Global settings overwritten",
+    "comPortsImported": "COM port settings overwritten",
+    "groupsImported": "Groups: {added} added, {skipped} skipped",
+    "commandsImported": "Commands: {added} added, {skipped} skipped",
+    "connectionsImported": "Connections: {added} added, {skipped} skipped",
+    "invalidFormat": "Invalid ZIP format: no importable data files found"
   }
 }
