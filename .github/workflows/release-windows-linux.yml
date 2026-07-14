@@ -37,6 +37,20 @@ jobs:
               release/*.deb
               release/*.yml
               release/*.blockmap
+          - name: macOS (Apple Silicon)
+            os: macos-14
+            builder-target: --mac --arm64
+            artifact-name: macos-arm64
+            artifact-path: |
+              release/*arm64*.dmg
+              release/*.yml
+          - name: macOS (Intel)
+            os: macos-13
+            builder-target: --mac --x64
+            artifact-name: macos-x64
+            artifact-path: |
+              release/*x64*.dmg
+              release/*.yml
 
     steps:
       - name: Checkout
@@ -76,6 +90,12 @@ jobs:
           rm -rf node_modules/cpu-features
           rm -rf node_modules/ssh2/node_modules/cpu-features
 
+      - name: Remove problematic cpu-features (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          rm -rf node_modules/cpu-features
+          rm -rf node_modules/ssh2/node_modules/cpu-features
+
       - name: Run tests
         run: npm test
 
@@ -97,6 +117,12 @@ jobs:
       - name: Build package (Linux)
         if: runner.os == 'Linux'
         run: npx electron-builder --linux --config electron-builder.yml --publish never
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build package (macOS)
+        if: runner.os == 'macOS'
+        run: npx electron-builder --mac --config electron-builder.yml --publish never
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
