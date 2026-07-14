@@ -68,7 +68,7 @@ jobs:
           sudo apt-get install -y rpm libarchive-tools
 
       - name: Install Python setuptools
-        run: python3 -m pip install setuptools
+        run: python3 -m pip install setuptools --break-system-packages
 
       - name: Install dependencies
         run: npm install --ignore-scripts
@@ -152,7 +152,7 @@ jobs:
           sudo apt-get install -y rpm libarchive-tools
 
       - name: Install Python setuptools
-        run: python3 -m pip install setuptools
+        run: python3 -m pip install setuptools --break-system-packages
 
       - name: Install dependencies
         run: npm install --ignore-scripts
