@@ -46,11 +46,11 @@ const loadVersion = async () => {
 loadVersion()
 
 const openGithub = () => {
-  window.toolApi.openExternalUrl('https://github.com/SuperStudio/SuperConnectX')
+  window.toolApi.openExternalUrl('https://github.com/naiheSH/SuperConnectX')
 }
 
 const openDoc = () => {
-  window.toolApi.openExternalUrl('https://github.com/SuperStudio/SuperConnectX#readme')
+  window.toolApi.openExternalUrl('https://github.com/naiheSH/SuperConnectX#readme')
 }
 </script>
 

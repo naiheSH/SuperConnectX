@@ -42,7 +42,7 @@ mac:
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
 dmg:
-  artifactName: ${name}-${version}-${arch}.${ext}
+  artifactName: ${name}-mac-${arch}.${ext}
 linux:
   target:
     - AppImage
@@ -56,7 +56,7 @@ afterPack: ./scripts/afterPack.js
 npmRebuild: true
 publish:
   provider: github
-  owner: SuperStudio
+  owner: naiheSH
   repo: SuperConnectX
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

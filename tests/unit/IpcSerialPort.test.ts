@@ -25,12 +25,52 @@ vi.mock('serialport', () => ({
         productId: undefined
       },
       {
+        path: '/dev/ttyprintk',
+        manufacturer: undefined,
+        serialNumber: undefined,
+        pnpId: undefined,
+        locationId: undefined,
+        friendlyName: 'Linux kernel console port',
+        vendorId: undefined,
+        productId: undefined
+      },
+      {
+        path: '/dev/ttyVirtual0',
+        manufacturer: undefined,
+        serialNumber: undefined,
+        pnpId: undefined,
+        locationId: undefined,
+        friendlyName: 'Virtual serial port',
+        vendorId: undefined,
+        productId: undefined
+      },
+      {
         path: 'COM1',
         manufacturer: 'Windows Mfr',
         serialNumber: 'W123',
         pnpId: undefined,
         locationId: undefined,
         friendlyName: 'Windows COM',
+        vendorId: undefined,
+        productId: undefined
+      },
+      {
+        path: 'COM99',
+        manufacturer: undefined,
+        serialNumber: undefined,
+        pnpId: undefined,
+        locationId: undefined,
+        friendlyName: 'Virtual COM Port',
+        vendorId: undefined,
+        productId: undefined
+      },
+      {
+        path: '/dev/cu.Bluetooth-Incoming-Port',
+        manufacturer: undefined,
+        serialNumber: undefined,
+        pnpId: undefined,
+        locationId: undefined,
+        friendlyName: 'Bluetooth Incoming Port',
         vendorId: undefined,
         productId: undefined
       }
@@ -60,7 +100,7 @@ describe('IpcSerialPort', () => {
       const instance = IpcSerialPort.getInstance()
       const ports = await instance.listSerialPorts()
 
-      // Linux: /dev/ttyUSB0 kept (has manufacturer), /dev/ttyS0 filtered (no device info), COM1 kept (non-linux path passes filter)
+      // The platform-specific filter keeps physical devices and removes virtual ports.
       expect(ports.length).toBeGreaterThanOrEqual(1)
       // ttyUSB0 should always be present (USB device)
       expect(ports[0].path).toBe('/dev/ttyUSB0')
@@ -82,6 +122,9 @@ describe('IpcSerialPort', () => {
       if (process.platform === 'linux') {
         expect(ports).toHaveLength(1)
         expect(ports[0].path).toBe('/dev/ttyUSB0')
+      } else if (process.platform === 'win32') {
+        expect(ports).toHaveLength(2)
+        expect(ports.map((port) => port.path)).toEqual(['/dev/ttyUSB0', 'COM1'])
       } else {
         expect(ports).toHaveLength(3)
       }

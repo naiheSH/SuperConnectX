@@ -42,14 +42,14 @@ jobs:
             builder-target: --mac --arm64
             artifact-name: macos-arm64
             artifact-path: |
-              release/*arm64*.dmg
+              release/*-mac-arm64.dmg
               release/*.yml
           - name: macOS (Intel)
             os: macos-14
             builder-target: --mac --x64
             artifact-name: macos-x64
             artifact-path: |
-              release/*x64*.dmg
+              release/*-mac-x64.dmg
               release/*.yml
 
     steps:

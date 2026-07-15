@@ -4,7 +4,7 @@
   "description": "SuperConnectX - 超级连接",
   "main": "./out/main/index.js",
   "author": "SuperStudio",
-  "homepage": "https://github.com/SuperStudio/SuperConnectX",
+  "homepage": "https://github.com/naiheSH/SuperConnectX",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",

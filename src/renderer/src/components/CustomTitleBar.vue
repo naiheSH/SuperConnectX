@@ -486,7 +486,7 @@ const handleDevelop = () => {
 }
 
 const handleFeedBack = () => {
-  window.toolApi.openExternalUrl('https://github.com/SuperStudio/SuperConnectX/issues')
+  window.toolApi.openExternalUrl('https://github.com/naiheSH/SuperConnectX/issues')
   showHelpMenu.value = false
 }
 
