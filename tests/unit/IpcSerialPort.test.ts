@@ -109,11 +109,18 @@ describe('IpcSerialPort', () => {
 
     it('should filter Linux virtual ports without device info', async () => {
       const { SerialPort } = await import('serialport')
-      ;(SerialPort.list as any).mockResolvedValueOnce([
-        { path: '/dev/ttyS0', manufacturer: undefined, serialNumber: undefined, pnpId: undefined },
-        { path: '/dev/ttyS1', manufacturer: undefined, serialNumber: undefined, pnpId: undefined },
-        { path: '/dev/ttyUSB0', manufacturer: 'USB', serialNumber: 'SN1', pnpId: undefined }
-      ])
+      const mockPorts =
+        process.platform === 'win32'
+          ? [
+              { path: 'COM1', manufacturer: 'USB', serialNumber: 'SN1', pnpId: undefined },
+              { path: 'COM99', manufacturer: 'Virtual COM Port', serialNumber: undefined, pnpId: undefined }
+            ]
+          : [
+              { path: '/dev/ttyS0', manufacturer: undefined, serialNumber: undefined, pnpId: undefined },
+              { path: '/dev/ttyS1', manufacturer: undefined, serialNumber: undefined, pnpId: undefined },
+              { path: '/dev/ttyUSB0', manufacturer: 'USB', serialNumber: 'SN1', pnpId: undefined }
+            ]
+      ;(SerialPort.list as any).mockResolvedValueOnce(mockPorts)
 
       const instance = IpcSerialPort.getInstance()
       const ports = await instance.listSerialPorts()
@@ -123,8 +130,8 @@ describe('IpcSerialPort', () => {
         expect(ports).toHaveLength(1)
         expect(ports[0].path).toBe('/dev/ttyUSB0')
       } else if (process.platform === 'win32') {
-        expect(ports).toHaveLength(2)
-        expect(ports.map((port) => port.path)).toEqual(['/dev/ttyUSB0', 'COM1'])
+        expect(ports).toHaveLength(1)
+        expect(ports[0].path).toBe('COM1')
       } else {
         expect(ports).toHaveLength(3)
       }
