@@ -26,22 +26,24 @@ export default class IpcSerialPort {
 
         // Linux: keep physical serial adapters and explicitly supported GPIO/Bluetooth devices.
         if (platform === 'linux') {
-          if (path.startsWith('/dev/ttyUSB') || path.startsWith('/dev/ttyACM')) {
-            return true
-          }
           if (path.startsWith('/dev/ttyS')) {
             return !!(port.manufacturer || port.serialNumber || port.pnpId)
           }
-          if (path.startsWith('/dev/ttyAMA') || path.startsWith('/dev/rfcomm')) {
+          if (
+            path.startsWith('/dev/ttyUSB') ||
+            path.startsWith('/dev/ttyACM') ||
+            path.startsWith('/dev/ttyAMA') ||
+            path.startsWith('/dev/rfcomm')
+          ) {
             return true
           }
           return false
         }
 
-        // Windows: ignore ports that are not backed by device metadata. These
-        // are commonly software-created COM ports exposed by drivers.
+        // Keep Windows ports unless the driver explicitly identifies them as virtual.
         if (platform === 'win32') {
-          return !!(port.manufacturer || port.serialNumber || port.pnpId || port.vendorId || port.productId)
+          const description = `${port.friendlyName || ''} ${port.manufacturer || ''}`.toLowerCase()
+          return !/(virtual|bluetooth[- ]incoming|com0com|eltima|vspd|vspe)/i.test(description)
         }
 
         // macOS: exclude Apple's virtual Bluetooth-incoming port.
@@ -52,13 +54,18 @@ export default class IpcSerialPort {
         return false
       })
 
-      logger.info(`filtered to ${filtered.length} serial ports`)
-      return filtered.map((port) => ({
+      const uniquePorts = filtered.filter(
+        (port, index, allPorts) => allPorts.findIndex((candidate) => candidate.path === port.path) === index
+      )
+
+      logger.info(`filtered to ${uniquePorts.length} serial ports`)
+      return uniquePorts.map((port) => ({
         path: port.path,
         manufacturer: port.manufacturer,
         serialNumber: port.serialNumber,
         pnpId: port.pnpId,
         locationId: port.locationId,
+        friendlyName: port.friendlyName,
         vendorId: port.vendorId,
         productId: port.productId
       }))

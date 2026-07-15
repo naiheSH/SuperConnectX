@@ -123,8 +123,8 @@ describe('IpcSerialPort', () => {
         expect(ports).toHaveLength(1)
         expect(ports[0].path).toBe('/dev/ttyUSB0')
       } else if (process.platform === 'win32') {
-        expect(ports).toHaveLength(1)
-        expect(ports[0].path).toBe('/dev/ttyUSB0')
+        expect(ports).toHaveLength(2)
+        expect(ports.map((port) => port.path)).toEqual(['/dev/ttyUSB0', 'COM1'])
       } else {
         expect(ports).toHaveLength(3)
       }
