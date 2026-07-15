@@ -46,6 +46,7 @@ export interface NotifyItem {
   message: string
   focused: boolean
   count: number
+  timer: ReturnType<typeof setTimeout> | null
 }
 
 const notifies = ref<NotifyItem[]>([])
@@ -73,11 +74,16 @@ const handleClearAll = () => {
   hideMenu()
 }
 
-const add = (title: string, message: string) => {
+const add = (title: string, message: string, duration = 5000) => {
   // 查找相同 title 和 message 的已有通知
   const existing = notifies.value.find((n) => n.title === title && n.message === message)
   if (existing) {
     existing.count++
+    // 重置自动关闭计时器
+    if (existing.timer) clearTimeout(existing.timer)
+    if (duration > 0) {
+      existing.timer = setTimeout(() => remove(existing.id), duration)
+    }
     // 将已有通知移到最前面
     const index = notifies.value.indexOf(existing)
     if (index > 0) {
@@ -92,7 +98,8 @@ const add = (title: string, message: string) => {
     return existing.id
   }
   const id = ++idCounter
-  notifies.value.unshift({ id, title, message, focused: false, count: 1 })
+  const timer = duration > 0 ? setTimeout(() => remove(id), duration) : null
+  notifies.value.unshift({ id, title, message, focused: false, count: 1, timer })
   nextTick(() => {
     if (containerRef.value) {
       containerRef.value.scrollTop = 0
@@ -104,11 +111,16 @@ const add = (title: string, message: string) => {
 const remove = (id: number) => {
   const index = notifies.value.findIndex((n) => n.id === id)
   if (index > -1) {
+    const item = notifies.value[index]
+    if (item.timer) clearTimeout(item.timer)
     notifies.value.splice(index, 1)
   }
 }
 
 const clear = () => {
+  for (const item of notifies.value) {
+    if (item.timer) clearTimeout(item.timer)
+  }
   notifies.value = []
 }
 
