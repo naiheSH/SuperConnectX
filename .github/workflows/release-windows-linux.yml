@@ -40,16 +40,18 @@ jobs:
           - name: macOS (Apple Silicon)
             os: macos-14
             builder-target: --mac --arm64
+            mac-arch: arm64
             artifact-name: macos-arm64
             artifact-path: |
-              release/*-mac-arm64.dmg
+              release/*arm64.dmg
               release/*.yml
           - name: macOS (Intel)
-            os: macos-14
+            os: macos-13
             builder-target: --mac --x64
+            mac-arch: x64
             artifact-name: macos-x64
             artifact-path: |
-              release/*-mac-x64.dmg
+              release/*x64.dmg
               release/*.yml
 
     steps:
@@ -127,9 +129,20 @@ jobs:
 
       - name: Build package (macOS)
         if: runner.os == 'macOS'
-        run: npx electron-builder --mac --config electron-builder.yml --publish never
+        run: npx electron-builder ${{ matrix.builder-target }} --config electron-builder.yml --publish never
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify macOS DMG artifact
+        if: runner.os == 'macOS'
+        run: |
+          shopt -s nullglob
+          dmg_files=(release/*${{ matrix.mac-arch }}.dmg)
+          if [ ${#dmg_files[@]} -eq 0 ]; then
+            echo "Expected macOS ${{ matrix.mac-arch }} DMG was not generated"
+            ls -la release
+            exit 1
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
