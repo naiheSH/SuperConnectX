@@ -125,3 +125,50 @@ Run `build.bat`
 Run `release.bat` and GitHub Actions will start automatically. Once the build completes, the latest releases will be generated.
 
 <img src="Image/image-20260531222201852.png" alt="image-20260531222201852" style="zoom:80%;" />
+
+# Fork Changelog
+
+Based on upstream SuperStudio/SuperConnectX, 37 commits in total.
+
+## Features
+- Support Chinese serial port encoding and Linux packaging
+- Display per-line timestamps for received data
+- Export complete split log files via Save As
+- Add AI context documentation (localized to Chinese)
+- Add Windows zip release artifacts
+- Add Ubuntu 24 compatible builds (Electron 35 + 38)
+- Add macOS dual-architecture builds (arm64 + x64)
+- Support naihe tag releases
+- Auto-generate changelog in release workflow
+- Add afterPack hook to auto-fix chrome-sandbox permissions
+- Version suffix -naihe, auto-dismiss notifications
+
+## Fixes
+- Fix release workflow npm cache config
+- Fix Linux release config
+- Fix Linux log Save As default filename
+- Fix tray icon resources
+- Fix log split filename basename
+- Adjust log Save As default filename
+- Change release artifacts to installer format
+- Fix custom tag release naming
+- Fix Ubuntu 24 build artifact filename conflict
+- Fix AppDir test cross-platform compatibility
+- Fix TypeScript type errors
+- Re-apply Linux serial port filtering (lost after upstream merge)
+- Fix CI test failures
+- Fix macOS build Python setuptools installation
+- Fix macOS pip externally-managed-environment
+- Distinguish macOS vs other platforms for Python setuptools
+- Fix log rotation data loss and timestamp regex
+- Make serial port filtering conservative
+
+## CI
+- Add cross-platform build workflow
+- Fix macOS Intel build runner
+- Publish separate macOS architecture packages
+- Update release assets and serial port filtering
+
+## Tests
+- Use platform-specific serial port test fixtures
+- Fix Windows serial port test expectations
