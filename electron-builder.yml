@@ -17,8 +17,6 @@ files:
 extraResources:
   - from: build/icon.ico
     to: icon.ico
-  - from: build/icon.icns
-    to: icon.icns
   - from: build/icon.png
     to: icon.png
 asarUnpack:

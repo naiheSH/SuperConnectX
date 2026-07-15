@@ -1,0 +1,81 @@
+name: CI Build
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: CI ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-2022
+          - name: Linux
+            os: ubuntu-22.04
+          - name: macOS
+            os: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libarchive-tools
+
+      - name: Install Python setuptools
+        if: runner.os != 'macOS'
+        run: python3 -m pip install setuptools
+
+      - name: Install Python setuptools (macOS)
+        if: runner.os == 'macOS'
+        run: python3 -m pip install setuptools --break-system-packages
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Remove problematic cpu-features (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path node_modules\cpu-features) {
+            Remove-Item -Recurse -Force node_modules\cpu-features
+          }
+          if (Test-Path node_modules\ssh2\node_modules\cpu-features) {
+            Remove-Item -Recurse -Force node_modules\ssh2\node_modules\cpu-features
+          }
+
+      - name: Remove problematic cpu-features (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          rm -rf node_modules/cpu-features
+          rm -rf node_modules/ssh2/node_modules/cpu-features
+
+      - name: Run tests
+        run: npm test
+
+      - name: Rebuild native modules
+        run: npx electron-builder install-app-deps
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build renderer and main
+        run: npx electron-vite build
