@@ -171,6 +171,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import UnifiedTerminal from './UnifiedTerminal.vue'
 import { useTerminal } from '../composables/useTerminal'
+import { formatReceivedData as formatReceivedDataUtil } from '../utils/TerminalUtils'
 
 const { t } = useI18n()
 
@@ -609,17 +610,7 @@ const handleConnect = async () => {
 }
 
 const formatReceivedData = (content: string, timestamp?: string): string => {
-  if (!terminal.showTimestamp.value || !timestamp) {
-    return `${content}\n`
-  }
-
-  const prefix = `[${timestamp}] `
-  const lines = content.split(/\r?\n/).filter(line => line.length > 0)
-  if (lines.length === 0) {
-    return `${prefix}\n`
-  }
-
-  return `${lines.map(line => `${prefix}${line}`).join('\n')}\n`
+  return formatReceivedDataUtil(content, terminal.showTimestamp.value, timestamp)
 }
 
 const handleClose = async () => {

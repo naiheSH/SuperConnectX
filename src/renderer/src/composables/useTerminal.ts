@@ -171,21 +171,21 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
         now.getMinutes()
       ).padStart(2, '0')}m-${String(now.getSeconds()).padStart(2, '0')}s`
       const result = await window.dialogApi.saveFileDialog({
-        title: '保存日志',
+        title: t('terminal.saveLogAs'),
         defaultPath: `${safeNamePart}-${timestamp}.log`,
-        filters: [{ name: '日志文件', extensions: ['log', 'txt'] }]
+        filters: [{ name: t('terminal.logFileFilter'), extensions: ['log', 'txt'] }]
       })
       if (result.filePath) {
         const copyResult = await window.connectApi.copyLogFile(String(conn.sessionId), result.filePath)
         if (copyResult.success) {
-          ElMessage.success('日志保存成功')
+          ElMessage.success(t('terminal.saveLogSuccess'))
           window.toolApi.showItemInFolder(result.filePath)
         } else {
-          ElMessage.error('保存失败：' + (copyResult.message || '未知错误'))
+          ElMessage.error(t('terminal.saveFailed', { message: copyResult.message || t('terminal.unknownError') }))
         }
       }
     } catch (error) {
-      ElMessage.error('保存失败：' + (error instanceof Error ? error.message : '未知错误'))
+      ElMessage.error(t('terminal.saveFailedWithError', { error: error instanceof Error ? error.message : t('terminal.unknownError') }))
     }
   }
 

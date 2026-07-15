@@ -347,12 +347,12 @@ export default class ProtocolLogger {
     if (!fileName) return
 
     const currentLogs = this.logCache.get(connId) || []
-    const timestampMatch = content.match(/^(\[[^\]]+\]\s*)/)
+    const timestampMatch = content.match(/^(\[\d{4}-\d{2}-\d{2}\s[^\]]+\]\s*)/)
     const timestampPrefix = timestampMatch ? timestampMatch[1] : `[${this.getTimeStamp()}] `
     const logContent = timestampMatch ? content.slice(timestampPrefix.length) : content
     const lines = logContent.split(/\r?\n/).filter((line) => line.trim() !== '')
     for (const line of lines) {
-      currentLogs.push(/^\[[^\]]+\]\s*/.test(line) ? line : `${timestampPrefix}${line}`)
+      currentLogs.push(/^\[\d{4}-\d{2}-\d{2}\s/.test(line) ? line : `${timestampPrefix}${line}`)
     }
     this.logCache.set(connId, currentLogs)
   }
@@ -460,7 +460,7 @@ export default class ProtocolLogger {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : '获取日志路径失败'
+        message: error instanceof Error ? error.message : 'Failed to get log file path'
       }
     }
   }
@@ -536,6 +536,8 @@ export default class ProtocolLogger {
 
       // 更新内部映射，后续写入和打开操作都指向新文件
       this.connLogFiles.set(connId, newLogFileName)
+      this.connLogFileHistory.set(connId, [...(this.connLogFileHistory.get(connId) || []), newLogFileName])
+      this.connLogBaseNames.set(connId, newLogFileName.replace(/\.log$/, ''))
       this.connLogIndexes.set(connId, 0)
       this.currentFileSizes.set(connId, 0)
 

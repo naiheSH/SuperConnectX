@@ -31,6 +31,7 @@ const { t } = useI18n()
 import UnifiedTerminal from './UnifiedTerminal.vue'
 import { fromRawConnection } from '../entity/protocol'
 import { useTerminal } from '../composables/useTerminal'
+import { formatReceivedData as formatReceivedDataUtil } from '../utils/TerminalUtils'
 
 const MAX_RETRY_COUNT = 1000
 const RETRY_INTERVAL_MS = 3000
@@ -122,17 +123,7 @@ const terminal = useTerminal({
 const { openLogFolder, openLogFile, saveLogFileAs, cleanup: terminalCleanup } = terminal
 
 const formatReceivedData = (content: string, timestamp?: string): string => {
-  if (!terminal.showTimestamp.value || !timestamp) {
-    return `${content}\n`
-  }
-
-  const prefix = `[${timestamp}] `
-  const lines = content.split(/\r?\n/).filter(line => line.length > 0)
-  if (lines.length === 0) {
-    return `${prefix}\n`
-  }
-
-  return `${lines.map(line => `${prefix}${line}`).join('\n')}\n`
+  return formatReceivedDataUtil(content, terminal.showTimestamp.value, timestamp)
 }
 
 const handleClose = async () => {

@@ -44,15 +44,13 @@ jobs:
             artifact-name: macos-arm64
             artifact-path: |
               release/*arm64.dmg
-              release/*.yml
           - name: macOS (Intel)
-            os: macos-13
+            os: macos-15-intel
             builder-target: --mac --x64
             mac-arch: x64
             artifact-name: macos-x64
             artifact-path: |
               release/*x64.dmg
-              release/*.yml
 
     steps:
       - name: Checkout
@@ -229,6 +227,27 @@ jobs:
         with:
           path: release-assets
           merge-multiple: true
+
+      - name: Generate combined latest-mac.yml
+        run: |
+          cd release-assets
+          if ls *.dmg 1>/dev/null 2>&1; then
+            # Collect DMG info from individual mac yml files (downloaded from build artifacts if present)
+            # Generate latest-mac.yml combining both architectures
+            VERSION=$(ls *.dmg | head -1 | grep -oP '\d+\.\d+\.\d+' || echo '0.0.0')
+            echo "version: $VERSION" > latest-mac.yml
+            echo "releaseDate: '$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'" >> latest-mac.yml
+            echo "files:" >> latest-mac.yml
+            for dmg in *.dmg; do
+              SIZE=$(stat -c%s "$dmg" 2>/dev/null || stat -f%z "$dmg" 2>/dev/null || echo 0)
+              SHA512=$(sha512sum "$dmg" 2>/dev/null | cut -d' ' -f1 || shasum -a 512 "$dmg" 2>/dev/null | cut -d' ' -f1 || echo '')
+              echo "  - url: $dmg" >> latest-mac.yml
+              echo "    sha512: $SHA512" >> latest-mac.yml
+              echo "    size: $SIZE" >> latest-mac.yml
+            done
+            echo "Generated latest-mac.yml with $(ls *.dmg | wc -l) architecture(s)"
+            cat latest-mac.yml
+          fi
 
       - name: Create Release and Upload Assets
         env:
