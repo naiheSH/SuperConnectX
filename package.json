@@ -3,7 +3,10 @@
   "version": "1.2.1-naihe",
   "description": "SuperConnectX - 超级连接",
   "main": "./out/main/index.js",
-  "author": "SuperStudio",
+  "author": {
+    "name": "SuperStudio",
+    "email": "naihe@superstudio.dev"
+  },
   "homepage": "https://github.com/naiheSH/SuperConnectX",
   "scripts": {
     "format": "prettier --write .",
