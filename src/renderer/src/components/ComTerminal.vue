@@ -408,6 +408,8 @@ const loadComSettings = async () => {
       dtr.value = settings.dtr !== undefined ? settings.dtr : false
       rts.value = settings.rts !== undefined ? settings.rts : false
       remark.value = settings.remark || ''
+      // 同步 remark 到 connection 对象，供导出时使用
+      ;(props.connection as any).remark = remark.value
       hexDisplayMode.value = settings.hexDisplayMode || false
       terminal.showTimestamp.value = settings.showTimestamp !== undefined ? settings.showTimestamp : true
       autoNewline.value = settings.autoNewline !== undefined ? settings.autoNewline : true

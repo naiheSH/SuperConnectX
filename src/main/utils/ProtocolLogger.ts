@@ -225,14 +225,57 @@ export default class ProtocolLogger {
     this.maxLogCount = count
   }
 
-  // 手动触发清理（公开方法）
+  // 手动触发清理（公开方法）- 清理所有非活跃日志文件，忽略设置值
   manualCleanup(): { deletedCount: number; deletedSize: number } {
     const beforeCount = this.countLogFiles()
-    this.cleanupOldLogs()
+    this.forceCleanupAllLogs()
     const afterCount = this.countLogFiles()
     return {
       deletedCount: beforeCount - afterCount,
-      deletedSize: 0 // 简化实现，不计算具体大小
+      deletedSize: 0
+    }
+  }
+
+  // 强制清理所有非活跃日志文件（手动清理时使用）
+  private forceCleanupAllLogs(): void {
+    try {
+      const logDir = this.logDir
+      if (!existsSync(logDir)) return
+
+      // 收集当前正在使用的日志文件（排除这些文件）
+      const activeLogFiles = new Set<string>()
+      this.connLogFiles.forEach((fileName) => {
+        activeLogFiles.add(fileName)
+      })
+
+      const files = readdirSync(logDir)
+      const logFiles = files
+        .filter(f => f.endsWith('.log') && !activeLogFiles.has(f))
+        .map(f => {
+          const filePath = join(logDir, f)
+          try {
+            const stats = statSync(filePath)
+            return { name: f, path: filePath, mtime: stats.mtimeMs, size: stats.size }
+          } catch {
+            return null
+          }
+        })
+        .filter((f): f is { name: string; path: string; mtime: number; size: number } => f !== null)
+        .sort((a, b) => b.mtime - a.mtime) // 按修改时间倒序
+
+      // 删除所有非活跃日志文件（保留最新的1个）
+      if (logFiles.length > 1) {
+        const filesToDelete = logFiles.slice(1) // 保留第一个（最新的）
+        for (const file of filesToDelete) {
+          try {
+            unlinkSync(file.path)
+          } catch {
+            // 忽略删除失败
+          }
+        }
+      }
+    } catch {
+      // 忽略清理过程中的错误
     }
   }
 

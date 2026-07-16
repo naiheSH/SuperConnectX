@@ -1,5 +1,5 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 export interface TerminalConnection {
@@ -159,7 +159,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     }
   }
 
-  // 保存日志到用户选择的位置（带进度提示）
+  // 保存日志到用户选择的位置
   const saveLogFileAs = async () => {
     try {
       // 生成文件名：备注-简短串口号-年月日.log
@@ -193,46 +193,19 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
         const settings = await window.storageApi.getSettings()
         const exportHours = settings?.exportTimeRange || 0
 
-        // 显示名称：备注(串口号) 或 串口号
-        const displayName = safeRemark ? `${safeRemark}(${safeShortName})` : safeShortName
+        // 显示导出中提示
+        ElMessage.info(t('terminal.exporting'))
 
-        // 创建进度通知
-        let currentNotification: { close: () => void } | null = null
-        const updateProgress = (percent: number) => {
-          if (currentNotification) {
-            currentNotification.close()
-          }
-          currentNotification = ElNotification({
-            title: `${t('terminal.exporting')} ${displayName}`,
-            message: `${percent}%`,
-            type: 'info',
-            duration: 0,
-            showClose: false
-          })
-        }
-        updateProgress(0)
-
-        // 监听进度
-        const removeProgressListener = window.connectApi.onCopyLogProgress((data) => {
-          if (data.sessionId === String(conn.sessionId)) {
-            updateProgress(data.percent)
-          }
-        })
-
-        try {
-          const copyResult = await window.connectApi.copyLogFile(
-            String(conn.sessionId),
-            result.filePath,
-            exportHours > 0 ? exportHours : undefined
-          )
-          if (copyResult.success) {
-            ElMessage.success(t('terminal.saveLogSuccess'))
-            window.toolApi.showItemInFolder(result.filePath)
-          } else {
-            ElMessage.error(t('terminal.saveFailed', { message: copyResult.message || t('terminal.unknownError') }))
-          }
-        } finally {
-          removeProgressListener()
+        const copyResult = await window.connectApi.copyLogFile(
+          String(conn.sessionId),
+          result.filePath,
+          exportHours > 0 ? exportHours : undefined
+        )
+        if (copyResult.success) {
+          ElMessage.success(t('terminal.saveLogSuccess'))
+          window.toolApi.showItemInFolder(result.filePath)
+        } else {
+          ElMessage.error(t('terminal.saveFailed', { message: copyResult.message || t('terminal.unknownError') }))
         }
       }
     } catch (error) {
