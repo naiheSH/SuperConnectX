@@ -156,17 +156,16 @@
                 <span class="label-text">{{ t('logSettings.logSplitSize') }}</span>
                 <span class="label-desc">{{ t('logSettings.logSplitSizeDesc') }}</span>
               </div>
-              <div class="slider-control">
-                <el-slider
-                  v-model="settings.logSplitSize"
-                  :min="1"
-                  :max="100"
-                  :step="1"
-                  :show-tooltip="false"
-                  style="width: 120px"
-                />
-                <span class="slider-value">{{ settings.logSplitSize }} MB</span>
-              </div>
+              <el-select v-model="settings.logSplitSize" size="small" style="width: 120px">
+                <el-option :label="t('logSettings.noSplit')" :value="0" />
+                <el-option label="10 MB" :value="10" />
+                <el-option label="20 MB" :value="20" />
+                <el-option label="50 MB" :value="50" />
+                <el-option label="100 MB" :value="100" />
+                <el-option label="200 MB" :value="200" />
+                <el-option label="500 MB" :value="500" />
+                <el-option label="1 GB" :value="1024" />
+              </el-select>
             </div>
             <div class="setting-item">
               <div class="setting-label">
@@ -204,6 +203,57 @@
                 </div>
                 <span class="hint-subtitle">{{ t('logSettings.fileNameHintPad') }}: <code>%MM</code> <code>%DD</code> <code>%hh</code> <code>%mm</code> <code>%ss</code> <code>%fff</code></span>
               </div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('logSettings.maxLogAgeDays') }}</span>
+                <span class="label-desc">{{ t('logSettings.maxLogAgeDaysDesc') }}</span>
+              </div>
+              <el-select v-model="settings.maxLogAgeDays" size="small" style="width: 120px">
+                <el-option :label="t('logSettings.noLimit')" :value="0" />
+                <el-option label="7d" :value="7" />
+                <el-option label="30d" :value="30" />
+                <el-option label="90d" :value="90" />
+                <el-option label="180d" :value="180" />
+                <el-option label="365d" :value="365" />
+              </el-select>
+              <span v-if="settings.maxLogAgeDays === 0" class="setting-hint">- {{ t('logSettings.allLogsKept') }}</span>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('logSettings.maxLogCount') }}</span>
+                <span class="label-desc">{{ t('logSettings.maxLogCountDesc') }}</span>
+              </div>
+              <el-select v-model="settings.maxLogCount" size="small" style="width: 120px">
+                <el-option :label="t('logSettings.noLimit')" :value="0" />
+                <el-option label="50" :value="50" />
+                <el-option label="100" :value="100" />
+                <el-option label="200" :value="200" />
+                <el-option label="500" :value="500" />
+              </el-select>
+              <span v-if="settings.maxLogCount === 0" class="setting-hint">- {{ t('logSettings.allLogsKept') }}</span>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('logSettings.exportTimeRange') }}</span>
+                <span class="label-desc">{{ t('logSettings.exportTimeRangeDesc') }}</span>
+              </div>
+              <el-select v-model="settings.exportTimeRange" size="small" style="width: 120px">
+                <el-option :label="t('logSettings.exportAll')" :value="0" />
+                <el-option label="1h" :value="1" />
+                <el-option label="6h" :value="6" />
+                <el-option label="24h" :value="24" />
+                <el-option :label="t('logSettings.days').replace('{n}', '7')" :value="168" />
+              </el-select>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('logSettings.cleanupNow') }}</span>
+                <span class="label-desc">{{ t('logSettings.cleanupNowDesc') }}</span>
+              </div>
+              <el-button size="small" @click="handleCleanupLogs" :loading="isCleaningUp">
+                {{ t('logSettings.cleanupButton') }}
+              </el-button>
             </div>
             </template>
           </div>
@@ -415,6 +465,20 @@ const saveSettings = async () => {
     window.toolApi?.notifySettingsUpdate(plainSettings)
   } catch (error) {
     console.error(t('common.saveFailed'), error)
+  }
+}
+
+// 手动清理日志
+const isCleaningUp = ref(false)
+const handleCleanupLogs = async () => {
+  isCleaningUp.value = true
+  try {
+    const result = await window.connectApi.cleanupLogs()
+    ElMessage.success(t('logSettings.cleanupSuccess', { count: result.deletedCount }))
+  } catch (error) {
+    ElMessage.error(t('logSettings.cleanupFailed'))
+  } finally {
+    isCleaningUp.value = false
   }
 }
 
@@ -916,6 +980,12 @@ const handleSettingsUpdated = (event: Event) => {
   font-size: 12px;
   min-width: 50px;
   text-align: right;
+}
+
+.setting-hint {
+  color: var(--settings-hint-color, #909399);
+  font-size: 12px;
+  margin-left: 8px;
 }
 
 .path-input-wrapper {

@@ -320,8 +320,8 @@ const toggleGroupExpanded = (type: string) => {
   font-weight: 600;
   color: var(--text-secondary);
   display: inline-block;
-  width: 80px;
-  flex-shrink: 0;
+  min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

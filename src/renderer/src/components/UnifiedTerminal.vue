@@ -441,6 +441,8 @@ let autoScrollOnFocus = true // 获得焦点时固定滚屏（默认开启）
 let autoScrollAfterSend = true // 发送命令后停止滚屏（默认开启）
 let autoScrollOnWheel = true // 鼠标滚动决策固定（默认开启）
 let toastDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let syntaxHighlightTimer: ReturnType<typeof setTimeout> | null = null
+const SYNTAX_HIGHLIGHT_DEBOUNCE_MS = 100 // 语法高亮防抖延迟
 
 const presetCommandsRef = ref<InstanceType<typeof PresetCommands>>()
 
@@ -629,8 +631,14 @@ const appendToTerminal = (content: string) => {
     window.dispatchEvent(new CustomEvent('terminal-text-cleared', { detail: { connectionName: props.connection.name } }))
   }
 
-  // 增量语法高亮（只扫描新增文本，成本极低）
-  applySyntaxWithClasses()
+  // 防抖语法高亮，避免高频数据导致卡顿
+  if (syntaxHighlightTimer) {
+    clearTimeout(syntaxHighlightTimer)
+  }
+  syntaxHighlightTimer = setTimeout(() => {
+    applySyntaxWithClasses()
+    syntaxHighlightTimer = null
+  }, SYNTAX_HIGHLIGHT_DEBOUNCE_MS)
 }
 
 // 将关键词模式转为正则（支持逗号分隔的多个关键词），结果会被缓存
@@ -1312,6 +1320,12 @@ onUnmounted(() => {
   if (editor) {
     editor.dispose()
     editor = null
+  }
+
+  // 清理语法高亮防抖定时器
+  if (syntaxHighlightTimer) {
+    clearTimeout(syntaxHighlightTimer)
+    syntaxHighlightTimer = null
   }
 
   window.removeEventListener('settings-updated', handleSettingsUpdated)

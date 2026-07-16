@@ -1,5 +1,5 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 export interface TerminalConnection {
@@ -159,29 +159,80 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     }
   }
 
-  // 保存日志到用户选择的位置
+  // 保存日志到用户选择的位置（带进度提示）
   const saveLogFileAs = async () => {
     try {
-      const namePart = connectionType === 'telnet' ? `${conn.host}_${conn.port}` : conn.comName
-      const safeNamePart = String(namePart || 'unknown').replace(/[\\/*?:"<>|]/g, '-')
+      // 生成文件名：备注-简短串口号-年月日.log
+      const remark = (conn as any).remark || ''
+      let shortName = ''
+      if (connectionType === 'telnet') {
+        shortName = `${conn.host}_${conn.port}`
+      } else {
+        // 简短串口号：取最后一段，如 /dev/ttyUSB0 → ttyUSB0
+        const comName = conn.comName || 'unknown'
+        const parts = comName.split('/')
+        shortName = parts[parts.length - 1] || comName
+      }
+      const safeShortName = String(shortName).replace(/[\\/*?:"<>|]/g, '-')
+      const safeRemark = String(remark).replace(/[\\/*?:"<>|]/g, '-')
+
       const now = new Date()
-      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
-        now.getDate()
-      ).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}h-${String(
-        now.getMinutes()
-      ).padStart(2, '0')}m-${String(now.getSeconds()).padStart(2, '0')}s`
+      const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+
+      // 组合文件名：有备注时 备注-串口号-日期，无备注时 串口号-日期
+      const fileNamePrefix = safeRemark ? `${safeRemark}-${safeShortName}` : safeShortName
+      const defaultPath = `${fileNamePrefix}-${dateStr}.log`
+
       const result = await window.dialogApi.saveFileDialog({
         title: t('terminal.saveLogAs'),
-        defaultPath: `${safeNamePart}-${timestamp}.log`,
+        defaultPath,
         filters: [{ name: t('terminal.logFileFilter'), extensions: ['log', 'txt'] }]
       })
       if (result.filePath) {
-        const copyResult = await window.connectApi.copyLogFile(String(conn.sessionId), result.filePath)
-        if (copyResult.success) {
-          ElMessage.success(t('terminal.saveLogSuccess'))
-          window.toolApi.showItemInFolder(result.filePath)
-        } else {
-          ElMessage.error(t('terminal.saveFailed', { message: copyResult.message || t('terminal.unknownError') }))
+        // 获取导出时间范围设置
+        const settings = await window.storageApi.getSettings()
+        const exportHours = settings?.exportTimeRange || 0
+
+        // 显示名称：备注(串口号) 或 串口号
+        const displayName = safeRemark ? `${safeRemark}(${safeShortName})` : safeShortName
+
+        // 创建进度通知
+        let currentNotification: { close: () => void } | null = null
+        const updateProgress = (percent: number) => {
+          if (currentNotification) {
+            currentNotification.close()
+          }
+          currentNotification = ElNotification({
+            title: `${t('terminal.exporting')} ${displayName}`,
+            message: `${percent}%`,
+            type: 'info',
+            duration: 0,
+            showClose: false
+          })
+        }
+        updateProgress(0)
+
+        // 监听进度
+        const removeProgressListener = window.connectApi.onCopyLogProgress((data) => {
+          if (data.sessionId === String(conn.sessionId)) {
+            updateProgress(data.percent)
+          }
+        })
+
+        try {
+          const copyResult = await window.connectApi.copyLogFile(
+            String(conn.sessionId),
+            result.filePath,
+            exportHours > 0 ? exportHours : undefined
+          )
+          if (copyResult.success) {
+            ElMessage.success(t('terminal.saveLogSuccess'))
+            window.toolApi.showItemInFolder(result.filePath)
+          } else {
+            ElMessage.error(t('terminal.saveFailed', { message: copyResult.message || t('terminal.unknownError') }))
+          }
+        } finally {
+          removeProgressListener()
         }
       }
     } catch (error) {

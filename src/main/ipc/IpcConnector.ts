@@ -187,8 +187,14 @@ export default class IpcConnector {
       return await _logger.getLogFilePath(sessionId)
     })
 
-    ipcMain.handle('copy-log-file', async (_, { sessionId, destPath }: { sessionId: string; destPath: string }) => {
-      return await _logger.copyLogFile(sessionId, destPath)
+    ipcMain.handle('copy-log-file', async (_event, { sessionId, destPath, hours }: { sessionId: string; destPath: string; hours?: number }) => {
+      // 通过事件发送进度
+      const sendProgress = (percent: number) => {
+        if (this.windows.mainWindow && !this.windows.mainWindow.isDestroyed()) {
+          this.windows.mainWindow.webContents.send('copy-log-progress', { sessionId, percent })
+        }
+      }
+      return await _logger.copyLogFile(sessionId, destPath, sendProgress, { hours })
     })
 
     ipcMain.handle('rotate-log-file', async (_, sessionId: string) => {
@@ -198,6 +204,11 @@ export default class IpcConnector {
     ipcMain.handle('write-to-log', async (_, { sessionId, content }: { sessionId: string; content: string }) => {
       _logger.appendToConnLog(content, sessionId)
       return { success: true }
+    })
+
+    // 手动清理日志
+    ipcMain.handle('cleanup-logs', async () => {
+      return _logger.manualCleanup()
     })
 
     // Worker 模式开关
@@ -289,6 +300,14 @@ export default class IpcConnector {
 
     if (settings.logFileName) {
       _logger.setLogFileName(settings.logFileName)
+    }
+
+    // 日志清理设置
+    if (settings.maxLogAgeDays) {
+      _logger.setMaxLogAgeDays(settings.maxLogAgeDays)
+    }
+    if (settings.maxLogCount) {
+      _logger.setMaxLogCount(settings.maxLogCount)
     }
   }
 

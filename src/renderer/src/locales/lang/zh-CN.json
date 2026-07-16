@@ -118,7 +118,23 @@
     "hints": "秒（补零）",
     "hintf": "毫秒（补零）",
     "logSplitSize": "日志分片大小",
-    "logSplitSizeDesc": "单个日志文件超过此大小时分片（MB）"
+    "logSplitSizeDesc": "单个日志文件超过此大小时分片",
+    "noSplit": "不分片",
+    "maxLogAgeDays": "日志最大保留天数",
+    "maxLogAgeDaysDesc": "超过此天数的日志文件将自动删除",
+    "days": "天",
+    "maxLogCount": "日志最大文件数",
+    "maxLogCountDesc": "保留最新的日志文件数量，超出部分自动删除",
+    "exportTimeRange": "导出时间范围",
+    "exportTimeRangeDesc": "另存为时导出的日志时间范围",
+    "exportAll": "全部",
+    "noLimit": "不限制",
+    "allLogsKept": "保留所有日志",
+    "cleanupNow": "立即清理",
+    "cleanupNowDesc": "手动触发日志清理，按当前规则删除旧日志",
+    "cleanupButton": "清理",
+    "cleanupSuccess": "清理完成，删除了 {count} 个文件",
+    "cleanupFailed": "清理失败"
   },
   "syntaxSettings": {
     "title": "语法高亮",
@@ -388,7 +404,8 @@
     "saveFailedWithError": "保存失败：{error}",
     "logRotateSuccess": "日志已归档：{oldName} → {newName}",
     "unknownError": "未知错误",
-    "clearAll": "清空全部"
+    "clearAll": "清空全部",
+    "exporting": "正在导出"
   },
   "presetCommands": {
     "title": "预设命令",

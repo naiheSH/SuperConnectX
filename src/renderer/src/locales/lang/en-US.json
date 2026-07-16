@@ -118,7 +118,23 @@
     "hints": "Second (padded)",
     "hintf": "Millisecond (padded)",
     "logSplitSize": "Log Split Size",
-    "logSplitSizeDesc": "Split log file when size exceeds this limit (MB)"
+    "logSplitSizeDesc": "Split log file when size exceeds this limit",
+    "noSplit": "No Split",
+    "maxLogAgeDays": "Max Log Retention Days",
+    "maxLogAgeDaysDesc": "Log files older than this will be automatically deleted",
+    "days": "days",
+    "maxLogCount": "Max Log File Count",
+    "maxLogCountDesc": "Keep the latest N log files, older ones will be deleted",
+    "exportTimeRange": "Export Time Range",
+    "exportTimeRangeDesc": "Time range of logs to export when saving",
+    "exportAll": "All",
+    "noLimit": "No Limit",
+    "allLogsKept": "Keep all logs",
+    "cleanupNow": "Cleanup Now",
+    "cleanupNowDesc": "Manually trigger log cleanup based on current rules",
+    "cleanupButton": "Cleanup",
+    "cleanupSuccess": "Cleanup done, deleted {count} files",
+    "cleanupFailed": "Cleanup failed"
   },
   "syntaxSettings": {
     "title": "Syntax Highlight",
@@ -388,7 +404,8 @@
     "saveFailedWithError": "Save failed: {error}",
     "logRotateSuccess": "Log rotated: {oldName} → {newName}",
     "unknownError": "Unknown error",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "exporting": "Exporting"
   },
   "presetCommands": {
     "title": "Preset Commands",

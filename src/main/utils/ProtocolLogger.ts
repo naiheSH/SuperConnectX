@@ -1,8 +1,17 @@
-import { appendFile, appendFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs'
+import { appendFile, appendFileSync, existsSync, mkdirSync, statSync, writeFileSync, readdirSync, unlinkSync } from 'fs'
 import { shell, app } from 'electron'
 import fs from 'fs/promises'
 import { dirname, join } from 'path'
 import { getAppDataDir } from './AppDir'
+
+// 磁盘空间相关
+const diskSpace = (() => {
+  try {
+    return require('disk-size') // 可选依赖
+  } catch {
+    return null
+  }
+})()
 
 export interface LogSplitCallback {
   (connId: string, oldFileName: string, newFileName: string): void
@@ -20,13 +29,22 @@ export default class ProtocolLogger {
   private connLogNames = new Map<string, string>() // 保存原始连接名
   private connLogRemarks = new Map<string, string>() // 保存备注名
   private logCache = new Map<string, string[]>()
+  private failedCache = new Map<string, string[]>() // 写入失败的缓存
   private currentFileSizes = new Map<string, number>()
   private logSplitCallback: LogSplitCallback | null = null
   private writeTimer: NodeJS.Timeout | null = null
+  private cleanupTimer: NodeJS.Timeout | null = null
+  private retryTimer: NodeJS.Timeout | null = null // 失败重试定时器
   private readonly BATCH_WRITE_INTERVAL_MS = 10 * 1000
+  private readonly CLEANUP_INTERVAL_MS = 60 * 60 * 1000 // 每小时检查一次
+  private readonly RETRY_INTERVAL_MS = 60 * 1000 // 1分钟重试一次
   private logSplitSizeMB: number = 20 // 默认 20MB
   private enableLogStorage: boolean = true // 是否启用日志存储
   private logFileNamePattern: string = '%C-%Y-%M-%D-%hh-%mm-%ss' // 文件名模板
+  private maxLogAgeDays: number = 30 // 日志最大保留天数
+  private maxLogCount: number = 100 // 日志最大文件数
+  private diskSpaceWarningMB: number = 100 // 磁盘空间预警阈值（MB）
+  private isDiskSpaceLow: boolean = false // 磁盘空间是否不足
 
   constructor() {
     // 智能路径：exe 同目录（非系统盘有权限）或 userData（回退）
@@ -38,6 +56,8 @@ export default class ProtocolLogger {
     }
 
     this.startWriteTimer()
+    this.startCleanupTimer()
+    this.startRetryTimer()
   }
 
   // 设置日志分片回调
@@ -164,16 +184,196 @@ export default class ProtocolLogger {
     if (this.writeTimer.unref) this.writeTimer.unref()
   }
 
+  // 启动定时清理旧日志
+  private startCleanupTimer(): void {
+    this.cleanupTimer = setInterval(() => {
+      this.cleanupOldLogs()
+    }, this.CLEANUP_INTERVAL_MS)
+    if (this.cleanupTimer.unref) this.cleanupTimer.unref()
+  }
+
+  // 启动失败重试定时器
+  private startRetryTimer(): void {
+    this.retryTimer = setInterval(() => {
+      this.retryFailedLogs()
+    }, this.RETRY_INTERVAL_MS)
+    if (this.retryTimer.unref) this.retryTimer.unref()
+  }
+
+  // 重试失败的日志写入
+  private retryFailedLogs(): void {
+    if (this.failedCache.size === 0) return
+
+    // 将失败缓存移回正常缓存
+    this.failedCache.forEach((entries, connId) => {
+      const currentCache = this.logCache.get(connId) || []
+      this.logCache.set(connId, [...currentCache, ...entries])
+    })
+    this.failedCache.clear()
+
+    // 尝试重新写入
+    this.flushAllLogs(false)
+  }
+
+  // 设置日志最大保留天数
+  setMaxLogAgeDays(days: number): void {
+    this.maxLogAgeDays = days
+  }
+
+  // 设置日志最大文件数
+  setMaxLogCount(count: number): void {
+    this.maxLogCount = count
+  }
+
+  // 手动触发清理（公开方法）
+  manualCleanup(): { deletedCount: number; deletedSize: number } {
+    const beforeCount = this.countLogFiles()
+    this.cleanupOldLogs()
+    const afterCount = this.countLogFiles()
+    return {
+      deletedCount: beforeCount - afterCount,
+      deletedSize: 0 // 简化实现，不计算具体大小
+    }
+  }
+
+  // 统计日志文件数量
+  private countLogFiles(): number {
+    try {
+      const logDir = this.logDir
+      if (!existsSync(logDir)) return 0
+      const files = readdirSync(logDir)
+      return files.filter(f => f.endsWith('.log')).length
+    } catch {
+      return 0
+    }
+  }
+
+  // 清理旧日志文件
+  private cleanupOldLogs(): void {
+    try {
+      const logDir = this.logDir
+      if (!existsSync(logDir)) return
+
+      // 收集当前正在使用的日志文件（排除这些文件）
+      const activeLogFiles = new Set<string>()
+      this.connLogFiles.forEach((fileName) => {
+        activeLogFiles.add(fileName)
+      })
+
+      const files = readdirSync(logDir)
+      const logFiles = files
+        .filter(f => f.endsWith('.log') && !activeLogFiles.has(f)) // 排除活跃文件
+        .map(f => {
+          const filePath = join(logDir, f)
+          try {
+            const stats = statSync(filePath)
+            return { name: f, path: filePath, mtime: stats.mtimeMs, size: stats.size }
+          } catch {
+            return null
+          }
+        })
+        .filter((f): f is { name: string; path: string; mtime: number; size: number } => f !== null)
+        .sort((a, b) => b.mtime - a.mtime) // 按修改时间倒序
+
+      const now = Date.now()
+
+      // 1. 按时间清理超期日志（0 = 不清理）
+      if (this.maxLogAgeDays > 0) {
+        const maxAgeMs = this.maxLogAgeDays * 24 * 60 * 60 * 1000
+        for (const file of logFiles) {
+          if (now - file.mtime > maxAgeMs) {
+            try {
+              unlinkSync(file.path)
+            } catch {
+              // 忽略删除失败
+            }
+          }
+        }
+      }
+
+      // 2. 按数量清理（0 = 不限制）
+      if (this.maxLogCount > 0) {
+        const remainingFiles = logFiles.filter(f => existsSync(f.path))
+        if (remainingFiles.length > this.maxLogCount) {
+          const filesToDelete = remainingFiles.slice(this.maxLogCount)
+          for (const file of filesToDelete) {
+            try {
+              unlinkSync(file.path)
+            } catch {
+              // 忽略删除失败
+            }
+          }
+        }
+      }
+    } catch {
+      // 忽略清理过程中的错误
+    }
+  }
+
+  // 检查磁盘空间
+  private checkDiskSpace(): boolean {
+    try {
+      // 尝试使用 disk-size 库
+      if (diskSpace && diskSpace.getDiskSpace) {
+        const result = diskSpace.getDiskSpace(this.logDir)
+        if (result && result.free) {
+          const freeMB = result.free / (1024 * 1024)
+          if (freeMB < this.diskSpaceWarningMB) {
+            if (!this.isDiskSpaceLow) {
+              console.warn(`[ProtocolLogger] Low disk space: ${freeMB.toFixed(1)}MB remaining, logging paused`)
+              this.isDiskSpaceLow = true
+            }
+            return false
+          }
+          this.isDiskSpaceLow = false
+          return true
+        }
+      }
+
+      // 回退：使用 statfs（Node.js 18+）
+      const { statfsSync } = require('fs') as any
+      if (statfsSync) {
+        const stats = statfsSync(this.logDir)
+        const freeMB = (stats.bavail * stats.bsize) / (1024 * 1024)
+        if (freeMB < this.diskSpaceWarningMB) {
+          if (!this.isDiskSpaceLow) {
+            console.warn(`[ProtocolLogger] Low disk space: ${freeMB.toFixed(1)}MB remaining, logging paused`)
+            this.isDiskSpaceLow = true
+          }
+          return false
+        }
+        this.isDiskSpaceLow = false
+        return true
+      }
+    } catch {
+      // 无法检测时假设正常
+    }
+    return true
+  }
+
+  // 获取磁盘空间状态
+  getDiskSpaceStatus(): { isLow: boolean; warningMB: number } {
+    return { isLow: this.isDiskSpaceLow, warningMB: this.diskSpaceWarningMB }
+  }
+
+  // 设置磁盘空间预警阈值
+  setDiskSpaceWarningMB(mb: number): void {
+    this.diskSpaceWarningMB = mb
+  }
+
   // 检查并处理日志分片
   private checkAndSplitLog(connId: string): string {
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return fileName || ''
 
+    // 0 = 不分片
+    if (this.logSplitSizeMB <= 0) return fileName
+
     const logFile = join(this.getConnLogDir(connId), fileName)
-    
+
     // 获取当前文件大小
     let currentSize = this.currentFileSizes.get(connId) || 0
-    
+
     if (existsSync(logFile)) {
       try {
         const stats = statSync(logFile)
@@ -233,8 +433,12 @@ export default class ProtocolLogger {
         } else {
           // 正常运行时异步写入（不阻塞事件循环）
           appendFile(logFile, logData, 'utf-8', (err) => {
-            if (err) console.error(`Async write log failed [connId:${connId}]:`, err)
-            else {
+            if (err) {
+              console.error(`Async write log failed [connId:${connId}]:`, err)
+              // 写入失败，将数据移入失败缓存
+              const failed = this.failedCache.get(connId) || []
+              this.failedCache.set(connId, [...failed, ...logEntries])
+            } else {
               try {
                 const stats = statSync(logFile)
                 this.currentFileSizes.set(connId, stats.size)
@@ -245,6 +449,9 @@ export default class ProtocolLogger {
         this.logCache.set(connId, []) // 清空缓存
       } catch (err) {
         console.error(`Write log failed [connId:${connId}]:`, err)
+        // 同步写入失败，将数据移入失败缓存
+        const failed = this.failedCache.get(connId) || []
+        this.failedCache.set(connId, [...failed, ...logEntries])
       }
     })
   }
@@ -254,6 +461,16 @@ export default class ProtocolLogger {
       clearInterval(this.writeTimer)
       this.writeTimer = null
     }
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer)
+      this.cleanupTimer = null
+    }
+    if (this.retryTimer) {
+      clearInterval(this.retryTimer)
+      this.retryTimer = null
+    }
+    // 退出前重试失败的日志
+    this.retryFailedLogs()
     this.flushAllLogs(true)
   }
 
@@ -328,6 +545,11 @@ export default class ProtocolLogger {
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return
 
+    // 检查磁盘空间，空间不足时停止写入
+    if (!this.checkDiskSpace()) {
+      return // 磁盘空间不足，丢弃数据
+    }
+
     const currentLogs = this.logCache.get(connId) || []
     const timestamp = this.getTimeStamp()
 
@@ -346,6 +568,11 @@ export default class ProtocolLogger {
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return
 
+    // 检查磁盘空间，空间不足时停止写入
+    if (!this.checkDiskSpace()) {
+      return // 磁盘空间不足，丢弃数据
+    }
+
     const currentLogs = this.logCache.get(connId) || []
     const timestampMatch = content.match(/^(\[\d{4}-\d{2}-\d{2}\s[^\]]+\]\s*)/)
     const timestampPrefix = timestampMatch ? timestampMatch[1] : `[${this.getTimeStamp()}] `
@@ -359,6 +586,14 @@ export default class ProtocolLogger {
 
   // 连接关闭时刷入日志（保留记录以便后续打开日志）
   flushConnLog(connId: string): void {
+    // 先处理失败缓存
+    const failedLogs = this.failedCache.get(connId)
+    if (failedLogs && failedLogs.length > 0) {
+      const allLogs = [...failedLogs, ...(this.logCache.get(connId) || [])]
+      this.logCache.set(connId, allLogs)
+      this.failedCache.delete(connId)
+    }
+
     const remainingLogs = this.logCache.get(connId)
     if (remainingLogs && remainingLogs.length > 0) {
       const fileName = this.connLogFiles.get(connId)
@@ -387,6 +622,7 @@ export default class ProtocolLogger {
     this.connLogNames.delete(connId)
     this.connLogRemarks.delete(connId)
     this.currentFileSizes.delete(connId)
+    this.failedCache.delete(connId)
   }
 
   async openConnLog(connId: string, mode: 'folder' | 'file' = 'folder'): Promise<{ success: boolean; message: string } | null> {
@@ -465,7 +701,12 @@ export default class ProtocolLogger {
     }
   }
 
-  async copyLogFile(connId: string, destPath: string): Promise<{ success: boolean; message?: string }> {
+  async copyLogFile(
+    connId: string,
+    destPath: string,
+    onProgress?: (percent: number) => void,
+    options?: { hours?: number }
+  ): Promise<{ success: boolean; message?: string }> {
     try {
       this.flushAllLogs(true) // 确保所有日志都已写入
 
@@ -476,22 +717,41 @@ export default class ProtocolLogger {
 
       const logDir = this.getConnLogDir(connId)
       await fs.mkdir(dirname(destPath), { recursive: true })
-      await fs.writeFile(destPath, '', 'utf-8')
 
-      let hasCopied = false
-      for (const fileName of fileNames) {
-        const sourcePath = join(logDir, fileName)
-        if (!existsSync(sourcePath)) {
-          continue
-        }
-
-        const content = await fs.readFile(sourcePath)
-        await fs.appendFile(destPath, content)
-        hasCopied = true
+      // 如果指定了时间范围，按时间筛选
+      if (options?.hours && options.hours > 0) {
+        return await this.copyLogFileWithTimeRange(connId, destPath, options.hours, onProgress)
       }
 
-      if (!hasCopied) {
+      // 全部导出
+      await fs.writeFile(destPath, '', 'utf-8')
+
+      // 收集有效文件并计算总大小
+      const validFiles: { path: string; size: number }[] = []
+      let totalSize = 0
+      for (const fileName of fileNames) {
+        const sourcePath = join(logDir, fileName)
+        if (existsSync(sourcePath)) {
+          const stats = statSync(sourcePath)
+          validFiles.push({ path: sourcePath, size: stats.size })
+          totalSize += stats.size
+        }
+      }
+
+      if (validFiles.length === 0) {
         return { success: false, message: 'Source log file does not exist' }
+      }
+
+      // 逐个文件复制并报告进度
+      let copiedSize = 0
+      for (const file of validFiles) {
+        const content = await fs.readFile(file.path)
+        await fs.appendFile(destPath, content)
+        copiedSize += file.size
+        // 报告进度
+        if (onProgress && totalSize > 0) {
+          onProgress(Math.min(100, Math.round((copiedSize / totalSize) * 100)))
+        }
       }
 
       return { success: true }
@@ -502,6 +762,68 @@ export default class ProtocolLogger {
         message: error instanceof Error ? error.message : 'Failed to copy log file'
       }
     }
+  }
+
+  // 按时间范围导出日志
+  private async copyLogFileWithTimeRange(
+    connId: string,
+    destPath: string,
+    hours: number,
+    onProgress?: (percent: number) => void
+  ): Promise<{ success: boolean; message?: string }> {
+    const fileNames = this.connLogFileHistory.get(connId) || []
+    const logDir = this.getConnLogDir(connId)
+    const cutoff = Date.now() - hours * 60 * 60 * 1000
+    const timestampRegex = /^\[(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})/
+
+    // 收集有效文件
+    const validFiles: string[] = []
+    for (const fileName of fileNames) {
+      const sourcePath = join(logDir, fileName)
+      if (existsSync(sourcePath)) {
+        validFiles.push(sourcePath)
+      }
+    }
+
+    if (validFiles.length === 0) {
+      return { success: false, message: 'Source log file does not exist' }
+    }
+
+    // 读取并筛选内容
+    let totalContent = ''
+    let processedFiles = 0
+
+    for (const filePath of validFiles) {
+      const content = await fs.readFile(filePath, 'utf-8')
+      const lines = content.split('\n')
+
+      // 按行匹配时间戳进行筛选
+      const filtered = lines.filter(line => {
+        const match = line.match(timestampRegex)
+        if (!match) return true // 保留无时间戳的行（如连接信息）
+        try {
+          const lineTime = new Date(match[1]).getTime()
+          return lineTime >= cutoff
+        } catch {
+          return true // 解析失败时保留
+        }
+      })
+
+      if (filtered.length > 0) {
+        totalContent += filtered.join('\n') + '\n'
+      }
+
+      processedFiles++
+      if (onProgress) {
+        onProgress(Math.min(99, Math.round((processedFiles / validFiles.length) * 100)))
+      }
+    }
+
+    // 写入目标文件
+    await fs.writeFile(destPath, totalContent.trimEnd() + '\n', 'utf-8')
+    if (onProgress) onProgress(100)
+
+    return { success: true }
   }
 
   // 日志归档：保留旧文件不动，创建新日志文件继续写入

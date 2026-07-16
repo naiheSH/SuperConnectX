@@ -86,12 +86,14 @@ declare global {
       onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
       onConnectClose: (callback: (connId: number) => void) => () => void
       onLogSplit: (callback: (data: { connId: string; oldFileName: string; newFileName: string }) => void) => () => void
+      onCopyLogProgress: (callback: (data: { sessionId: string; percent: number }) => void) => () => void
       openConnectLog: (sessionId: string, mode?: 'folder' | 'file') => Promise<{ success: boolean; message?: string; filePath?: string }>
       getLogFilePath: (sessionId: string) => Promise<{ success: boolean; filePath?: string; message?: string }>
-      copyLogFile: (sessionId: string, destPath: string) => Promise<{ success: boolean; message?: string }>
+      copyLogFile: (sessionId: string, destPath: string, hours?: number) => Promise<{ success: boolean; message?: string }>
       rotateLogFile: (sessionId: string) => Promise<{ success: boolean; message?: string; oldFileName?: string; newFileName?: string }>
       listSerialPorts: () => Promise<SerialPortInfo[]>
       writeToLog: (sessionId: string, content: string) => Promise<any>
+      cleanupLogs: () => Promise<{ deletedCount: number; deletedSize: number }>
     }
     windowApi: {
       minimizeWindow: () => Promise<void>
