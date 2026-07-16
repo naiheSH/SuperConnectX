@@ -38,6 +38,10 @@ if (!app.isPackaged || process.env.NODE_ENV !== 'development') {
     if (windows.mainWindow) {
       AppUpdater.getInstance().init(windows.mainWindow)
       logger.info('[Updater] Auto-updater module initialized')
+      // 启动后延迟检查更新（5秒后，避免影响启动速度）
+      setTimeout(() => {
+        AppUpdater.getInstance().checkForUpdates()
+      }, 5000)
     }
   })
 }
