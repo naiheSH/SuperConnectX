@@ -177,9 +177,9 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
       const safeRemark = String(remark).replace(/[\\/*?:"<>|]/g, '-')
 
       const now = new Date()
-      const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+      const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
 
-      // 组合文件名：有备注时 备注-串口号-日期，无备注时 串口号-日期
+      // 组合文件名：有备注时 备注-串口号-日期时间，无备注时 串口号-日期时间
       const fileNamePrefix = safeRemark ? `${safeRemark}-${safeShortName}` : safeShortName
       const defaultPath = `${fileNamePrefix}-${dateStr}.log`
 
