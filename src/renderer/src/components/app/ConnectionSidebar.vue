@@ -39,7 +39,9 @@
                     ></span>
                     <div class="serial-port-info">
                       <div class="serial-port-row">
-                        <span class="conn-name">{{ port.path }}</span>
+                        <el-tooltip :content="port.path" placement="top" effect="dark" :enterable="false" :show-after="300">
+                          <span class="conn-name">{{ port.path }}</span>
+                        </el-tooltip>
                         <span v-if="showPortType" class="serial-port-type">
                           <el-tag v-if="port.type === 'virtual'" type="info" size="small" effect="dark">{{ t('sidebar.virtual') }}</el-tag>
                           <el-tag v-else-if="port.type === 'usb'" type="success" size="small" effect="dark">{{ t('sidebar.usb') }}</el-tag>

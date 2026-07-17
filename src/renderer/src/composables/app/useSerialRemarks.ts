@@ -3,7 +3,6 @@
  */
 import { ref, reactive, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
 import type { ComTerminalRef } from './types'
 
 export function useSerialRemarks(comTerminalRefs: Record<string, ComTerminalRef>) {
@@ -62,28 +61,32 @@ export function useSerialRemarks(comTerminalRefs: Record<string, ComTerminalRef>
 
   const saveSerialRemark = async (rightClickedTab?: { id: string | number; comName?: string } | null) => {
     if (!editingRemarkComName.value) return
+    // 立即更新 UI
     serialRemarks[editingRemarkComName.value] = editingRemark.value
+    showRemarkDialog.value = false
+
+    // 异步保存到存储（不阻塞 UI）
+    const comName = editingRemarkComName.value
+    const remark = editingRemark.value
 
     if (rightClickedTab) {
       const tabId = rightClickedTab.id.toString()
       if (comTerminalRefs[tabId]?.updateRemark) {
-        await comTerminalRefs[tabId].updateRemark(editingRemark.value)
-        showRemarkDialog.value = false
+        // 异步调用，不等待
+        comTerminalRefs[tabId].updateRemark(remark).catch(console.error)
         return
       }
     }
 
-    try {
-      const currentSettings = await window.storageApi.getComSettings(editingRemarkComName.value)
-      await window.storageApi.saveComSettings(editingRemarkComName.value, {
-        ...currentSettings,
-        remark: editingRemark.value
+    // 异步保存到存储
+    window.storageApi.getComSettings(comName).then(settings => {
+      return window.storageApi.saveComSettings(comName, {
+        ...settings,
+        remark
       })
-    } catch (error) {
+    }).catch(error => {
       console.error(t('dialog.remarkSaveFailed'), error)
-      ElMessage.error(t('dialog.remarkSaveFailed'))
-    }
-    showRemarkDialog.value = false
+    })
   }
 
   return {
