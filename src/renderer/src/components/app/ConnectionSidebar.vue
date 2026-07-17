@@ -30,6 +30,7 @@
                 v-for="port in filteredSerialPorts"
                 :key="port.path"
                 @dblclick="$emit('connectToSerialPort', port)"
+                @contextmenu.prevent="$emit('serialPortContextMenu', { event: $event, port })"
               >
                 <div class="serial-port-content">
                   <div class="serial-port-left">
@@ -190,6 +191,7 @@ const emit = defineEmits<{
   editCreateDialog: [conn: any]
   deleteConnection: [conn: any]
   sidebarMenuCommand: [command: string]
+  serialPortContextMenu: [data: { event: MouseEvent; port: SerialPortInfo }]
 }>()
 
 const showSidebarMenu = ref(false)

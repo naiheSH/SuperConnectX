@@ -47,6 +47,7 @@
         @deleteConnection="deleteConnection"
         @sidebarMenuCommand="handleSidebarMenuCommand"
         @update:serialPortExpanded="(v) => serialPortExpanded = v"
+        @serialPortContextMenu="handleSerialPortContextMenu"
       />
 
       <!-- 侧边栏分隔条 -->
@@ -421,6 +422,24 @@ const openRemarkDialogHandler = async () => {
   if (!rightClickedTab.value?.comName) return
   await openRemarkDialog(rightClickedTab.value)
   hideTabMenu()
+}
+
+// 串口右键菜单处理
+const handleSerialPortContextMenu = async (data: { event: MouseEvent; port: any }) => {
+  const { port } = data
+  // 打开备注对话框
+  editingRemarkComName.value = port.path
+  if (serialRemarks[port.path]) {
+    editingRemark.value = serialRemarks[port.path]
+  } else {
+    try {
+      const settings = await window.storageApi.getComSettings(port.path)
+      editingRemark.value = settings?.remark || ''
+    } catch {
+      editingRemark.value = ''
+    }
+  }
+  showRemarkDialog.value = true
 }
 
 // ---- 分屏操作 ----
