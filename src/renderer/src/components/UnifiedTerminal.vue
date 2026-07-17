@@ -504,7 +504,12 @@ const initEditor = async () => {
     wordWrap: 'off',
     wrappingStrategy: 'simple',
     fontSize: fontSize.value,
-    fontFamily: fontFamily.value
+    fontFamily: fontFamily.value,
+    find: {
+      addExtraSpaceOnTop: false,
+      autoFindInSelection: 'never',
+      seedSearchStringFromSelection: 'never'
+    }
   })
 
   // 创建语法高亮装饰器集合
