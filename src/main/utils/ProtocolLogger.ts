@@ -751,7 +751,22 @@ export default class ProtocolLogger {
     options?: { hours?: number }
   ): Promise<{ success: boolean; message?: string }> {
     try {
-      this.flushAllLogs(true) // 确保所有日志都已写入
+      // 快速刷盘：只写入当前连接的日志，不等待其他连接
+      const currentLogs = this.logCache.get(connId) || []
+      if (currentLogs.length > 0) {
+        const fileName = this.connLogFiles.get(connId)
+        if (fileName) {
+          const logFile = join(this.getConnLogDir(connId), fileName)
+          const logData = currentLogs.join('\n') + '\n'
+          try {
+            this.ensureDir(dirname(logFile))
+            appendFileSync(logFile, logData, 'utf-8')
+            this.logCache.set(connId, [])
+          } catch (err) {
+            console.error('Quick flush failed:', err)
+          }
+        }
+      }
 
       const fileNames = this.connLogFileHistory.get(connId) || []
       if (fileNames.length === 0) {
