@@ -1718,6 +1718,11 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   opacity: 0 !important;
 }
 
+/* 确保 Find Widget 显示在最上层 */
+:deep(.find-widget) {
+  z-index: 1000 !important;
+}
+
 /* 历史命令弹窗 */
 .input-wrapper {
   flex: 1;
