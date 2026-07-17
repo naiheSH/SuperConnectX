@@ -162,8 +162,19 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
   // 保存日志到用户选择的位置
   const saveLogFileAs = async () => {
     try {
-      // 生成文件名：备注-简短串口号-年月日.log
-      const remark = (conn as any).remark || ''
+      // 从存储中获取最新的备注
+      let remark = (conn as any).remark || ''
+      if (connectionType === 'com' && conn.comName) {
+        try {
+          const settings = await window.storageApi.getComSettings(conn.comName)
+          if (settings?.remark) {
+            remark = settings.remark
+          }
+        } catch {
+          // 忽略错误，使用默认值
+        }
+      }
+
       let shortName = ''
       if (connectionType === 'telnet') {
         shortName = `${conn.host}_${conn.port}`
