@@ -1718,9 +1718,12 @@ watch(activeSyntaxGroupId, async (newVal, oldVal) => {
   opacity: 0 !important;
 }
 
-/* 确保 Find Widget 显示在最上层 */
+/* 确保 Find Widget 显示在最上层，并移到左上角更易见的位置 */
 :deep(.find-widget) {
   z-index: 1000 !important;
+  top: 10px !important;
+  left: 10px !important;
+  right: auto !important;
 }
 
 /* 历史命令弹窗 */
