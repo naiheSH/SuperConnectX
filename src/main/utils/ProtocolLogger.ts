@@ -766,9 +766,6 @@ export default class ProtocolLogger {
         return await this.copyLogFileWithTimeRange(connId, destPath, options.hours, onProgress)
       }
 
-      // 全部导出
-      await fs.writeFile(destPath, '', 'utf-8')
-
       // 收集有效文件并计算总大小
       const validFiles: { path: string; size: number }[] = []
       let totalSize = 0
@@ -785,16 +782,34 @@ export default class ProtocolLogger {
         return { success: false, message: 'Source log file does not exist' }
       }
 
-      // 逐个文件复制并报告进度
-      let copiedSize = 0
-      for (const file of validFiles) {
-        const content = await fs.readFile(file.path)
-        await fs.appendFile(destPath, content)
-        copiedSize += file.size
-        // 报告进度
-        if (onProgress && totalSize > 0) {
-          onProgress(Math.min(100, Math.round((copiedSize / totalSize) * 100)))
+      // 单文件直接复制，多文件流式追加
+      if (validFiles.length === 1) {
+        // 单文件：直接复制，最快
+        await fs.copyFile(validFiles[0].path, destPath)
+        if (onProgress) onProgress(100)
+      } else {
+        // 多文件：使用流式追加，避免内存溢出
+        const { createReadStream, createWriteStream } = require('fs')
+        const writeStream = createWriteStream(destPath)
+
+        let copiedSize = 0
+        for (const file of validFiles) {
+          await new Promise<void>((resolve, reject) => {
+            const readStream = createReadStream(file.path)
+            readStream.on('data', (chunk: string | Buffer) => {
+              copiedSize += Buffer.byteLength(chunk)
+            })
+            readStream.on('end', resolve)
+            readStream.on('error', reject)
+            readStream.pipe(writeStream, { end: false })
+          })
+          // 报告进度
+          if (onProgress && totalSize > 0) {
+            onProgress(Math.min(100, Math.round((copiedSize / totalSize) * 100)))
+          }
         }
+        writeStream.end()
+        await new Promise<void>((resolve) => writeStream.on('finish', resolve))
       }
 
       return { success: true }
