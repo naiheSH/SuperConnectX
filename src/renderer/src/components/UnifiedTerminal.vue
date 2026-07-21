@@ -495,7 +495,7 @@ const initEditor = async () => {
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
     theme: getMonacoTheme(),
-    automaticLayout: true,
+    automaticLayout: false,
     hover: { enabled: false },
     occurrencesHighlight: 'off',
     selectionHighlight: false,
@@ -518,23 +518,35 @@ const initEditor = async () => {
   editor.layout()
   editor.updateOptions({ readOnly: true })
 
-  // 将 terminal-output 容器高度锁定为固定 px 值，避免 flex 布局在 v-show 切换时的过渡态导致跳动
-  // 用 ResizeObserver 持续同步真实高度（模拟 split 拖拽后的效果）
+  // 将 terminal-output 容器高度锁定为固定 px 值，避免 flex 布局在 v-show 切换时的过渡态导致跳动。
+  // resize/maximize/缩放比例变化会触发大量 ResizeObserver 回调；用 rAF 合并布局。
   if (editorContainer.value && typeof ResizeObserver !== 'undefined') {
+    let layoutFrame: number | null = null
     const syncHeight = () => {
       if (!editorContainer.value) return
       const h = editorContainer.value.getBoundingClientRect().height
-      if (h > 0) {
+      if (h > 0 && Math.abs((terminalOutputHeight.value ?? 0) - h) >= 1) {
         terminalOutputHeight.value = h
       }
+      editor?.layout()
     }
     // 初始化时立即锁定一次
     syncHeight()
     const ro = new ResizeObserver(() => {
-      syncHeight()
+      if (layoutFrame !== null) return
+      layoutFrame = requestAnimationFrame(() => {
+        layoutFrame = null
+        syncHeight()
+      })
     })
     ro.observe(editorContainer.value)
     ;(editor as any).__resizeObserver = ro
+    ;(editor as any).__layoutFrame = () => {
+      if (layoutFrame !== null) {
+        cancelAnimationFrame(layoutFrame)
+        layoutFrame = null
+      }
+    }
   }
 
   const domNode = editor.getDomNode()
@@ -587,11 +599,29 @@ const initEditor = async () => {
   }
 }
 
+// 高频数据批量刷新：把短时间内的多次写入合并成一次 Monaco 编辑，避免窗口卡顿
+const APPEND_FLUSH_INTERVAL_MS = 40
+let pendingAppendBuffer = ''
+let appendFlushTimer: ReturnType<typeof setTimeout> | null = null
+
 const appendToTerminal = (content: string) => {
   if (!editorModel) return
 
   // 如果不显示日志，直接返回
   if (!isShowLog.value) return
+
+  pendingAppendBuffer += content
+  if (appendFlushTimer) return
+  appendFlushTimer = setTimeout(() => {
+    appendFlushTimer = null
+    const batched = pendingAppendBuffer
+    pendingAppendBuffer = ''
+    doAppendToTerminal(batched)
+  }, APPEND_FLUSH_INTERVAL_MS)
+}
+
+const doAppendToTerminal = (content: string) => {
+  if (!editorModel || !content) return
 
   // 解析 ANSI SGR 序列：得到纯文本 + 样式段信息
   const { cleanText, segments } = parseAnsiToSegments(content)
@@ -835,6 +865,8 @@ const handleScrollToTop = () => {
 }
 
 const clearTerminal = () => {
+  // 丢弃尚未刷新的缓冲数据，保证清空后界面干净
+  pendingAppendBuffer = ''
   if (editorModel) {
     editorModel.setValue('')
   }
@@ -1316,6 +1348,10 @@ onUnmounted(() => {
     ;(editor as any).__resizeObserver.disconnect()
     ;(editor as any).__resizeObserver = null
   }
+  if (editor && (editor as any).__layoutFrame) {
+    ;(editor as any).__layoutFrame()
+    ;(editor as any).__layoutFrame = null
+  }
 
   if (editorModel) {
     editorModel.dispose()
@@ -1332,6 +1368,13 @@ onUnmounted(() => {
     clearTimeout(syntaxHighlightTimer)
     syntaxHighlightTimer = null
   }
+
+  // 清理批量刷新定时器
+  if (appendFlushTimer) {
+    clearTimeout(appendFlushTimer)
+    appendFlushTimer = null
+  }
+  pendingAppendBuffer = ''
 
   window.removeEventListener('settings-updated', handleSettingsUpdated)
   window.removeEventListener('syntax-rules-updated', handleSyntaxRulesUpdated)
