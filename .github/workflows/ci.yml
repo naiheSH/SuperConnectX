@@ -135,6 +135,7 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  # Electron 38 构建的包在 Ubuntu 24.04 上无法运行，降级 Electron 35 单独构建一版兼容包
   build-ubuntu24:
     name: CI Linux (Ubuntu 24 compatible)
     runs-on: ubuntu-22.04

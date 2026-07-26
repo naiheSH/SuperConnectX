@@ -11,6 +11,11 @@ import AppUpdater from './updater/AppUpdater'
 import logger from './ipc/IpcAppLogger'
 import { migrateDataIfNeeded, initAppPaths, cleanupChromiumClutter } from './utils/AppDir'
 
+// 禁用 Chromium 自动网络请求，避免公司内网代理环境触发安全告警（同步上游 83a8ac6）
+app.commandLine.appendSwitch('disable-component-update')         // 禁用组件更新
+app.commandLine.appendSwitch('disable-features', 'InterestFeedContentSuggestions')  // 禁用内容建议
+app.commandLine.appendSwitch('disable-background-networking')   // 禁用后台网络（仅 Chromium 内核有效）
+
 // 必须在 app.whenReady() 之前调用，将 Electron 内置路径（Cache、CrashDumps 等）
 // 重定向到 userData 子目录，避免根目录散乱
 initAppPaths()
