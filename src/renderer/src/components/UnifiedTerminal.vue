@@ -114,7 +114,7 @@
               @mouseenter="historySelectedIndex = index"
             >
               <span class="history-item-text">{{ item }}</span>
-              <el-tooltip :content="t('historySettings.deleteCommand')" placement="top" effect="dark" :enterable="false">
+              <el-tooltip :content="t('historySettings.deleteCommand')" placement="top" effect="dark" :show-after="TOOLTIP_SHOW_AFTER" :enterable="false">
                 <span class="history-item-delete" @mousedown.prevent.stop="deleteHistoryItem(item)">×</span>
               </el-tooltip>
             </div>
@@ -194,6 +194,7 @@ import { parseAnsiToSegments } from '../utils/AnsiParser'
 import { AnsiDecorationManager } from '../utils/AnsiDecorationManager'
 import { getMonacoTheme } from '../utils/MonacoTheme'
 import { getDefaultTerminalFont } from '../utils/FontDetector'
+import { TOOLTIP_SHOW_AFTER } from '../utils/constants'
 
 const maxClearSizeMB = ref(30)
 
@@ -445,6 +446,7 @@ let autoScrollToast = true // 固定滚屏时弹出提示（默认开启）
 let autoScrollOnFocus = true // 获得焦点时固定滚屏（默认开启）
 let autoScrollAfterSend = true // 发送命令后停止滚屏（默认开启）
 let autoScrollOnWheel = true // 鼠标滚动决策固定（默认开启）
+let clearInputAfterSend = false // 发送命令后自动清空输入栏
 let toastDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let syntaxHighlightTimer: ReturnType<typeof setTimeout> | null = null
 const SYNTAX_HIGHLIGHT_DEBOUNCE_MS = 100 // 语法高亮防抖延迟
@@ -1004,6 +1006,11 @@ const handleSendCommand = () => {
   emit('onSend', sendData, originalInput)
   closeHistoryPopup()
 
+  // 发送后清空输入栏
+  if (clearInputAfterSend) {
+    currentCommand.value = ''
+  }
+
   // 发送命令后停止滚屏
   if (autoScrollAfterSend) {
     isInternalChange = true
@@ -1309,6 +1316,7 @@ const loadMaxClearSize = async () => {
     autoScrollOnFocus = settings?.autoScrollOnFocus !== false
     autoScrollAfterSend = settings?.autoScrollAfterSend !== false
     autoScrollOnWheel = settings?.autoScrollOnWheel === true
+    clearInputAfterSend = settings?.clearInputAfterSend === true
   } catch (e) {
     // ignore
   }
@@ -1482,6 +1490,9 @@ const handleSettingsUpdated = async (event: Event) => {
     }
     if ('autoScrollOnWheel' in updatedSettings) {
       autoScrollOnWheel = updatedSettings.autoScrollOnWheel === true
+    }
+    if ('clearInputAfterSend' in updatedSettings) {
+      clearInputAfterSend = updatedSettings.clearInputAfterSend === true
     }
     if ('enableSyntaxHighlight' in updatedSettings) {
       enableSyntaxHighlight = updatedSettings.enableSyntaxHighlight !== false

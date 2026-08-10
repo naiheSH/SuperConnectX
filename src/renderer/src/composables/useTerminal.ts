@@ -46,6 +46,7 @@ export interface UseTerminalReturn {
   openLogFile: () => Promise<void>
   saveLogFileAs: () => Promise<void>
   rotateLogFile: () => Promise<void>
+  saveLogFile: () => Promise<void> // 上游 API 别名，等价于 rotateLogFile
   handleClose: () => Promise<void>
   handleSend: (command: string, originalInput?: string) => Promise<void>
   reconnect: () => void
@@ -239,6 +240,9 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     }
   }
 
+  // 上游 useTerminal API 中保存日志名为 saveLogFile，行为与 rotateLogFile 一致，保留别名以兼容
+  const saveLogFile = rotateLogFile
+
   // 关闭连接
   const handleClose = async () => {
     cleanup()
@@ -347,6 +351,7 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     openLogFile,
     saveLogFileAs,
     rotateLogFile,
+    saveLogFile,
     handleClose,
     handleSend,
     reconnect,

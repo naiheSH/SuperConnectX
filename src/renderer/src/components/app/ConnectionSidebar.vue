@@ -50,7 +50,7 @@
                           <el-tag v-else type="info" size="small" effect="dark">{{ t('sidebar.noType') }}</el-tag>
                         </span>
                       </div>
-                      <el-tooltip v-if="serialRemarks[port.path]" :content="serialRemarks[port.path]" placement="top" effect="dark" :enterable="false" :show-after="500">
+                      <el-tooltip v-if="serialRemarks[port.path]" :content="serialRemarks[port.path]" placement="top" effect="dark" :enterable="false" :show-after="TOOLTIP_SHOW_AFTER">
                         <span class="serial-remark">{{ serialRemarks[port.path] }}</span>
                       </el-tooltip>
                     </div>
@@ -146,13 +146,13 @@
           </svg>
         </div>
         <div class="dropdown-menu" ref="sidebarMenuRef" v-if="showSidebarMenu" @click.stop>
-          <div class="menu-item" @click="$emit('sidebarMenuCommand', 'settings')">{{ t('sidebar.settings') }}</div>
-          <div class="menu-item" @click="$emit('sidebarMenuCommand', 'shortcuts')">{{ t('sidebar.shortcuts') }}</div>
+          <div class="menu-item" @click="handleMenuClick('settings')">{{ t('sidebar.settings') }}</div>
+          <div class="menu-item" @click="handleMenuClick('shortcuts')">{{ t('sidebar.shortcuts') }}</div>
           <div class="menu-divider"></div>
-          <div class="menu-item" @click="$emit('sidebarMenuCommand', 'plugins')">{{ t('sidebar.plugins') }}</div>
-          <div class="menu-item" @click="$emit('sidebarMenuCommand', 'checkUpdate')">{{ t('sidebar.checkUpdate') }}</div>
+          <div class="menu-item" @click="handleMenuClick('plugins')">{{ t('sidebar.plugins') }}</div>
+          <div class="menu-item" @click="handleMenuClick('checkUpdate')">{{ t('sidebar.checkUpdate') }}</div>
           <div class="menu-divider"></div>
-          <div class="menu-item" @click="$emit('sidebarMenuCommand', 'about')">{{ t('titlebar.about') }}</div>
+          <div class="menu-item" @click="handleMenuClick('about')">{{ t('titlebar.about') }}</div>
         </div>
       </div>
     </div>
@@ -163,6 +163,7 @@
 import { ref, onMounted, onUnmounted, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SearchInput from '../SearchInput.vue'
+import { TOOLTIP_SHOW_AFTER } from '../../utils/constants'
 
 const { t } = useI18n()
 
@@ -213,6 +214,11 @@ onUnmounted(() => {
 
 const toggleGroupExpanded = (type: string) => {
   emit('sidebarMenuCommand', '__toggleGroup__' + type)
+}
+
+const handleMenuClick = (command: string) => {
+  showSidebarMenu.value = false
+  emit('sidebarMenuCommand', command)
 }
 </script>
 

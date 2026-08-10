@@ -5,11 +5,12 @@ import IpcConnector from './ipc/IpcConnector'
 import IpcWindow from './ipc/IpcWindow'
 import IpcTools from './ipc/IpcTools'
 import IpcSerialPort from './ipc/IpcSerialPort'
+import IpcVirtualPort from './ipc/IpcVirtualPort'
 import IpcMain from './ipc/IpcMain'
 import IpcDataCheck from './ipc/IpcDataCheck'
 import AppUpdater from './updater/AppUpdater'
 import logger from './ipc/IpcAppLogger'
-import { migrateDataIfNeeded, initAppPaths, cleanupChromiumClutter } from './utils/AppDir'
+import { migrateDataIfNeeded, initAppPaths, cleanupChromiumClutter, getInstanceIndex } from './utils/AppDir'
 
 // 禁用 Chromium 自动网络请求，避免公司内网代理环境触发安全告警（同步上游 83a8ac6）
 app.commandLine.appendSwitch('disable-component-update')         // 禁用组件更新
@@ -20,10 +21,12 @@ app.commandLine.appendSwitch('disable-background-networking')   // 禁用后台�
 // 重定向到 userData 子目录，避免根目录散乱
 initAppPaths()
 
+const instanceIdx = getInstanceIndex()
+
 const protocolLogger = new ProtocolLogger()
 const windows = { mainWindow: undefined as BrowserWindow | undefined }
 
-logger.info(`======== start superconnect-x ========`)
+logger.info(`======== start superconnect-x (instance ${instanceIdx}) ========`)
 logger.info(JSON.stringify(IpcMain.getInstance().getVersionInfo()))
 
 // 迁移旧数据：如果 EXE 目录下存在旧的 userdata/backup，拷贝到 appDataDir 并删除旧目录
@@ -34,6 +37,7 @@ IpcConnector.getInstance().init(protocolLogger, windows)
 IpcWindow.getInstance().init(windows)
 IpcTools.getInstance().init(windows)
 IpcSerialPort.getInstance().init(protocolLogger, windows)
+IpcVirtualPort.getInstance().init(protocolLogger, windows)
 IpcMain.getInstance().init(protocolLogger, windows)
 IpcDataCheck.getInstance().init()
 
@@ -56,4 +60,4 @@ app.whenReady().then(() => {
   cleanupChromiumClutter(logger)
 })
 
-logger.info(`======== start superconnect-x ok ========`)
+logger.info(`======== start superconnect-x ok (instance ${instanceIdx}) ========`)

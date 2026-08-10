@@ -35,19 +35,19 @@
             <el-icon v-else-if="tab.connectionType === 'settings'" :size="14"><Setting /></el-icon>
           </span>
           <span
-            v-if="tab.connectionType !== 'commandEditor' && tab.connectionType !== 'shortcuts' && tab.connectionType !== 'settings'"
+            v-if="tab.connectionType !== 'commandEditor' && tab.connectionType !== 'shortcuts' && tab.connectionType !== 'settings' && tab.connectionType !== 'virtualPort'"
             class="connection-dot"
             :class="getConnectionStatus(tab)"
           ></span>
-          <el-tooltip :content="tab.name || `${tab.host || tab.comName}:${tab.port || ''}`" placement="top" effect="dark" :enterable="false" :show-after="500">
+          <el-tooltip :content="tab.name || `${tab.host || tab.comName}:${tab.port || ''}`" placement="top" effect="dark" :enterable="false" :show-after="TOOLTIP_SHOW_AFTER">
             <span class="tab-name">
               {{ tab.name || `${tab.host || tab.comName}:${tab.port || ''}` }}
-              <el-tooltip v-if="tab.connectionType === 'com' && tab.comName && serialRemarks[tab.comName]" :content="serialRemarks[tab.comName]" placement="top" effect="dark" :enterable="false" :show-after="500">
+              <el-tooltip v-if="tab.connectionType === 'com' && tab.comName && serialRemarks[tab.comName]" :content="serialRemarks[tab.comName]" placement="top" effect="dark" :enterable="false" :show-after="TOOLTIP_SHOW_AFTER">
                 <span class="tab-remark">{{ serialRemarks[tab.comName] }}</span>
               </el-tooltip>
             </span>
           </el-tooltip>
-          <el-tooltip :content="pinnedTabs.has(tab.id) ? $t('tabs.unpin') : $t('tabs.close')" placement="top" effect="dark" :enterable="false" :show-after="500">
+          <el-tooltip :content="pinnedTabs.has(tab.id) ? $t('tabs.unpin') : $t('tabs.close')" placement="top" effect="dark" :enterable="false" :show-after="TOOLTIP_SHOW_AFTER">
             <span
               class="tab-action-btn"
               :class="{ pinned: pinnedTabs.has(tab.id) }"
@@ -94,6 +94,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { TOOLTIP_SHOW_AFTER } from '../../utils/constants'
 
 const props = defineProps<{
   connectionTabs: any[]

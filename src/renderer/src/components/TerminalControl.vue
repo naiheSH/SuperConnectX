@@ -15,6 +15,7 @@
         icon="Refresh"
         size="small"
         class="btn-primary reconnect-btn toggle-btn"
+        :class="{ 'is-connecting': isConnecting }"
         @click="emit('onReconnect')"
         :disabled="isConnecting"
       >
@@ -28,7 +29,7 @@
       >
         {{ t('terminal.clear') }}
       </el-button>
-      <el-tooltip :content="autoScroll ? t('terminal.cancelAutoScroll') : t('terminal.autoScroll')" placement="bottom" effect="dark" :enterable="false">
+      <el-tooltip :content="autoScroll ? t('terminal.cancelAutoScroll') : t('terminal.autoScroll')" placement="bottom" effect="dark" :show-after="TOOLTIP_SHOW_AFTER" :enterable="false">
         <el-button
           size="small"
           class="auto-scroll-btn"
@@ -40,7 +41,7 @@
           </svg>
         </el-button>
       </el-tooltip>
-      <el-tooltip :content="t('terminal.openLogFolder')" placement="bottom" effect="dark" :enterable="false">
+      <el-tooltip :content="t('terminal.openLogFolder')" placement="bottom" effect="dark" :show-after="TOOLTIP_SHOW_AFTER" :enterable="false">
         <el-button
           size="small"
           class="icon-action-btn"
@@ -49,7 +50,7 @@
           <el-icon :size="14"><FolderOpened /></el-icon>
         </el-button>
       </el-tooltip>
-      <el-tooltip :content="t('terminal.openLogFile')" placement="bottom" effect="dark" :enterable="false">
+      <el-tooltip :content="t('terminal.openLogFile')" placement="bottom" effect="dark" :show-after="TOOLTIP_SHOW_AFTER" :enterable="false">
         <el-button
           size="small"
           class="icon-action-btn"
@@ -88,7 +89,7 @@
           :value="group.id"
         />
       </el-select>
-      <el-tooltip :content="t('terminal.editSyntaxRules')" placement="bottom" effect="dark" :enterable="false">
+      <el-tooltip :content="t('terminal.editSyntaxRules')" placement="bottom" effect="dark" :show-after="TOOLTIP_SHOW_AFTER" :enterable="false">
         <el-button
           size="small"
           class="icon-action-btn"
@@ -105,6 +106,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { FolderOpened, Document, Edit } from '@element-plus/icons-vue'
+import { TOOLTIP_SHOW_AFTER } from '../utils/constants'
 
 const { t } = useI18n()
 
@@ -312,6 +314,16 @@ onMounted(() => {
 
 .reconnect-btn:disabled {
   cursor: not-allowed !important;
+}
+
+/* 连接中图标旋转动画 */
+.reconnect-btn.is-connecting :deep(.el-icon) {
+  animation: connecting-spin 1s linear infinite;
+}
+
+@keyframes connecting-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .auto-scroll-btn {

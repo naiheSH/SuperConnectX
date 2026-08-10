@@ -10,6 +10,7 @@
       @open-about="isAboutDialogOpen = true"
       @open-settings="openSettingsTab"
       @open-shortcuts="openShortcutsTab"
+      @open-virtualPort="openVirtualPortTab"
       @check-update="updateDialogRef?.open()"
       @open-plugins="handlePlugins"
       @toggle-word-wrap="handleToggleWordWrap"
@@ -200,6 +201,11 @@
                 v-show="isTabActiveInItsPanel(tab.id.toString())"
                 class="terminal-component"
               />
+              <VirtualPortPage
+                v-if="tab.connectionType === 'virtualPort'"
+                v-show="isTabActiveInItsPanel(tab.id.toString())"
+                class="terminal-component"
+              />
             </Teleport>
           </template>
         </div>
@@ -247,6 +253,7 @@ import TelnetTerminal from './components/TelnetTerminal.vue'
 import CommandEditor from './components/CommandEditor.vue'
 import ShortcutsPage from './components/ShortcutsPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
+import VirtualPortPage from './components/VirtualPortPage.vue'
 import logoImage from './assets/icon.png'
 
 // Composables
@@ -319,7 +326,7 @@ const {
   reorderTabs, moveTabToFirst, moveTabToLast,
   togglePinTabByButton, togglePinTab,
   connectToServer, connectToSerialPort,
-  openCommandEditorTab, openShortcutsTab, openSettingsTab
+  openCommandEditorTab, openShortcutsTab, openSettingsTab, openVirtualPortTab
 } = useTabManager(comTerminalRefs, telnetTerminalRefs)
 
 // ---- Split Panel ----
