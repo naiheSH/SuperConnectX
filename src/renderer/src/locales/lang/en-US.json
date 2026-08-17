@@ -61,6 +61,10 @@
     "autoScrollOnWheelDesc": "Scroll up to pause auto scroll, scroll to bottom to resume",
     "clearInputAfterSend": "Clear Input After Send",
     "clearInputAfterSendDesc": "Automatically clear input field after sending command",
+    "sendDisplayText": "Send Display Text",
+    "sendDisplayTextDesc": "Text prefix shown in terminal when sending a command",
+    "recvDisplayText": "Receive Display Text",
+    "recvDisplayTextDesc": "Text prefix shown in terminal when receiving data",
     "maxDisplayText": "Max Display Text",
     "maxDisplayTextDesc": "Auto clear terminal when text size exceeds this limit (MB)",
     "backup": "Backup",
@@ -83,7 +87,13 @@
     "restoreSuccess": "Successfully restored from backup {date}, please restart the app to take effect",
     "restoreFailed": "Restore failed",
     "noBackups": "No backups available",
-    "backupSize": "Size"
+    "backupSize": "Size",
+    "manualBackup": "Backup Now",
+    "manualBackupDesc": "Back up all current user data immediately",
+    "manualBackupTitle": "Backup Now",
+    "manualBackupTip": "The following data types will be backed up:\n\nConnections\nPreset Commands\nCommand Groups\nSerial Settings\nGlobal Settings\nCommand History\nShortcuts",
+    "manualBackupSuccess": "Backup succeeded",
+    "manualBackupFailed": "Backup failed"
   },
   "serialSettings": {
     "title": "Serial COM Settings",
@@ -408,7 +418,15 @@
     "logRotateSuccess": "Log rotated: {oldName} → {newName}",
     "unknownError": "Unknown error",
     "clearAll": "Clear All",
-    "exporting": "Exporting"
+    "exporting": "Exporting",
+    "logFilter": "Log Filter",
+    "logFilterPlaceholder": "Enter regex to filter logs...",
+    "logFilterHint": "Enter a regex; matching log lines will be listed here",
+    "logFilterNoMatch": "No matches",
+    "logFilterMatch": "Matched {count} / {total}",
+    "logFilterInvalidRegex": "Invalid regular expression",
+    "prevMatch": "Previous match",
+    "nextMatch": "Next match"
   },
   "presetCommands": {
     "title": "Preset Commands",

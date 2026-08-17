@@ -36,6 +36,10 @@ contextBridge.exposeInMainWorld('storageApi', {
   getAppSettings: () => ipcRenderer.invoke('get-app-settings'),
   saveAppSettings: (settings: any) => ipcRenderer.invoke('save-app-settings', settings),
 
+  /* 日志过滤面板 */
+  getLogFilter: () => ipcRenderer.invoke('get-log-filter'),
+  saveLogFilter: (settings: any) => ipcRenderer.invoke('save-log-filter', settings),
+
   /* 设置页面 */
   getSettings: () => ipcRenderer.invoke('get-settings'),
   getDefaultSettings: () => ipcRenderer.invoke('get-default-settings'),
@@ -59,6 +63,7 @@ contextBridge.exposeInMainWorld('storageApi', {
 
   /* 备份与恢复 */
   getBackupList: () => ipcRenderer.invoke('get-backup-list'),
+  performBackup: () => ipcRenderer.invoke('perform-backup'),
   restoreBackup: (dateStr: string) => ipcRenderer.invoke('restore-backup', dateStr),
   getNextBackupDate: (backupInterval: number) => ipcRenderer.invoke('get-next-backup-date', backupInterval)
 })

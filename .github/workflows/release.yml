@@ -59,6 +59,34 @@ jobs:
         with:
           node-version: '24'
 
+      # ---- CI 缓存优化：npm 依赖下载缓存（按平台 + lock 文件区分）----
+      - name: Cache npm (Linux/macOS)
+        if: runner.os != 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Cache npm (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\npm-cache
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      # Electron 二进制缓存：install.js 下载的解压产物（Electron 体积大，命中可省大量时间）
+      - name: Cache Electron binary
+        uses: actions/cache@v4
+        with:
+          path: node_modules/electron/dist
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-${{ runner.os }}-
+
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: |
@@ -103,6 +131,9 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Run integration tests
+        run: npm run test:integration
 
       - name: Rebuild native modules
         run: npx electron-builder install-app-deps
@@ -163,6 +194,15 @@ jobs:
         with:
           node-version: '24'
 
+      # ---- CI 缓存优化：npm 依赖下载缓存（build-ubuntu24 为纯 Linux）----
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-ubuntu24-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-ubuntu24-
+
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
@@ -177,6 +217,15 @@ jobs:
       - name: Downgrade Electron to 35 for Ubuntu 24 compatibility
         run: npm install electron@35.7.5 --save-dev
 
+      # Electron 35 二进制缓存：与 build job 的 Electron 38 缓存 key 区分，避免互串
+      - name: Cache Electron binary (Electron 35)
+        uses: actions/cache@v4
+        with:
+          path: node_modules/electron/dist
+          key: electron-ubuntu24-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-ubuntu24-
+
       - name: Remove problematic cpu-features
         run: |
           rm -rf node_modules/cpu-features
@@ -184,6 +233,9 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Run integration tests
+        run: npm run test:integration
 
       - name: Rebuild native modules
         run: npx electron-builder install-app-deps
@@ -248,6 +300,25 @@ jobs:
             echo "Generated latest-mac.yml with $(ls *.dmg | wc -l) architecture(s)"
             cat latest-mac.yml
           fi
+
+      # 生成 SHA256 校验和文件：让用户下载后能自证安装包完整性（开源项目无代码签名时的可信度补充）
+      - name: Generate SHA256 checksums
+        working-directory: release-assets
+        run: |
+          shopt -s nullglob
+          files=(*)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No assets to checksum"
+            exit 1
+          fi
+          : > SHA256SUMS
+          for f in *; do
+            [ -f "$f" ] || continue
+            [ "$f" = "SHA256SUMS" ] && continue
+            sha256sum "$f" >> SHA256SUMS
+          done
+          echo "Generated SHA256SUMS with $(wc -l < SHA256SUMS) entry(s)"
+          cat SHA256SUMS
 
       - name: Create Release and Upload Assets
         env:

@@ -61,6 +61,10 @@
     "autoScrollOnWheelDesc": "向上滚动鼠标自动固定滚屏，滚动到底部自动恢复",
     "clearInputAfterSend": "发送后清空输入栏",
     "clearInputAfterSendDesc": "发送命令后自动清空输入栏内容",
+    "sendDisplayText": "发送命令显示文本",
+    "sendDisplayTextDesc": "发送命令时终端中显示的文本前缀",
+    "recvDisplayText": "接收命令显示文本",
+    "recvDisplayTextDesc": "接收数据时终端中显示的文本前缀",
     "maxDisplayText": "可显示最大文本",
     "maxDisplayTextDesc": "终端文本框达到此大小时自动清空（MB）",
     "backup": "备份",
@@ -83,7 +87,13 @@
     "restoreSuccess": "已成功恢复到 {date} 的备份，请重启应用以生效",
     "restoreFailed": "恢复失败",
     "noBackups": "暂无可用备份",
-    "backupSize": "大小"
+    "backupSize": "大小",
+    "manualBackup": "立即备份",
+    "manualBackupDesc": "立即备份当前全部用户数据",
+    "manualBackupTitle": "立即备份",
+    "manualBackupTip": "将立即备份以下数据类型：\n\n连接配置\n预设命令\n命令组\n串口设置\n全局设置\n命令历史\n快捷键",
+    "manualBackupSuccess": "备份成功",
+    "manualBackupFailed": "备份失败"
   },
   "serialSettings": {
     "title": "串口COM设置",
@@ -408,7 +418,15 @@
     "logRotateSuccess": "日志已归档：{oldName} → {newName}",
     "unknownError": "未知错误",
     "clearAll": "清空全部",
-    "exporting": "正在导出"
+    "exporting": "正在导出",
+    "logFilter": "日志过滤",
+    "logFilterPlaceholder": "输入正则表达式过滤日志...",
+    "logFilterHint": "输入正则表达式，匹配的日志将显示在此列表",
+    "logFilterNoMatch": "无匹配结果",
+    "logFilterMatch": "匹配 {count} / {total}",
+    "logFilterInvalidRegex": "正则表达式无效",
+    "prevMatch": "上一个匹配",
+    "nextMatch": "下一个匹配"
   },
   "presetCommands": {
     "title": "预设命令",

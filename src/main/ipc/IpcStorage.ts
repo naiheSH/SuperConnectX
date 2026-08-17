@@ -8,6 +8,7 @@ import ComSettingsStorage from '../storage/ComSettingsStorage'
 import AppSettingsStorage from '../storage/AppSettingsStorage'
 import SettingsStorage from '../storage/SettingsStorage'
 import CommandHistoryStorage from '../storage/CommandHistoryStorage'
+import LogFilterStorage from '../storage/LogFilterStorage'
 import IpcConnector from './IpcConnector'
 import BackupManager from '../utils/BackupManager'
 import AdmZip from 'adm-zip'
@@ -88,6 +89,14 @@ export default class IpcStorage {
       return true
     })
 
+    /* 日志过滤面板持久化 */
+    const logFilterStorage = new LogFilterStorage()
+    ipcMain.handle('get-log-filter', () => logFilterStorage.getSettings())
+    ipcMain.handle('save-log-filter', (_, settings: any) => {
+      logFilterStorage.saveSettings(settings)
+      return true
+    })
+
     /* 设置页面持久化 */
     const settingsStorage = new SettingsStorage()
 
@@ -162,6 +171,7 @@ export default class IpcStorage {
 
     /* 备份与恢复 */
     ipcMain.handle('get-backup-list', () => BackupManager.getInstance().getBackupList())
+    ipcMain.handle('perform-backup', () => BackupManager.getInstance().performBackupNow())
     ipcMain.handle('restore-backup', (_, dateStr: string) =>
       BackupManager.getInstance().restoreBackup(dateStr)
     )

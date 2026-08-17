@@ -32,6 +32,7 @@ import UnifiedTerminal from './UnifiedTerminal.vue'
 import { fromRawConnection } from '../entity/protocol'
 import { useTerminal } from '../composables/useTerminal'
 import { formatReceivedData as formatReceivedDataUtil } from '../utils/TerminalUtils'
+import { recvDisplayText } from '../composables/app/useSettingsStore'
 
 const MAX_RETRY_COUNT = 1000
 const RETRY_INTERVAL_MS = 3000
@@ -263,7 +264,8 @@ const connect = async () => {
           if (data.connId !== currentConnId) return
           terminal.totalRxSize += data.data.length
           unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-          const displayText = formatReceivedData(data.data, data.timestamp)
+          const recvLabel = recvDisplayText.value ? `${recvDisplayText.value} ` : ''
+          const displayText = formatReceivedData(`${recvLabel}${data.data}`, data.timestamp)
           unifiedTerminalRef.value?.appendToTerminal(displayText)
         })
 

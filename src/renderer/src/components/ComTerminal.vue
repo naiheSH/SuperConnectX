@@ -49,6 +49,28 @@
           </div>
 
           <div class="param-item">
+            <span class="param-label">{{ t('comTerminal.encoding') }}</span>
+            <el-select v-model="encoding" size="small" class="param-select-encoding" :popper-append-to-body="false">
+              <el-option label="UTF-8" value="utf8" />
+              <el-option label="GB2312" value="gb2312" />
+              <el-option label="GBK" value="gbk" />
+              <el-option label="GB18030" value="gb18030" />
+              <el-option label="BIG5" value="big5" />
+              <el-option label="Shift-JIS" value="shift-jis" />
+              <el-option label="EUC-KR" value="euc-kr" />
+              <el-option label="ASCII" value="ascii" />
+              <el-option label="ISO-8859-1" value="latin1" />
+              <el-option label="ISO-8859-2" value="latin2" />
+              <el-option label="KOI8-R" value="koi8-r" />
+              <el-option label="windows-1251" value="windows-1251" />
+              <el-option label="windows-1252" value="windows-1252" />
+              <el-option label="ISO-8859-5" value="iso-8859-5" />
+              <el-option label="UTF-16LE" value="utf16le" />
+              <el-option label="UTF-16BE" value="utf16be" />
+            </el-select>
+          </div>
+
+          <div class="param-item">
             <span class="param-label">{{ t('comTerminal.dataBits') }}</span>
             <el-select v-model="dataBits" size="small" class="param-select">
               <el-option label="5" :value="5" />
@@ -85,26 +107,6 @@
         <!-- 更多设置对话框 -->
         <el-dialog v-model="showMoreDialog" :title="t('comTerminal.advancedSettings')" width="400px">
           <el-form label-width="100px" @submit.prevent>
-            <el-form-item :label="t('comTerminal.encoding')">
-              <el-select v-model="encoding" size="small" class="full-width">
-                <el-option label="UTF-8" value="utf8" />
-                <el-option label="GB2312" value="gb2312" />
-                <el-option label="GBK" value="gbk" />
-                <el-option label="GB18030" value="gb18030" />
-                <el-option label="BIG5" value="big5" />
-                <el-option label="Shift-JIS" value="shift-jis" />
-                <el-option label="EUC-KR" value="euc-kr" />
-                <el-option label="ASCII" value="ascii" />
-                <el-option label="ISO-8859-1" value="latin1" />
-                <el-option label="ISO-8859-2" value="latin2" />
-                <el-option label="KOI8-R" value="koi8-r" />
-                <el-option label="windows-1251" value="windows-1251" />
-                <el-option label="windows-1252" value="windows-1252" />
-                <el-option label="ISO-8859-5" value="iso-8859-5" />
-                <el-option label="UTF-16LE" value="utf16le" />
-                <el-option label="UTF-16BE" value="utf16be" />
-              </el-select>
-            </el-form-item>
             <el-form-item :label="t('comTerminal.openTimeout')">
               <div class="input-with-unit">
                 <el-input-number v-model="readTimeout" :min="0" :step="100" size="small" class="full-width" :controls="false" placeholder="ms" />
@@ -173,6 +175,7 @@ import UnifiedTerminal from './UnifiedTerminal.vue'
 import { useTerminal } from '../composables/useTerminal'
 import { formatReceivedData as formatReceivedDataUtil } from '../utils/TerminalUtils'
 import { getDefaultTerminalFont } from '../utils/FontDetector'
+import { sendDisplayText, recvDisplayText } from '../composables/app/useSettingsStore'
 
 const { t } = useI18n()
 
@@ -597,7 +600,8 @@ const handleConnect = async () => {
         if (String(data.connId) !== String(currentSessionId.value)) return
         terminal.totalRxSize += data.data.length
         unifiedTerminalRef.value?.updateRxBytes(data.data.length)
-        const displayText = formatReceivedData(data.data, data.timestamp)
+        const recvLabel = recvDisplayText.value ? `${recvDisplayText.value} ` : ''
+        const displayText = formatReceivedData(`${recvLabel}${data.data}`, data.timestamp)
         unifiedTerminalRef.value?.appendToTerminal(displayText)
       })
 
@@ -663,7 +667,7 @@ const handleSendCommand = async (command: string, originalInput?: string) => {
   // 显示发送内容
   const now = new Date()
   const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
-  unifiedTerminalRef.value?.appendToTerminal(`\n[${timestamp}] SEND>>>>>>>>>>>>> ${displayCommand}\n`)
+  unifiedTerminalRef.value?.appendToTerminal(`\n[${timestamp}] ${sendDisplayText.value} ${displayCommand}\n`)
 
   try {
     await window.connectApi.sendData({
