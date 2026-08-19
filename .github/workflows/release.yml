@@ -325,7 +325,7 @@ jobs:
 
       - name: Create Release and Upload Assets
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
           tag="$GITHUB_REF_NAME"
@@ -338,13 +338,13 @@ jobs:
           fi
           echo "Assets found: ${#assets[@]} file(s)"
 
-          # Delete existing release/draft if any (ignore errors)
-          gh release delete "$tag" --repo "$REPO" --cleanup-tag --yes 2>/dev/null || true
-
-          # Create release with notes from latest.md and upload all assets
-          gh release create "$tag" \
-            --repo "$REPO" \
-            --target "$GITHUB_SHA" \
-            --title "$tag" \
-            --notes-file latest.md \
-            "${assets[@]}"
+          if gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$tag" --repo "$REPO" --clobber "${assets[@]}"
+          else
+            gh release create "$tag" \
+              --repo "$REPO" \
+              --target "$GITHUB_SHA" \
+              --title "$tag" \
+              --notes-file latest.md \
+              "${assets[@]}"
+          fi
