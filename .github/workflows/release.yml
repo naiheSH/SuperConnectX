@@ -325,7 +325,7 @@ jobs:
 
       - name: Create Release and Upload Assets
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           tag="$GITHUB_REF_NAME"
