@@ -1,7 +1,10 @@
 name: Build and Release
 
 on:
-  workflow_dispatch:   # 仅保留手动触发；fork 的 tag 发布走 release-windows-linux.yml，避免双流程重复发布
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
