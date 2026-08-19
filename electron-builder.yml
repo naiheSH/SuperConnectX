@@ -59,6 +59,7 @@ appImage:
   artifactName: ${name}-${version}-linux-x64.${ext}
 deb:
   artifactName: ${name}-${version}-linux-x64.${ext}
+  afterInstall: build/installer/linux-after-install.sh
 snap:
   artifactName: ${name}-${version}-linux-x64.${ext}
 afterPack: ./scripts/afterPack.js
