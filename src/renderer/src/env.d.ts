@@ -74,6 +74,7 @@ interface ConnectApi {
   copyLogFile: (sessionId: string, destPath: string, hours?: number) => Promise<any>
   rotateLogFile: (sessionId: string) => Promise<any>
   listSerialPorts: () => Promise<any[]>
+  fixSerialPermissions: () => Promise<{ success: boolean; message?: string }>
   onSerialPortsChanged: (callback: (ports: any[]) => void) => () => void
   writeToLog: (sessionId: string, content: string) => Promise<any>
   cleanupLogs: () => Promise<{ deletedCount: number; deletedSize: number }>
