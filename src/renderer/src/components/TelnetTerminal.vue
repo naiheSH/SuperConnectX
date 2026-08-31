@@ -47,6 +47,7 @@ const props = defineProps<{
     name?: string
     sessionId: string | number
     ftpMode?: string
+    encoding?: string
   }
   onClose?: () => void
 }>()
