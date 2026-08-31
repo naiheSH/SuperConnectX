@@ -1536,6 +1536,11 @@ onUnmounted(() => {
   }
   pendingAppendBuffer = ''
 
+  // Monaco dispose 后不再需要保留这些 ID/缓存引用，及时释放大终端的辅助数据。
+  syntaxDecorationIds = []
+  syntaxClassMap.clear()
+  regexCache.clear()
+
   window.removeEventListener('settings-updated', handleSettingsUpdated)
   window.removeEventListener('syntax-rules-updated', handleSyntaxRulesUpdated)
   document.removeEventListener('click', handleClickOutsideCrc)
