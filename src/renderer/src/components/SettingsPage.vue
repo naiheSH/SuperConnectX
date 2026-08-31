@@ -56,7 +56,7 @@
                 <el-slider
                   v-model="settings.maxDisplayText"
                   :min="1"
-                  :max="100"
+                  :max="8"
                   :step="1"
                   :show-tooltip="false"
                   style="width: 120px"
@@ -489,6 +489,7 @@ const loadSettings = async () => {
     const data = await window.storageApi.getSettings()
     if (data && typeof data === 'object') {
       settings.value = { ...defaultSettings.value, ...data }
+      settings.value.maxDisplayText = Math.min(settings.value.maxDisplayText || 8, 8)
       isLoading = false
     }
   } catch (error) {
