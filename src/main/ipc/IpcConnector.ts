@@ -307,17 +307,13 @@ export default class IpcConnector {
     }
 
     // 日志清理设置
-    if (settings.maxLogAgeDays) {
-      _logger.setMaxLogAgeDays(settings.maxLogAgeDays)
-    }
-    if (settings.maxLogCount) {
-      _logger.setMaxLogCount(settings.maxLogCount)
-    }
+    _logger.setMaxLogAgeDays(settings.maxLogAgeDays ?? 0)
+    _logger.setMaxLogCount(settings.maxLogCount ?? 0)
   }
 
   // ============ 对外接口 ============
 
-  applySettings(settings: { logSplit?: boolean; logSplitSize?: number; enableLogStorage?: boolean; logPath?: string; logFileName?: string }): void {
+  applySettings(settings: { logSplit?: boolean; logSplitSize?: number; enableLogStorage?: boolean; logPath?: string; logFileName?: string; maxLogAgeDays?: number; maxLogCount?: number }): void {
     if ((settings.logSplit !== undefined || settings.logSplitSize !== undefined) && this._logger) {
       this._logger.setLogSplitSize(settings.logSplit === false ? 0 : (settings.logSplitSize ?? 20))
     }
@@ -329,6 +325,12 @@ export default class IpcConnector {
     }
     if (settings.logFileName !== undefined && this._logger) {
       this._logger.setLogFileName(settings.logFileName)
+    }
+    if (settings.maxLogAgeDays !== undefined && this._logger) {
+      this._logger.setMaxLogAgeDays(settings.maxLogAgeDays)
+    }
+    if (settings.maxLogCount !== undefined && this._logger) {
+      this._logger.setMaxLogCount(settings.maxLogCount)
     }
   }
 

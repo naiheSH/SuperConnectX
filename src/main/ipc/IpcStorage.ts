@@ -127,6 +127,13 @@ export default class IpcStorage {
       if (settings.logFileName !== undefined) {
         IpcConnector.getInstance().applySettings({ logFileName: settings.logFileName })
       }
+      // 日志保留策略需实时生效，0 表示不限制，也必须下发。
+      if (settings.maxLogAgeDays !== undefined || settings.maxLogCount !== undefined) {
+        IpcConnector.getInstance().applySettings({
+          maxLogAgeDays: settings.maxLogAgeDays,
+          maxLogCount: settings.maxLogCount
+        })
+      }
       // 命令历史最大数量变更时裁剪历史记录
       if (settings.commandHistoryMaxCount) {
         commandHistoryStorage.applyMaxCount(settings.commandHistoryMaxCount)

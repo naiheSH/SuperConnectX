@@ -257,7 +257,6 @@
                 <el-option label="180d" :value="180" />
                 <el-option label="365d" :value="365" />
               </el-select>
-              <span v-if="settings.maxLogAgeDays === 0" class="setting-hint">- {{ t('logSettings.allLogsKept') }}</span>
             </div>
             <div class="setting-item">
               <div class="setting-label">
@@ -271,7 +270,6 @@
                 <el-option label="200" :value="200" />
                 <el-option label="500" :value="500" />
               </el-select>
-              <span v-if="settings.maxLogCount === 0" class="setting-hint">- {{ t('logSettings.allLogsKept') }}</span>
             </div>
             <div class="setting-item">
               <div class="setting-label">
@@ -1002,12 +1000,6 @@ const handleSettingsUpdated = (event: Event) => {
   font-size: 12px;
   min-width: 50px;
   text-align: right;
-}
-
-.setting-hint {
-  color: var(--settings-hint-color, #909399);
-  font-size: 12px;
-  margin-left: 8px;
 }
 
 .path-input-wrapper {
