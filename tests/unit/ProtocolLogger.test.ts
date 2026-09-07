@@ -225,6 +225,73 @@ describe('ProtocolLogger', () => {
       logger.writeToConnLog('test data', 'conn-1')
       expect(() => logger.flushConnLog('conn-1')).not.toThrow()
     })
+
+    it('flush 成功后记录实际字节大小', async () => {
+      const logger = await createLogger()
+      const fileName = logger.createConnLogFile('conn-size', 'Size')
+      logger.writeToConnLog('中文日志', 'conn-size')
+
+      expect(logger.flushConnLog('conn-size')).toBe(true)
+      const logPath = path.join(logger.getLogDir(), fileName)
+      expect(logger.currentFileSizes.get('conn-size')).toBe(fs.statSync(logPath).size)
+      expect(logger.currentFileSizes.get('conn-size')).toBeGreaterThan('中文日志'.length)
+    })
+
+    it('刷盘失败时返回失败并保留缓存，之后可以重试', async () => {
+      const logger = await createLogger()
+      const fileName = logger.createConnLogFile('conn-fail', 'Fail')
+      logger.writeToConnLog('must retry', 'conn-fail')
+      const logPath = path.join(logger.getLogDir(), fileName)
+      fs.unlinkSync(logPath)
+      fs.mkdirSync(logPath)
+
+      expect(logger.flushConnLog('conn-fail')).toBe(false)
+      expect(logger.failedCache.get('conn-fail')).toEqual(expect.arrayContaining([
+        expect.stringContaining('must retry')
+      ]))
+      expect(logger.logCache.has('conn-fail')).toBe(false)
+
+      fs.rmdirSync(logPath)
+      expect(logger.flushConnLog('conn-fail')).toBe(true)
+      expect(fs.readFileSync(logPath, 'utf8')).toContain('must retry')
+      expect(logger.failedCache.has('conn-fail')).toBe(false)
+      expect(logger.logCache.has('conn-fail')).toBe(false)
+    })
+
+    it('失败重试批次排在新批次之前', async () => {
+      const logger = await createLogger()
+      const fileName = logger.createConnLogFile('conn-order', 'Order')
+      logger.writeToConnLog('old batch', 'conn-order')
+      const logPath = path.join(logger.getLogDir(), fileName)
+      fs.unlinkSync(logPath)
+      fs.mkdirSync(logPath)
+      logger.flushAllLogs(true)
+      logger.writeToConnLog('new batch', 'conn-order')
+
+      fs.rmdirSync(logPath)
+      logger.retryFailedLogs()
+      const content = fs.readFileSync(logPath, 'utf8')
+      expect(content.indexOf('old batch')).toBeLessThan(content.indexOf('new batch'))
+    })
+
+    it('失败缓存达到上限时保留上限并输出可观测日志', async () => {
+      const logger = await createLogger()
+      const fileName = logger.createConnLogFile('conn-cap', 'Cap')
+      logger.writeToConnLog('entry\n'.repeat(10001), 'conn-cap')
+      const logPath = path.join(logger.getLogDir(), fileName)
+      fs.unlinkSync(logPath)
+      fs.mkdirSync(logPath)
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      logger.flushAllLogs(true)
+
+      expect(logger.failedCacheEntries).toBe(10000)
+      expect(logger.failedCache.get('conn-cap')).toHaveLength(10000)
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed log cache full; dropped 1 entries'))
+
+      errorSpy.mockRestore()
+      fs.rmdirSync(logPath)
+    })
   })
 
   describe('clearConnLogFile', () => {
@@ -334,6 +401,19 @@ describe('ProtocolLogger', () => {
       expect(content).toContain('first chunk')
       expect(content).toContain('second chunk')
     })
+
+    it('另存为不能覆盖当前源日志文件', async () => {
+      const logger = await createLogger()
+      const fileName = logger.createConnLogFile('conn-1', 'Test')
+      logger.writeToConnLog('must remain', 'conn-1')
+
+      const sourcePath = path.join(logger.getLogDir(), fileName)
+      const result = await logger.copyLogFile('conn-1', sourcePath)
+
+      expect(result.success).toBe(false)
+      expect(result.message).toContain('cannot overwrite')
+      expect(fs.readFileSync(sourcePath, 'utf8')).toContain('must remain')
+    })
   })
 
   describe('日志分片逻辑', () => {
@@ -362,6 +442,52 @@ describe('ProtocolLogger', () => {
       expect(fs.existsSync(path.join(logDir, `${baseName}-1.log`))).toBe(true)
       expect(fs.existsSync(path.join(logDir, `${baseName}-2.log`))).toBe(true)
     })
+
+    it('按待写入字节数分片，但允许单条超出阈值写入空文件', async () => {
+      const logger = await createLogger()
+      logger.setLogSplitSize(0.00001)
+      const first = logger.createConnLogFile('conn-size', 'Size')
+      logger.writeToConnLog('x'.repeat(100), 'conn-size')
+      logger.flushAllLogs(true)
+      const second = logger.createConnLogFile('conn-size-2', 'Size2')
+      logger.writeToConnLog('small', 'conn-size-2')
+      logger.flushAllLogs(true)
+      expect(fs.existsSync(path.join(logger.getLogDir(), first))).toBe(true)
+      expect(fs.existsSync(path.join(logger.getLogDir(), second))).toBe(true)
+      expect(fs.readFileSync(path.join(logger.getLogDir(), first), 'utf8')).toContain('x'.repeat(100))
+    })
+  })
+
+  describe('manualCleanup', () => {
+    it('respects zero retention values and returns exact result', async () => {
+      const logger = await createLogger()
+      logger.setMaxLogAgeDays(0)
+      logger.setMaxLogCount(0)
+      const dir = path.join(TEST_ROOT, 'cleanup')
+      logger.setLogDir(dir)
+      fs.mkdirSync(dir, { recursive: true })
+      fs.writeFileSync(path.join(dir, 'old.log'), '1234')
+      const result = logger.manualCleanup()
+      expect(result).toMatchObject({ success: true, deletedCount: 0, deletedSize: 0, failedCount: 0 })
+      expect(fs.existsSync(path.join(dir, 'old.log'))).toBe(true)
+    })
+
+    it('cleans all configured connection directories while protecting active absolute paths', async () => {
+      const logger = await createLogger()
+      logger.setMaxLogCount(1)
+      const root = path.join(TEST_ROOT, 'multi')
+      logger.setLogDir(root)
+      fs.mkdirSync(path.join(root, 'one'), { recursive: true })
+      fs.mkdirSync(path.join(root, 'two'), { recursive: true })
+      logger.setLogDir(path.join(root, '%C'))
+      const active = logger.createConnLogFile('active', 'one')
+      const activePath = path.join(root, 'one', active)
+      fs.writeFileSync(path.join(root, 'two', 'old.log'), 'old')
+      fs.writeFileSync(path.join(root, 'two', 'new.log'), 'new')
+      const result = logger.manualCleanup()
+      expect(result.deletedCount).toBeGreaterThanOrEqual(1)
+      expect(fs.existsSync(activePath)).toBe(true)
+    })
   })
 
   describe('rotateLogFile', () => {
@@ -384,6 +510,38 @@ describe('ProtocolLogger', () => {
       expect(result.newFileName).toBeTruthy()
       expect(result.newFileName).toContain('Test')
       expect(result.newFileName).not.toBe(oldFileName)
+    })
+
+    it('刷盘失败时阻断归档并保留当前日志映射', async () => {
+      const logger = await createLogger()
+      const oldFileName = logger.createConnLogFile('conn-rotate-fail', 'RotateFail')
+      logger.writeToConnLog('pending before rotate', 'conn-rotate-fail')
+      const oldPath = path.join(logger.getLogDir(), oldFileName)
+      fs.unlinkSync(oldPath)
+      fs.mkdirSync(oldPath)
+
+      const result = await logger.rotateLogFile('conn-rotate-fail')
+
+      expect(result.success).toBe(false)
+      expect(logger.connLogFiles.get('conn-rotate-fail')).toBe(oldFileName)
+      expect(logger.connLogFileHistory.get('conn-rotate-fail')).toEqual([oldFileName])
+      expect(fs.statSync(oldPath).isDirectory()).toBe(true)
+    })
+  })
+
+  describe('markConnLogRotate', () => {
+    it('刷盘失败时不标记下次连接轮换日志', async () => {
+      const logger = await createLogger()
+      const fileName = logger.createConnLogFile('conn-mark-fail', 'MarkFail')
+      logger.writeToConnLog('pending before disconnect', 'conn-mark-fail')
+      const logPath = path.join(logger.getLogDir(), fileName)
+      fs.unlinkSync(logPath)
+      fs.mkdirSync(logPath)
+
+      logger.markConnLogRotate('conn-mark-fail')
+
+      expect(logger.connLogNeedsNew.get('conn-mark-fail')).not.toBe(true)
+      expect(logger.failedCache.get('conn-mark-fail')).toContainEqual(expect.stringContaining('pending before disconnect'))
     })
   })
 

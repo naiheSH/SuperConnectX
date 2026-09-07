@@ -187,6 +187,14 @@ describe('IpcConnector', () => {
       expect(logger.setLogSplitSize).toHaveBeenLastCalledWith(50)
     })
 
+    it('should preserve stored split state for partial updates', () => {
+      connector.applySettings({ logSplit: false, logSplitSize: 50 })
+      connector.applySettings({ logSplitSize: 80 })
+      expect(logger.setLogSplitSize).toHaveBeenLastCalledWith(0)
+      connector.applySettings({ logSplit: true })
+      expect(logger.setLogSplitSize).toHaveBeenLastCalledWith(80)
+    })
+
     it('should apply zero values for unlimited log retention', () => {
       connector.applySettings({ maxLogAgeDays: 0, maxLogCount: 0 })
       expect(logger.setMaxLogAgeDays).toHaveBeenLastCalledWith(0)

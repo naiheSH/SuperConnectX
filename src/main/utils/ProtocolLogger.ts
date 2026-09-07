@@ -1,7 +1,7 @@
-import { appendFile, appendFileSync, existsSync, mkdirSync, statSync, writeFileSync, readdirSync, unlinkSync } from 'fs'
+import { appendFileSync, existsSync, mkdirSync, statSync, writeFileSync, readdirSync, unlinkSync } from 'fs'
 import { shell, app } from 'electron'
 import fs from 'fs/promises'
-import { dirname, join } from 'path'
+import { dirname, join, resolve } from 'path'
 import { getAppDataDir } from './AppDir'
 
 // 磁盘空间相关
@@ -30,6 +30,8 @@ export default class ProtocolLogger {
   private connLogRemarks = new Map<string, string>() // 保存备注名
   private logCache = new Map<string, string[]>()
   private failedCache = new Map<string, string[]>() // 写入失败的缓存
+  private failedCacheEntries = 0
+  private readonly MAX_FAILED_CACHE_ENTRIES = 10000
   private currentFileSizes = new Map<string, number>()
   // 标记该连接下次连接时需创建新的日志文件（手动断开后保留旧日志可打开，但重连时另起新文件）
   private connLogNeedsNew = new Map<string, boolean>()
@@ -209,9 +211,10 @@ export default class ProtocolLogger {
     // 将失败缓存移回正常缓存
     this.failedCache.forEach((entries, connId) => {
       const currentCache = this.logCache.get(connId) || []
-      this.logCache.set(connId, [...currentCache, ...entries])
+      this.logCache.set(connId, [...entries, ...currentCache])
     })
     this.failedCache.clear()
+    this.failedCacheEntries = 0
 
     // 尝试重新写入
     this.flushAllLogs(false)
@@ -227,140 +230,63 @@ export default class ProtocolLogger {
     this.maxLogCount = count
   }
 
-  // 手动触发清理（公开方法）- 清理所有非活跃日志文件，忽略设置值
-  manualCleanup(): { deletedCount: number; deletedSize: number } {
-    const beforeCount = this.countLogFiles()
-    this.forceCleanupAllLogs()
-    const afterCount = this.countLogFiles()
-    return {
-      deletedCount: beforeCount - afterCount,
-      deletedSize: 0
-    }
+  manualCleanup(): { success: boolean; deletedCount: number; deletedSize: number; failedCount: number; failedFiles: string[] } {
+    return this.cleanupLogs()
   }
 
-  // 强制清理所有非活跃日志文件（手动清理时使用）
-  private forceCleanupAllLogs(): void {
+  private cleanupLogs(): { success: boolean; deletedCount: number; deletedSize: number; failedCount: number; failedFiles: string[] } {
+    const result = { success: true, deletedCount: 0, deletedSize: 0, failedCount: 0, failedFiles: [] as string[] }
+    if (this.maxLogAgeDays <= 0 && this.maxLogCount <= 0) return result
     try {
-      const logDir = this.logDir
-      if (!existsSync(logDir)) return
-
-      // 收集当前正在使用的日志文件（排除这些文件）
-      const activeLogFiles = new Set<string>()
-      this.connLogFiles.forEach((fileName) => {
-        activeLogFiles.add(fileName)
-      })
-
-      const files = readdirSync(logDir)
-      const logFiles = files
-        .filter(f => f.endsWith('.log') && !activeLogFiles.has(f))
-        .map(f => {
-          const filePath = join(logDir, f)
+      const active = new Set<string>()
+      this.connLogFiles.forEach((fileName, connId) => active.add(resolve(this.getConnLogDir(connId), fileName)))
+      const files: { path: string; mtime: number; size: number }[] = []
+      for (const dir of [...new Set([this.logDir, this.defaultLogDir, ...this.connLogDirs.values()])]) {
+        if (!existsSync(dir)) continue
+        for (const name of readdirSync(dir)) {
+          if (!name.endsWith('.log')) continue
+          const filePath = resolve(dir, name)
           try {
             const stats = statSync(filePath)
-            return { name: f, path: filePath, mtime: stats.mtimeMs, size: stats.size }
-          } catch {
-            return null
-          }
-        })
-        .filter((f): f is { name: string; path: string; mtime: number; size: number } => f !== null)
-        .sort((a, b) => b.mtime - a.mtime) // 按修改时间倒序
-
-      // 删除所有非活跃日志文件（保留最新的1个）
-      if (logFiles.length > 1) {
-        const filesToDelete = logFiles.slice(1) // 保留第一个（最新的）
-        for (const file of filesToDelete) {
-          try {
-            unlinkSync(file.path)
-          } catch {
-            // 忽略删除失败
-          }
+            if (!active.has(filePath)) files.push({ path: filePath, mtime: stats.mtimeMs, size: stats.size })
+          } catch { result.success = false }
         }
       }
-    } catch {
-      // 忽略清理过程中的错误
-    }
-  }
-
-  // 统计日志文件数量
-  private countLogFiles(): number {
-    try {
-      const logDir = this.logDir
-      if (!existsSync(logDir)) return 0
-      const files = readdirSync(logDir)
-      return files.filter(f => f.endsWith('.log')).length
-    } catch {
-      return 0
-    }
+      files.sort((a, b) => b.mtime - a.mtime)
+      const deletePaths = new Set<string>()
+      if (this.maxLogAgeDays > 0) {
+        const age = this.maxLogAgeDays * 24 * 60 * 60 * 1000
+        files.forEach(file => { if (Date.now() - file.mtime > age) deletePaths.add(file.path) })
+      }
+      if (this.maxLogCount > 0) files.slice(this.maxLogCount).forEach(file => deletePaths.add(file.path))
+      for (const file of files) {
+        if (!deletePaths.has(file.path)) continue
+        try {
+          unlinkSync(file.path)
+          result.deletedCount++
+          result.deletedSize += file.size
+        } catch {
+          result.success = false
+          result.failedCount++
+          result.failedFiles.push(file.path)
+        }
+      }
+    } catch { result.success = false }
+    return result
   }
 
   // 清理旧日志文件
   private cleanupOldLogs(): void {
-    try {
-      const logDir = this.logDir
-      if (!existsSync(logDir)) return
-
-      // 收集当前正在使用的日志文件（排除这些文件）
-      const activeLogFiles = new Set<string>()
-      this.connLogFiles.forEach((fileName) => {
-        activeLogFiles.add(fileName)
-      })
-
-      const files = readdirSync(logDir)
-      const logFiles = files
-        .filter(f => f.endsWith('.log') && !activeLogFiles.has(f)) // 排除活跃文件
-        .map(f => {
-          const filePath = join(logDir, f)
-          try {
-            const stats = statSync(filePath)
-            return { name: f, path: filePath, mtime: stats.mtimeMs, size: stats.size }
-          } catch {
-            return null
-          }
-        })
-        .filter((f): f is { name: string; path: string; mtime: number; size: number } => f !== null)
-        .sort((a, b) => b.mtime - a.mtime) // 按修改时间倒序
-
-      const now = Date.now()
-
-      // 1. 按时间清理超期日志（0 = 不清理）
-      if (this.maxLogAgeDays > 0) {
-        const maxAgeMs = this.maxLogAgeDays * 24 * 60 * 60 * 1000
-        for (const file of logFiles) {
-          if (now - file.mtime > maxAgeMs) {
-            try {
-              unlinkSync(file.path)
-            } catch {
-              // 忽略删除失败
-            }
-          }
-        }
-      }
-
-      // 2. 按数量清理（0 = 不限制）
-      if (this.maxLogCount > 0) {
-        const remainingFiles = logFiles.filter(f => existsSync(f.path))
-        if (remainingFiles.length > this.maxLogCount) {
-          const filesToDelete = remainingFiles.slice(this.maxLogCount)
-          for (const file of filesToDelete) {
-            try {
-              unlinkSync(file.path)
-            } catch {
-              // 忽略删除失败
-            }
-          }
-        }
-      }
-    } catch {
-      // 忽略清理过程中的错误
-    }
+    this.cleanupLogs()
   }
 
   // 检查磁盘空间
-  private checkDiskSpace(): boolean {
+  private checkDiskSpace(connId?: string): boolean {
+    const logDir = connId ? this.getConnLogDir(connId) : this.logDir
     try {
       // 尝试使用 disk-size 库
       if (diskSpace && diskSpace.getDiskSpace) {
-        const result = diskSpace.getDiskSpace(this.logDir)
+        const result = diskSpace.getDiskSpace(logDir)
         if (result && result.free) {
           const freeMB = result.free / (1024 * 1024)
           if (freeMB < this.diskSpaceWarningMB) {
@@ -378,7 +304,7 @@ export default class ProtocolLogger {
       // 回退：使用 statfs（Node.js 18+）
       const { statfsSync } = require('fs') as any
       if (statfsSync) {
-        const stats = statfsSync(this.logDir)
+        const stats = statfsSync(logDir)
         const freeMB = (stats.bavail * stats.bsize) / (1024 * 1024)
         if (freeMB < this.diskSpaceWarningMB) {
           if (!this.isDiskSpaceLow) {
@@ -407,7 +333,7 @@ export default class ProtocolLogger {
   }
 
   // 检查并处理日志分片
-  private checkAndSplitLog(connId: string): string {
+  private checkAndSplitLog(connId: string, incomingBytes = 0): string {
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return fileName || ''
 
@@ -430,7 +356,8 @@ export default class ProtocolLogger {
 
     // 如果超过阈值，创建新文件
     const maxSizeBytes = this.logSplitSizeMB * 1024 * 1024
-    if (currentSize >= maxSizeBytes) {
+    // A single record larger than the limit is written to an empty file as-is.
+    if (currentSize > 0 && currentSize + incomingBytes > maxSizeBytes) {
       const oldFileName = fileName
       const index = (this.connLogIndexes.get(connId) || 0) + 1
       this.connLogIndexes.set(connId, index)
@@ -453,50 +380,36 @@ export default class ProtocolLogger {
   }
 
   // 批量写入日志（默认异步，isSync=true 时同步写入）
-  private flushAllLogs(isSync: boolean = false): void {
+  private flushAllLogs(_isSync: boolean = false): void {
     this.logCache.forEach((logEntries, connId) => {
       if (logEntries.length <= 0) {
         return
       }
 
-      // 检查是否需要分片
-      this.checkAndSplitLog(connId)
-
-      const fileName = this.connLogFiles.get(connId)
-      if (!fileName) return
-
-      const logFile = join(this.getConnLogDir(connId), fileName)
       const logData = logEntries.join('\n') + '\n'
+      // Include the pending batch in the split decision, not only the old file size.
+      const fileName = this.checkAndSplitLog(connId, Buffer.byteLength(logData, 'utf8'))
+      if (!fileName) return
+      const logFile = join(this.getConnLogDir(connId), fileName)
 
       try {
         this.ensureDir(dirname(logFile))
-        if (isSync) {
-          // 退出时同步写入
-          appendFileSync(logFile, logData, 'utf-8')
-          const stats = statSync(logFile)
-          this.currentFileSizes.set(connId, stats.size)
-        } else {
-          // 正常运行时异步写入（不阻塞事件循环）
-          appendFile(logFile, logData, 'utf-8', (err) => {
-            if (err) {
-              console.error(`Async write log failed [connId:${connId}]:`, err)
-              // 写入失败，将数据移入失败缓存
-              const failed = this.failedCache.get(connId) || []
-              this.failedCache.set(connId, [...failed, ...logEntries])
-            } else {
-              try {
-                const stats = statSync(logFile)
-                this.currentFileSizes.set(connId, stats.size)
-              } catch { /* ignore */ }
-            }
-          })
-        }
-        this.logCache.set(connId, []) // 清空缓存
+        if (!this.checkDiskSpace(connId)) throw new Error('Insufficient disk space for log write')
+        // Synchronous, ordered writes avoid concurrent append callbacks racing on split files.
+        appendFileSync(logFile, logData, 'utf-8')
+        this.currentFileSizes.set(connId, statSync(logFile).size)
+        this.logCache.set(connId, [])
       } catch (err) {
         console.error(`Write log failed [connId:${connId}]:`, err)
-        // 同步写入失败，将数据移入失败缓存
         const failed = this.failedCache.get(connId) || []
-        this.failedCache.set(connId, [...failed, ...logEntries])
+        const available = Math.max(0, this.MAX_FAILED_CACHE_ENTRIES - this.failedCacheEntries)
+        const retained = logEntries.slice(0, available)
+        this.failedCache.set(connId, [...failed, ...retained])
+        this.failedCacheEntries += retained.length
+        if (retained.length < logEntries.length) {
+          console.error(`[ProtocolLogger] Failed log cache full; dropped ${logEntries.length - retained.length} entries`)
+        }
+        this.logCache.delete(connId)
       }
     })
   }
@@ -577,7 +490,12 @@ export default class ProtocolLogger {
     // 同时更新全局 logDir（用于 openLogDir 等无连接上下文的操作）
     this.logDir = resolvedDir
 
-    const fileName = `${this.resolveFileName(connName, remark)}.log`
+    const baseFileName = `${this.resolveFileName(connName, remark)}.log`
+    let fileName = baseFileName
+    let suffix = 1
+    while (existsSync(join(resolvedDir, fileName))) {
+      fileName = `${baseFileName.replace(/\.log$/, '')}-${suffix++}.log`
+    }
     this.connLogFiles.set(connId, fileName)
     this.connLogFileHistory.set(connId, [fileName])
     this.connLogBaseNames.set(connId, fileName.replace(/\.log$/, ''))
@@ -592,9 +510,7 @@ export default class ProtocolLogger {
     // 连接时立即创建空日志文件，避免刚连接时点击打开日志提示文件不存在
     const logFilePath = join(resolvedDir, fileName)
     this.ensureDir(dirname(logFilePath))
-    if (!existsSync(logFilePath)) {
-      writeFileSync(logFilePath, '', 'utf-8')
-    }
+    writeFileSync(logFilePath, '', 'utf-8')
 
     return fileName
   }
@@ -603,11 +519,6 @@ export default class ProtocolLogger {
     if (!this.enableLogStorage) return
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return
-
-    // 检查磁盘空间，空间不足时停止写入
-    if (!this.checkDiskSpace()) {
-      return // 磁盘空间不足，丢弃数据
-    }
 
     const currentLogs = this.logCache.get(connId) || []
     const timestamp = this.getTimeStamp()
@@ -627,11 +538,6 @@ export default class ProtocolLogger {
     const fileName = this.connLogFiles.get(connId)
     if (!fileName) return
 
-    // 检查磁盘空间，空间不足时停止写入
-    if (!this.checkDiskSpace()) {
-      return // 磁盘空间不足，丢弃数据
-    }
-
     const currentLogs = this.logCache.get(connId) || []
     const timestampMatch = content.match(/^(\[\d{4}-\d{2}-\d{2}\s[^\]]+\]\s*)/)
     const timestampPrefix = timestampMatch ? timestampMatch[1] : `[${this.getTimeStamp()}] `
@@ -644,16 +550,11 @@ export default class ProtocolLogger {
   }
 
   // 连接关闭时刷入日志（保留记录以便后续打开日志）
-  flushConnLog(connId: string): void {
-    // 先处理失败缓存
-    const failedLogs = this.failedCache.get(connId)
-    if (failedLogs && failedLogs.length > 0) {
-      const allLogs = [...failedLogs, ...(this.logCache.get(connId) || [])]
-      this.logCache.set(connId, allLogs)
-      this.failedCache.delete(connId)
-    }
-
-    const remainingLogs = this.logCache.get(connId)
+  flushConnLog(connId: string): boolean {
+    const remainingLogs = [
+      ...(this.failedCache.get(connId) || []),
+      ...(this.logCache.get(connId) || [])
+    ]
     if (remainingLogs && remainingLogs.length > 0) {
       const fileName = this.connLogFiles.get(connId)
       if (fileName) {
@@ -661,18 +562,42 @@ export default class ProtocolLogger {
         const logData = remainingLogs.join('\n') + '\n'
         try {
           this.ensureDir(dirname(logFile))
+          if (!this.checkDiskSpace(connId)) throw new Error('Insufficient disk space for log write')
           appendFileSync(logFile, logData, 'utf-8') // 同步写入
+          this.failedCacheEntries -= (this.failedCache.get(connId) || []).length
+          this.failedCache.delete(connId)
+          this.logCache.delete(connId)
+          this.currentFileSizes.set(connId, statSync(logFile).size)
+          return true
         } catch (err) {
           console.error(`Flush log on disconnect failed:`, err)
+          // Move the new batch to the retry queue; existing failed entries are
+          // already included in it and must not be duplicated.
+          const pendingBatch = this.logCache.get(connId) || []
+          if (pendingBatch.length > 0) {
+            const failed = this.failedCache.get(connId) || []
+            const available = Math.max(0, this.MAX_FAILED_CACHE_ENTRIES - this.failedCacheEntries)
+            const retained = pendingBatch.slice(0, available)
+            this.failedCache.set(connId, [...failed, ...retained])
+            this.failedCacheEntries += retained.length
+            if (retained.length < pendingBatch.length) {
+              console.error(`[ProtocolLogger] Failed log cache full; dropped ${pendingBatch.length - retained.length} entries`)
+            }
+            this.logCache.delete(connId)
+          }
+          return false
         }
       }
     }
+    if (!this.connLogFiles.has(connId)) return false
     this.logCache.delete(connId)
+    return true
   }
 
   // 真正清理日志记录（选项卡关闭时调用）
   clearConnLogFile(connId: string): void {
     this.flushConnLog(connId)
+    if (this.failedCache.has(connId) || (this.logCache.get(connId)?.length || 0) > 0) return
     this.connLogFiles.delete(connId)
     this.connLogFileHistory.delete(connId)
     this.connLogBaseNames.delete(connId)
@@ -681,7 +606,7 @@ export default class ProtocolLogger {
     this.connLogNames.delete(connId)
     this.connLogRemarks.delete(connId)
     this.currentFileSizes.delete(connId)
-    this.failedCache.delete(connId)
+    if (!this.failedCache.has(connId)) this.failedCacheEntries = Math.max(0, this.failedCacheEntries)
     this.connLogNeedsNew.delete(connId)
   }
 
@@ -692,7 +617,7 @@ export default class ProtocolLogger {
    * 但下次手动重连时（createConnLogFile）会创建新的日志文件。
    */
   markConnLogRotate(connId: string): void {
-    this.flushConnLog(connId)
+    if (!this.flushConnLog(connId)) return
     // 仅当该连接确实存在日志文件时才标记轮换，否则下次连接走正常新建逻辑
     if (this.connLogFiles.has(connId)) {
       this.connLogNeedsNew.set(connId, true)
@@ -782,21 +707,9 @@ export default class ProtocolLogger {
     options?: { hours?: number }
   ): Promise<{ success: boolean; message?: string }> {
     try {
-      // 快速刷盘：只写入当前连接的日志，不等待其他连接
-      const currentLogs = this.logCache.get(connId) || []
-      if (currentLogs.length > 0) {
-        const fileName = this.connLogFiles.get(connId)
-        if (fileName) {
-          const logFile = join(this.getConnLogDir(connId), fileName)
-          const logData = currentLogs.join('\n') + '\n'
-          try {
-            this.ensureDir(dirname(logFile))
-            appendFileSync(logFile, logData, 'utf-8')
-            this.logCache.set(connId, [])
-          } catch (err) {
-            console.error('Quick flush failed:', err)
-          }
-        }
+      // Flush this connection synchronously before taking a consistent export snapshot.
+      if (!this.flushConnLog(connId)) {
+        return { success: false, message: 'Failed to flush pending log data before export' }
       }
 
       const fileNames = this.connLogFileHistory.get(connId) || []
@@ -808,7 +721,10 @@ export default class ProtocolLogger {
       await fs.mkdir(dirname(destPath), { recursive: true })
 
       // 如果指定了时间范围，按时间筛选
-      if (options?.hours && options.hours > 0) {
+      if (options?.hours !== undefined && (!Number.isFinite(options.hours) || options.hours <= 0)) {
+        return { success: false, message: 'Invalid time range' }
+      }
+      if (options?.hours !== undefined) {
         return await this.copyLogFileWithTimeRange(connId, destPath, options.hours, onProgress)
       }
 
@@ -828,34 +744,29 @@ export default class ProtocolLogger {
         return { success: false, message: 'Source log file does not exist' }
       }
 
+      const normalizedDest = resolve(destPath)
+      if (validFiles.some(file => this.samePath(file.path, normalizedDest))) {
+        return { success: false, message: 'Export destination cannot overwrite a source log file' }
+      }
+
       // 单文件直接复制，多文件流式追加
       if (validFiles.length === 1) {
         // 单文件：直接复制，最快
         await fs.copyFile(validFiles[0].path, destPath)
         if (onProgress) onProgress(100)
       } else {
-        // 多文件：使用流式追加，避免内存溢出
-        const { createReadStream, createWriteStream } = require('fs')
-        const writeStream = createWriteStream(destPath)
-
+        // Sequential synchronous appends make destination errors observable and avoid stream races.
+        writeFileSync(destPath, '', 'utf-8')
         let copiedSize = 0
         for (const file of validFiles) {
-          await new Promise<void>((resolve, reject) => {
-            const readStream = createReadStream(file.path)
-            readStream.on('data', (chunk: string | Buffer) => {
-              copiedSize += Buffer.byteLength(chunk)
-            })
-            readStream.on('end', resolve)
-            readStream.on('error', reject)
-            readStream.pipe(writeStream, { end: false })
-          })
+          const content = await fs.readFile(file.path)
+          appendFileSync(destPath, content)
+          copiedSize += content.length
           // 报告进度
           if (onProgress && totalSize > 0) {
             onProgress(Math.min(100, Math.round((copiedSize / totalSize) * 100)))
           }
         }
-        writeStream.end()
-        await new Promise<void>((resolve) => writeStream.on('finish', resolve))
       }
 
       return { success: true }
@@ -893,8 +804,13 @@ export default class ProtocolLogger {
       return { success: false, message: 'Source log file does not exist' }
     }
 
-    // 读取并筛选内容
-    let totalContent = ''
+    const normalizedDest = resolve(destPath)
+    if (validFiles.some(filePath => this.samePath(filePath, normalizedDest))) {
+      return { success: false, message: 'Export destination cannot overwrite a source log file' }
+    }
+
+    // Read and write one file at a time so a long export does not build one large string.
+    writeFileSync(destPath, '', 'utf-8')
     let processedFiles = 0
 
     for (const filePath of validFiles) {
@@ -907,15 +823,13 @@ export default class ProtocolLogger {
         if (!match) return true // 保留无时间戳的行（如连接信息）
         try {
           const lineTime = new Date(match[1]).getTime()
-          return lineTime >= cutoff
+          return Number.isNaN(lineTime) || lineTime >= cutoff
         } catch {
           return true // 解析失败时保留
         }
       })
 
-      if (filtered.length > 0) {
-        totalContent += filtered.join('\n') + '\n'
-      }
+      if (filtered.length > 0) appendFileSync(destPath, filtered.join('\n') + '\n', 'utf-8')
 
       processedFiles++
       if (onProgress) {
@@ -923,22 +837,32 @@ export default class ProtocolLogger {
       }
     }
 
-    // 写入目标文件
-    await fs.writeFile(destPath, totalContent.trimEnd() + '\n', 'utf-8')
     if (onProgress) onProgress(100)
 
     return { success: true }
+  }
+
+  private samePath(left: string, right: string): boolean {
+    const normalizedLeft = resolve(left)
+    const normalizedRight = resolve(right)
+    return process.platform === 'win32'
+      ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+      : normalizedLeft === normalizedRight
   }
 
   // 日志归档：保留旧文件不动，创建新日志文件继续写入
   // 后续的日志写入、打开文件/文件夹操作都指向新文件
   async rotateLogFile(connId: string): Promise<{ success: boolean; message?: string; oldFileName?: string; newFileName?: string }> {
     try {
-      this.flushAllLogs(true) // 确保所有日志都已写入
-
       const oldFileName = this.connLogFiles.get(connId)
       if (!oldFileName) {
         return { success: false, message: 'Log file not found' }
+      }
+
+      // Rotation must not detach the active file while this connection still has
+      // unwritten data. Other connections may continue flushing independently.
+      if (!this.flushConnLog(connId)) {
+        return { success: false, message: 'Failed to flush pending log data before rotation' }
       }
 
       const connName = this.connLogNames.get(connId) || 'unknown'

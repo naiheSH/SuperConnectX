@@ -31,6 +31,8 @@ export default class IpcConnector {
   private connectionStorage: ConnectionStorage
   private windows!: { mainWindow?: BrowserWindow | null }
   private _logger: ProtocolLogger | null = null
+  private logSplitEnabled = true
+  private logSplitSize = 20
 
   // 是否启用 Worker 模式（可通过设置切换，默认启用）
   private useWorkerMode: boolean = true
@@ -292,7 +294,9 @@ export default class IpcConnector {
   private applyLogSettings(): void {
     const _logger = this._logger!
     const settings = this.settingsStorage.getSettings()
-    _logger.setLogSplitSize(settings.logSplit === false ? 0 : (settings.logSplitSize ?? 20))
+    this.logSplitEnabled = settings.logSplit !== false
+    this.logSplitSize = settings.logSplitSize ?? 20
+    _logger.setLogSplitSize(this.logSplitEnabled ? this.logSplitSize : 0)
     _logger.setEnableLogStorage(settings.enableLogStorage === true)
 
     if (!settings.logPath) {
@@ -315,7 +319,9 @@ export default class IpcConnector {
 
   applySettings(settings: { logSplit?: boolean; logSplitSize?: number; enableLogStorage?: boolean; logPath?: string; logFileName?: string; maxLogAgeDays?: number; maxLogCount?: number }): void {
     if ((settings.logSplit !== undefined || settings.logSplitSize !== undefined) && this._logger) {
-      this._logger.setLogSplitSize(settings.logSplit === false ? 0 : (settings.logSplitSize ?? 20))
+      if (settings.logSplit !== undefined) this.logSplitEnabled = settings.logSplit
+      if (settings.logSplitSize !== undefined) this.logSplitSize = settings.logSplitSize
+      this._logger.setLogSplitSize(this.logSplitEnabled ? this.logSplitSize : 0)
     }
     if (settings.enableLogStorage !== undefined && this._logger) {
       this._logger.setEnableLogStorage(settings.enableLogStorage)
