@@ -141,7 +141,7 @@
     "maxLogAgeDaysDesc": "Log files older than this will be automatically deleted",
     "days": "days",
     "maxLogCount": "Max Log File Count",
-    "maxLogCountDesc": "Keep the latest N log files, older ones will be deleted",
+    "maxLogCountDesc": "Keep the latest N log files across all log roots, older ones will be deleted",
     "exportTimeRange": "Export Time Range",
     "exportTimeRangeDesc": "Time range of logs to export when saving",
     "exportAll": "All",

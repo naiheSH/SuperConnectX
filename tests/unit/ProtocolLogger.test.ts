@@ -561,6 +561,67 @@ describe('ProtocolLogger', () => {
       expect(result.deletedCount).toBeGreaterThanOrEqual(1)
       expect(fs.existsSync(activePath)).toBe(true)
     })
+
+    it('recursively scans nested log directories and applies one global count', async () => {
+      const logger = await createLogger()
+      logger.setMaxLogAgeDays(0)
+      logger.setMaxLogCount(1)
+      const root = path.join(TEST_ROOT, 'nested')
+      logger.setLogDir(root)
+      fs.mkdirSync(path.join(root, 'a', 'b'), { recursive: true })
+      fs.writeFileSync(path.join(root, 'a', 'b', 'old.log'), 'old')
+      fs.writeFileSync(path.join(root, 'new.log'), 'new')
+      fs.utimesSync(path.join(root, 'a', 'b', 'old.log'), new Date(1), new Date(1))
+      const result = logger.manualCleanup()
+      expect(result).toMatchObject({ success: true, deletedCount: 1, deletedSize: 3, failedCount: 0 })
+      expect(fs.existsSync(path.join(root, 'a', 'b', 'old.log'))).toBe(false)
+      expect(fs.existsSync(path.join(root, 'new.log'))).toBe(true)
+    })
+
+    it('uses the static root before a directory template after restart', async () => {
+      const logger = await createLogger()
+      logger.setMaxLogAgeDays(0)
+      logger.setMaxLogCount(1)
+      const root = path.join(TEST_ROOT, 'templated')
+      logger.setLogDir(path.join(root, '%Y', '%C'))
+      fs.mkdirSync(path.join(root, '2025', 'offline'), { recursive: true })
+      fs.writeFileSync(path.join(root, '2025', 'offline', 'old.log'), 'old')
+      fs.writeFileSync(path.join(root, 'history.log'), 'new')
+      fs.utimesSync(path.join(root, '2025', 'offline', 'old.log'), new Date(1), new Date(1))
+      ;(logger as any).connLogDirs.clear()
+      const result = logger.manualCleanup()
+      expect(result.deletedCount).toBe(1)
+      expect(fs.existsSync(path.join(root, '2025', 'offline', 'old.log'))).toBe(false)
+    })
+
+    it('does not follow directory symlinks', async () => {
+      if (process.platform === 'win32') return
+      const logger = await createLogger()
+      logger.setMaxLogAgeDays(0)
+      logger.setMaxLogCount(1)
+      const root = path.join(TEST_ROOT, 'symlink-root')
+      const outside = path.join(TEST_ROOT, 'outside')
+      logger.setLogDir(root)
+      fs.mkdirSync(root, { recursive: true })
+      fs.mkdirSync(outside, { recursive: true })
+      fs.writeFileSync(path.join(outside, 'outside.log'), 'outside')
+      fs.symlinkSync(outside, path.join(root, 'linked'))
+      const result = logger.manualCleanup()
+      expect(result.deletedCount).toBe(0)
+      expect(fs.existsSync(path.join(outside, 'outside.log'))).toBe(true)
+    })
+
+    it('reports scan failures accurately', async () => {
+      const logger = await createLogger()
+      logger.setMaxLogAgeDays(0)
+      logger.setMaxLogCount(1)
+      const missingRoot = path.join(TEST_ROOT, 'missing-root')
+      logger.setLogDir(missingRoot)
+      const scanResult = logger.manualCleanup()
+      expect(scanResult.success).toBe(false)
+      expect(scanResult.failedCount).toBe(1)
+      expect(scanResult.failedFiles).toContain(path.resolve(missingRoot))
+    })
   })
 
   describe('rotateLogFile', () => {
@@ -655,6 +716,14 @@ describe('ProtocolLogger', () => {
   })
 
   describe('日志目录模板解析', () => {
+    it('根目录占位符不会把清理扫描范围扩大到文件系统根', async () => {
+      const logger = await createLogger()
+      const defaultLogDir = logger.getLogDir()
+      logger.setLogDir(path.parse(TEST_ROOT).root + '%Y')
+
+      expect(logger.getLogDir()).toBe(defaultLogDir)
+    })
+
     it('空模板使用默认目录', async () => {
       const logger = await createLogger()
       logger.setLogDir('')

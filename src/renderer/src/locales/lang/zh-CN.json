@@ -141,7 +141,7 @@
     "maxLogAgeDaysDesc": "超过此天数的日志文件将自动删除",
     "days": "天",
     "maxLogCount": "日志最大文件数",
-    "maxLogCountDesc": "保留最新的日志文件数量，超出部分自动删除",
+    "maxLogCountDesc": "所有日志根目录合计保留最新的 N 个日志文件，超出部分自动删除",
     "exportTimeRange": "导出时间范围",
     "exportTimeRangeDesc": "另存为时导出的日志时间范围",
     "exportAll": "全部",

@@ -1,7 +1,7 @@
-import { appendFileSync, existsSync, mkdirSync, statSync, writeFileSync, readdirSync, unlinkSync } from 'fs'
+import { appendFileSync, existsSync, mkdirSync, statSync, writeFileSync, readdirSync, unlinkSync, lstatSync } from 'fs'
 import { shell, app } from 'electron'
 import fs from 'fs/promises'
-import { dirname, join, resolve } from 'path'
+import { dirname, join, parse, resolve, isAbsolute } from 'path'
 import { getAppDataDir } from './AppDir'
 
 // 磁盘空间相关
@@ -46,7 +46,7 @@ export default class ProtocolLogger {
   private enableLogStorage: boolean = true // 是否启用日志存储
   private logFileNamePattern: string = '%C-%Y-%M-%D-%hh-%mm-%ss' // 文件名模板
   private maxLogAgeDays: number = 30 // 日志最大保留天数
-  private maxLogCount: number = 100 // 日志最大文件数
+  private maxLogCount: number = 100 // 所有扫描根合计保留的最新日志文件数
   private diskSpaceWarningMB: number = 100 // 磁盘空间预警阈值（MB）
   private isDiskSpaceLow: boolean = false // 磁盘空间是否不足
 
@@ -89,11 +89,26 @@ export default class ProtocolLogger {
   setLogDir(dirPath: string): void {
     if (dirPath) {
       this.logDirPattern = dirPath
+      this.logDir = this.getLogScanRoot(dirPath)
     } else {
       this.logDirPattern = ''
       this.logDir = this.defaultLogDir
       this.ensureDir(this.logDir)
     }
+  }
+
+  // 模板目录只能从第一个占位符之前的静态路径推导扫描根。
+  private getLogScanRoot(pattern: string): string {
+    const placeholder = /%(?:fff|MM|DD|hh|mm|ss|C|R|Y|M|D|h|m|s|f)/
+    const match = placeholder.exec(pattern)
+    if (!match) return resolve(pattern)
+    const staticPart = match ? pattern.slice(0, match.index) : pattern
+    const rootPart = match && !/[\\/]$/.test(staticPart) ? dirname(staticPart) : staticPart
+    const scanRoot = isAbsolute(rootPart) ? resolve(rootPart) : resolve(this.defaultLogDir, rootPart || '.')
+    // Never recursively scan a filesystem root. Templates such as /%Y or
+    // /logs-%Y do not provide a safe static directory boundary.
+    if (scanRoot === parse(scanRoot).root) return this.defaultLogDir
+    return scanRoot
   }
 
   // 获取日志目录
@@ -122,6 +137,13 @@ export default class ProtocolLogger {
     const f = String(date.getMilliseconds()).padStart(3, '0')
 
     let result = this.logDirPattern
+      // 不补零版本，必须先替换双字母占位符，避免被单字母匹配截断。
+      .replace(/%fff/g, String(date.getMilliseconds()))
+      .replace(/%MM/g, String(date.getMonth() + 1))
+      .replace(/%DD/g, String(date.getDate()))
+      .replace(/%hh/g, String(date.getHours()))
+      .replace(/%mm/g, String(date.getMinutes()))
+      .replace(/%ss/g, String(date.getSeconds()))
       .replace(/%C/g, connName)
       .replace(/%R/g, remark || '')
       .replace(/%Y/g, Y)
@@ -131,13 +153,6 @@ export default class ProtocolLogger {
       .replace(/%m/g, m)
       .replace(/%s/g, s)
       .replace(/%f/g, f)
-      // 不补零版本
-      .replace(/%MM/g, String(date.getMonth() + 1))
-      .replace(/%DD/g, String(date.getDate()))
-      .replace(/%hh/g, String(date.getHours()))
-      .replace(/%mm/g, String(date.getMinutes()))
-      .replace(/%ss/g, String(date.getSeconds()))
-      .replace(/%fff/g, String(date.getMilliseconds()))
 
     // 替换非法文件名字符（保留 \ / : 作为路径分隔符和盘符）
     return result.replace(/[*?"<>|]/g, '-')
@@ -237,41 +252,79 @@ export default class ProtocolLogger {
   private cleanupLogs(): { success: boolean; deletedCount: number; deletedSize: number; failedCount: number; failedFiles: string[] } {
     const result = { success: true, deletedCount: 0, deletedSize: 0, failedCount: 0, failedFiles: [] as string[] }
     if (this.maxLogAgeDays <= 0 && this.maxLogCount <= 0) return result
-    try {
-      const active = new Set<string>()
-      this.connLogFiles.forEach((fileName, connId) => active.add(resolve(this.getConnLogDir(connId), fileName)))
-      const files: { path: string; mtime: number; size: number }[] = []
-      for (const dir of [...new Set([this.logDir, this.defaultLogDir, ...this.connLogDirs.values()])]) {
-        if (!existsSync(dir)) continue
-        for (const name of readdirSync(dir)) {
-          if (!name.endsWith('.log')) continue
-          const filePath = resolve(dir, name)
-          try {
-            const stats = statSync(filePath)
-            if (!active.has(filePath)) files.push({ path: filePath, mtime: stats.mtimeMs, size: stats.size })
-          } catch { result.success = false }
-        }
+    const active = new Set<string>()
+    this.connLogFiles.forEach((fileName, connId) => active.add(resolve(this.getConnLogDir(connId), fileName)))
+    const files: { path: string; mtime: number; size: number; active: boolean }[] = []
+    const scannedPaths = new Set<string>()
+    const roots = [...new Set([
+      this.logDirPattern ? this.getLogScanRoot(this.logDirPattern) : this.logDir,
+      this.defaultLogDir,
+      ...this.connLogDirs.values()
+    ].map(dir => resolve(dir)))]
+
+    const scan = (dir: string): void => {
+      let entries: string[]
+      try {
+        entries = readdirSync(dir)
+      } catch {
+        result.success = false
+        result.failedCount++
+        result.failedFiles.push(dir)
+        return
       }
-      files.sort((a, b) => b.mtime - a.mtime)
-      const deletePaths = new Set<string>()
-      if (this.maxLogAgeDays > 0) {
-        const age = this.maxLogAgeDays * 24 * 60 * 60 * 1000
-        files.forEach(file => { if (Date.now() - file.mtime > age) deletePaths.add(file.path) })
-      }
-      if (this.maxLogCount > 0) files.slice(this.maxLogCount).forEach(file => deletePaths.add(file.path))
-      for (const file of files) {
-        if (!deletePaths.has(file.path)) continue
+      for (const name of entries) {
+        const filePath = resolve(dir, name)
+        let stats
         try {
-          unlinkSync(file.path)
-          result.deletedCount++
-          result.deletedSize += file.size
+          stats = lstatSync(filePath)
         } catch {
           result.success = false
           result.failedCount++
-          result.failedFiles.push(file.path)
+          result.failedFiles.push(filePath)
+          continue
+        }
+        if (stats.isSymbolicLink()) continue
+        if (stats.isDirectory()) {
+          scan(filePath)
+        } else if (stats.isFile() && name.endsWith('.log') && !scannedPaths.has(filePath)) {
+          scannedPaths.add(filePath)
+          files.push({ path: filePath, mtime: stats.mtimeMs, size: stats.size, active: active.has(filePath) })
         }
       }
-    } catch { result.success = false }
+    }
+
+    for (const root of roots) {
+      let rootStats
+      try {
+        rootStats = lstatSync(root)
+      } catch {
+        result.success = false
+        result.failedCount++
+        result.failedFiles.push(root)
+        continue
+      }
+      if (!rootStats.isSymbolicLink() && rootStats.isDirectory()) scan(root)
+    }
+
+    files.sort((a, b) => b.mtime - a.mtime)
+    const deletePaths = new Set<string>()
+    if (this.maxLogAgeDays > 0) {
+      const age = this.maxLogAgeDays * 24 * 60 * 60 * 1000
+      files.forEach(file => { if (!file.active && Date.now() - file.mtime > age) deletePaths.add(file.path) })
+    }
+    if (this.maxLogCount > 0) files.slice(this.maxLogCount).forEach(file => { if (!file.active) deletePaths.add(file.path) })
+    for (const file of files) {
+      if (!deletePaths.has(file.path)) continue
+      try {
+        unlinkSync(file.path)
+        result.deletedCount++
+        result.deletedSize += file.size
+      } catch {
+        result.success = false
+        result.failedCount++
+        result.failedFiles.push(file.path)
+      }
+    }
     return result
   }
 
@@ -444,6 +497,13 @@ export default class ProtocolLogger {
     const f = String(date.getMilliseconds()).padStart(3, '0')
 
     let result = this.logFileNamePattern
+      // 不补零版本，必须先替换双字母占位符，避免被单字母匹配截断。
+      .replace(/%fff/g, String(date.getMilliseconds()))
+      .replace(/%MM/g, String(date.getMonth() + 1))
+      .replace(/%DD/g, String(date.getDate()))
+      .replace(/%hh/g, String(date.getHours()))
+      .replace(/%mm/g, String(date.getMinutes()))
+      .replace(/%ss/g, String(date.getSeconds()))
       .replace(/%C/g, connName)
       .replace(/%R/g, remark || '')
       .replace(/%Y/g, Y)
@@ -453,13 +513,6 @@ export default class ProtocolLogger {
       .replace(/%m/g, m)
       .replace(/%s/g, s)
       .replace(/%f/g, f)
-      // 不补零版本
-      .replace(/%MM/g, String(date.getMonth() + 1))
-      .replace(/%DD/g, String(date.getDate()))
-      .replace(/%hh/g, String(date.getHours()))
-      .replace(/%mm/g, String(date.getMinutes()))
-      .replace(/%ss/g, String(date.getSeconds()))
-      .replace(/%fff/g, String(date.getMilliseconds()))
 
     // 日志文件名不能保留路径分隔符，Linux 串口名如 /dev/ttyUSB0 会被当成子目录。
     return result.replace(/[\\/\\*?:"<>|]/g, '-')

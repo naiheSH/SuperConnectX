@@ -292,8 +292,8 @@
               <el-button
                 size="small"
                 @click="handleCleanupLogs"
-                :loading="isCleaningUp"
-                :disabled="settings.maxLogAgeDays === 0 && settings.maxLogCount === 0"
+                :loading="isCleaningUp || isSavingSettings"
+                :disabled="isCleaningUp || isSavingSettings || (settings.maxLogAgeDays === 0 && settings.maxLogCount === 0)"
               >
                 {{ t('logSettings.cleanupButton') }}
               </el-button>
@@ -434,6 +434,7 @@ import { setLocale } from '../locales'
 import SyntaxHighlightPage from './SyntaxHighlightPage.vue'
 import SettingsLayout from '../foundation/settings/SettingsLayout.vue'
 import { SettingsRegistry } from '../foundation/settings/SettingsRegistry'
+import { useSerializedSettingsSave } from '../composables/app/useSerializedSettingsSave'
 
 const { t } = useI18n()
 
@@ -514,21 +515,32 @@ const loadSettings = async () => {
   }
 }
 
-const saveSettings = async () => {
+const serializedSettingsSave = useSerializedSettingsSave((plainSettings) => window.storageApi.saveSettings(plainSettings))
+const isSavingSettings = ref(0)
+
+const saveSettings = async (): Promise<boolean> => {
+  isSavingSettings.value++
   try {
+    const saved = await serializedSettingsSave.save(settings.value)
+    if (!saved) throw new Error('Settings save returned false')
     const plainSettings = JSON.parse(JSON.stringify(settings.value))
-    await window.storageApi.saveSettings(plainSettings)
     window.dispatchEvent(new CustomEvent('settings-updated', { detail: plainSettings }))
     // 通知主进程设置更新（用于防止屏幕息屏功能）
     window.toolApi?.notifySettingsUpdate(plainSettings)
+    return true
   } catch (error) {
     console.error(t('common.saveFailed'), error)
+    return false
+  } finally {
+    isSavingSettings.value--
   }
 }
 
 // 手动清理日志
 const isCleaningUp = ref(false)
 const handleCleanupLogs = async () => {
+  if (isCleaningUp.value || (settings.value.maxLogAgeDays === 0 && settings.value.maxLogCount === 0)) return
+  isCleaningUp.value = true
   try {
     await ElMessageBox.confirm(
       t('logSettings.cleanupConfirm'),
@@ -536,11 +548,19 @@ const handleCleanupLogs = async () => {
       { type: 'warning' }
     )
   } catch {
+    isCleaningUp.value = false
     return
   }
 
-  isCleaningUp.value = true
   try {
+    if (!await serializedSettingsSave.waitForLatest()) {
+      ElMessage.error(t('common.saveFailed'))
+      return
+    }
+    if (!await saveSettings()) {
+      ElMessage.error(t('common.saveFailed'))
+      return
+    }
     const result = await window.connectApi.cleanupLogs()
     if (result.success) {
       ElMessage.success(t('logSettings.cleanupSuccess', { count: result.deletedCount }))
