@@ -174,6 +174,16 @@ describe('IpcConnector', () => {
       expect(() => connector.applySettings({ logPath: '/custom' })).not.toThrow()
       expect(() => connector.applySettings({})).not.toThrow()
     })
+
+    it('should apply zero split size when log splitting is disabled', () => {
+      connector.applySettings({ logSplit: false, logSplitSize: 20 })
+      expect(logger.setLogSplitSize).toHaveBeenLastCalledWith(0)
+    })
+
+    it('should apply the configured split size when enabled', () => {
+      connector.applySettings({ logSplit: true, logSplitSize: 50 })
+      expect(logger.setLogSplitSize).toHaveBeenLastCalledWith(50)
+    })
   })
 
   // ============ cleanup ============

@@ -184,19 +184,28 @@
             <template v-if="settings.enableLogStorage">
             <div class="setting-item">
               <div class="setting-label">
+                <span class="label-text">{{ t('logSettings.logSplit') }}</span>
+                <span class="label-desc">{{ t('logSettings.logSplitDesc') }}</span>
+              </div>
+              <el-switch class="terminal-switch" v-model="settings.logSplit" />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
                 <span class="label-text">{{ t('logSettings.logSplitSize') }}</span>
                 <span class="label-desc">{{ t('logSettings.logSplitSizeDesc') }}</span>
               </div>
-              <el-select v-model="settings.logSplitSize" size="small" style="width: 120px">
-                <el-option :label="t('logSettings.noSplit')" :value="0" />
-                <el-option label="10 MB" :value="10" />
-                <el-option label="20 MB" :value="20" />
-                <el-option label="50 MB" :value="50" />
-                <el-option label="100 MB" :value="100" />
-                <el-option label="200 MB" :value="200" />
-                <el-option label="500 MB" :value="500" />
-                <el-option label="1 GB" :value="1024" />
-              </el-select>
+              <div class="slider-control">
+                <el-slider
+                  v-model="settings.logSplitSize"
+                  :disabled="!settings.logSplit"
+                  :min="1"
+                  :max="100"
+                  :step="1"
+                  :show-tooltip="false"
+                  style="width: 120px"
+                />
+                <span class="slider-value">{{ settings.logSplitSize }} MB</span>
+              </div>
             </div>
             <div class="setting-item">
               <div class="setting-label">
@@ -490,6 +499,11 @@ const loadSettings = async () => {
     const data = await window.storageApi.getSettings()
     if (data && typeof data === 'object') {
       settings.value = { ...defaultSettings.value, ...data }
+      // 兼容旧版使用 logSplitSize=0 表示“不分片”的配置。
+      if (settings.value.logSplitSize === 0) {
+        settings.value.logSplit = false
+        settings.value.logSplitSize = defaultSettings.value.logSplitSize || 20
+      }
       isLoading = false
     }
   } catch (error) {

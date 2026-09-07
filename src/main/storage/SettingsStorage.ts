@@ -98,7 +98,7 @@ const defaultSettings: Settings = {
   enableLogStorage: true,
   logPath: '',
   logFileName: '%C-%Y-%M-%D-%hh-%mm-%ss',
-  logSplitSize: 0,   // 0 = 不分片
+  logSplitSize: 20,
   maxLogSize: 50,
   logTimestamp: true,
   logHex: false,

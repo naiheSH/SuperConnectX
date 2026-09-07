@@ -292,9 +292,7 @@ export default class IpcConnector {
   private applyLogSettings(): void {
     const _logger = this._logger!
     const settings = this.settingsStorage.getSettings()
-    if (settings.logSplitSize) {
-      _logger.setLogSplitSize(settings.logSplitSize)
-    }
+    _logger.setLogSplitSize(settings.logSplit === false ? 0 : (settings.logSplitSize ?? 20))
     _logger.setEnableLogStorage(settings.enableLogStorage === true)
 
     if (!settings.logPath) {
@@ -319,9 +317,9 @@ export default class IpcConnector {
 
   // ============ 对外接口 ============
 
-  applySettings(settings: { logSplitSize?: number; enableLogStorage?: boolean; logPath?: string; logFileName?: string }): void {
-    if (settings.logSplitSize && this._logger) {
-      this._logger.setLogSplitSize(settings.logSplitSize)
+  applySettings(settings: { logSplit?: boolean; logSplitSize?: number; enableLogStorage?: boolean; logPath?: string; logFileName?: string }): void {
+    if ((settings.logSplit !== undefined || settings.logSplitSize !== undefined) && this._logger) {
+      this._logger.setLogSplitSize(settings.logSplit === false ? 0 : (settings.logSplitSize ?? 20))
     }
     if (settings.enableLogStorage !== undefined && this._logger) {
       this._logger.setEnableLogStorage(settings.enableLogStorage)
