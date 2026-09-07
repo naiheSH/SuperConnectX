@@ -1,8 +1,8 @@
-import Store from 'electron-store'
 import fs from 'fs'
 import path from 'path'
 import logger from '../ipc/IpcAppLogger'
 import { getAppDataDir } from '../utils/AppDir'
+import PreferenceStore from '../../core/storage/PreferenceStore'
 
 const SAVE_DIR_NAME = 'userdata'
 
@@ -25,7 +25,7 @@ interface SyntaxRuleGroup {
   previewText?: string
 }
 
-interface Settings {
+interface Settings extends Record<string, any> {
   // 基本设置
   minimizeToTray?: boolean
   logSplit?: boolean
@@ -46,6 +46,8 @@ interface Settings {
   // 串口设置
   supportedBaudRates?: number[]
   showPortType?: boolean
+  showSerialPortFriendlyName?: boolean
+  showSerialPortDetails?: boolean
   // 日志
   enableLogStorage?: boolean
   logPath?: string
@@ -90,6 +92,8 @@ const defaultSettings: Settings = {
   // 串口设置
   supportedBaudRates: [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600, 1500000],
   showPortType: true,
+  showSerialPortFriendlyName: true,
+  showSerialPortDetails: false,
   // 日志
   enableLogStorage: true,
   logPath: '',
@@ -246,40 +250,34 @@ const defaultSettings: Settings = {
   clearInputAfterSend: false
 }
 
-export default class SettingsStorage {
-  private storageData: Store<any>
-  private readonly STORAGE_NAME = 'settings'
-
+export default class SettingsStorage extends PreferenceStore<Settings> {
   constructor() {
-    const cwd = this.getAppUserDataPath()
-    this.storageData = new Store<any>({
-      name: this.STORAGE_NAME,
+    const cwd = getAppUserDataPath()
+    super({
+      name: 'settings',
       cwd,
       defaults: defaultSettings
     })
     logger.debug(`SettingsStorage initialized at: ${cwd}`)
   }
 
-  private getAppUserDataPath(): string {
-    const userDataPath = path.join(getAppDataDir(), SAVE_DIR_NAME)
-    if (!fs.existsSync(userDataPath)) {
-      fs.mkdirSync(userDataPath, { recursive: true })
-    }
-
-    return userDataPath
-  }
-
   getSettings(): Settings {
-    return { ...defaultSettings, ...this.storageData.store }
+    return { ...defaultSettings, ...this.getPreferences() }
   }
 
   saveSettings(settings: Settings): void {
-    Object.keys(settings).forEach((key) => {
-      this.storageData.set(key, (settings as any)[key])
-    })
+    this.savePreferences(settings)
   }
 
   getDefaults(): Settings {
     return { ...defaultSettings }
   }
+}
+
+function getAppUserDataPath(): string {
+  const userDataPath = path.join(getAppDataDir(), SAVE_DIR_NAME)
+  if (!fs.existsSync(userDataPath)) {
+    fs.mkdirSync(userDataPath, { recursive: true })
+  }
+  return userDataPath
 }

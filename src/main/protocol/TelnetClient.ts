@@ -53,8 +53,9 @@ export default class TelnetClient extends BaseClient {
         onLog?.(result.log, timestamp)
       }
 
-      // 某些设备会持续发送不带换行符的内容。此时 split() 会一直保留
-      // remainder，必须定期强制刷新，否则 Buffer 会随运行时间无限增长。
+      // 某些设备会持续发送不带换行符的内容（如用 \b 刷进度条）。此时 split()
+      // 会一直保留 remainder，且数据永远到不了渲染进程（没有完整行），
+      // 终端的显示上限清空机制无法覆盖，必须有界刷新，否则 Buffer 随运行时间无限增长。
       if (connData.buffer.length > MAX_BUFFER_BYTES) {
         const timestamp = BufferLineSplitter.timestamp()
         const flushed = splitter.decodeCompletePrefix(connData.buffer)

@@ -354,6 +354,8 @@ describe('ProtocolLogger', () => {
       logger.flushAllLogs(true)
       logger.writeToConnLog('second chunk', 'conn-1')
       logger.flushAllLogs(true)
+      logger.writeToConnLog('third chunk', 'conn-1')
+      logger.flushAllLogs(true)
 
       const baseName = firstFileName.replace(/\.log$/, '')
       const logDir = logger.getLogDir()

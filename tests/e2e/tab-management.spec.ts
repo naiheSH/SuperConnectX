@@ -95,6 +95,94 @@ test.describe('选项卡管理', () => {
     }
   })
 
+  test('同一分屏中的每个标签独立保存底部面板高度', async () => {
+    const { app, page, userDataDir } = await launchApp()
+    try {
+      for (const [name, host] of [
+        ['TAB-独立-A', '10.0.1.1'],
+        ['TAB-独立-B', '10.0.1.2'],
+        ['TAB-独立-C', '10.0.1.3']
+      ]) {
+        await invokeStorage(app, 'addConnection', {
+          name,
+          connectionType: 'telnet',
+          host,
+          port: 23
+        })
+      }
+      await page.reload()
+      await page.waitForSelector('.app-container', { timeout: 30000 })
+
+      const group = page.locator('.connection-group').filter({ hasText: 'TELNET' }).first()
+      for (const name of ['TAB-独立-A', 'TAB-独立-B', 'TAB-独立-C']) {
+        await group
+          .locator('.connection-card')
+          .filter({ hasText: name })
+          .first()
+          .getByRole('button', { name: '连接' })
+          .click()
+      }
+      await expect(page.locator('.tab-item')).toHaveCount(3)
+
+      const visibleRoot = page.locator('.unified-terminal:visible')
+      const visibleSplitter = page.locator('.vertical-splitter:visible')
+      const dragVisibleSplitter = async (ratio: number): Promise<number> => {
+        const rootBox = await visibleRoot.boundingBox()
+        const splitterBox = await visibleSplitter.boundingBox()
+        expect(rootBox).not.toBeNull()
+        expect(splitterBox).not.toBeNull()
+
+        await page.mouse.move(splitterBox!.x + splitterBox!.width / 2, splitterBox!.y + 2)
+        await page.mouse.down()
+        await page.mouse.move(
+          splitterBox!.x + splitterBox!.width / 2,
+          rootBox!.y + rootBox!.height * ratio
+        )
+        await page.mouse.up()
+
+        const result = await visibleSplitter.boundingBox()
+        expect(result).not.toBeNull()
+        return result!.y
+      }
+      const switchTo = async (name: string): Promise<number> => {
+        const tab = page.locator('.tab-item').filter({ hasText: name }).first()
+        await tab.click()
+        await expect(tab).toHaveClass(/active/)
+        const result = await visibleSplitter.boundingBox()
+        expect(result).not.toBeNull()
+        return result!.y
+      }
+
+      // C 当前激活，将同一分屏内的三个标签分别调整为明显不同的高度。
+      const cHeight = await dragVisibleSplitter(0.3)
+      await switchTo('TAB-独立-B')
+      const bHeight = await dragVisibleSplitter(0.55)
+      await switchTo('TAB-独立-A')
+      const aHeight = await dragVisibleSplitter(0.8)
+
+      expect(Math.abs(aHeight - bHeight)).toBeGreaterThan(10)
+      expect(Math.abs(bHeight - cHeight)).toBeGreaterThan(10)
+
+      // 反复切换后，每个标签恢复自己的高度，而不是采用当前分屏的共享高度。
+      expect(Math.abs((await switchTo('TAB-独立-C')) - cHeight)).toBeLessThanOrEqual(1)
+      expect(Math.abs((await switchTo('TAB-独立-B')) - bHeight)).toBeLessThanOrEqual(1)
+      expect(Math.abs((await switchTo('TAB-独立-A')) - aHeight)).toBeLessThanOrEqual(1)
+
+      // 关闭当前标签后，下一标签仍使用自己的已保存高度。
+      const activeTab = page.locator('.tab-item.active').first()
+      await activeTab.hover()
+      await activeTab.locator('.tab-action-btn').click()
+      await expect(page.locator('.tab-item')).toHaveCount(2)
+      const remainingHeight = await visibleSplitter.boundingBox()
+      expect(remainingHeight).not.toBeNull()
+      const matchesB = Math.abs(remainingHeight!.y - bHeight) <= 1
+      const matchesC = Math.abs(remainingHeight!.y - cHeight) <= 1
+      expect(matchesB || matchesC).toBe(true)
+    } finally {
+      await closeApp(app, userDataDir)
+    }
+  })
+
   test('选项卡右键菜单可关闭单个选项卡', async () => {
     const { app, page, userDataDir } = await launchApp()
     try {

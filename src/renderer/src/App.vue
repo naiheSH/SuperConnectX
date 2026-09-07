@@ -1,7 +1,9 @@
 <template>
-  <div class="app-container">
-    <CustomTitleBar
-      @toggle-connection-list="toggleConnectionList"
+  <AppShell>
+    <template #titlebar>
+      <CustomTitleBar
+      @toggle-primary-sidebar="toggleConnectionList"
+      @toggle-bottom-panel="toggleBottomPanel"
       @refreshCommands="refreshHandler"
       @refreshConnections="loadConnections"
       @notifyImport="handleImportNotify"
@@ -17,14 +19,16 @@
       @toggle-line-numbers="handleToggleLineNumbers"
       @toggle-log-editable="handleToggleLogEditable"
       :show-connection-list="showConnectionList"
+      :show-bottom-panel="showBottomPanel"
       :current-font="currentFont"
       :word-wrap="terminalWordWrap"
       :line-numbers="terminalLineNumbers"
       :log-editable="terminalLogEditable"
-    />
+      />
+    </template>
     <NotifyContainer ref="notifyContainerRef" />
 
-    <main class="app-main">
+    <div class="app-main">
       <!-- 侧边栏 -->
       <ConnectionSidebar
         :show-connection-list="showConnectionList"
@@ -33,6 +37,8 @@
         :filtered-serial-ports="filteredSerialPorts"
         :serial-port-expanded="serialPortExpanded"
         :show-port-type="showPortType"
+        :show-serial-port-friendly-name="showSerialPortFriendlyName"
+        :show-serial-port-details="showSerialPortDetails"
         :connection-groups="connectionGroups"
         :connection-group-expanded="connectionGroupExpanded"
         :serial-remarks="serialRemarks"
@@ -52,7 +58,7 @@
       />
 
       <!-- 侧边栏分隔条 -->
-      <div v-if="showConnectionList" class="sidebar-resizer" @mousedown="startResize" :class="{ resizing: isResizing }"></div>
+      <SidebarResizeHandle v-if="showConnectionList" :resizing="isResizing" @resizeStart="startResize" />
 
       <!-- 终端区域 -->
       <div class="terminal-wrapper" :class="{ expanded: !showConnectionList }">
@@ -162,7 +168,8 @@
                 v-show="isTabActiveInItsPanel(tab.id.toString())"
                 :connection="tab"
                 :ref="(el: any) => { if (el) comTerminalRefs[tab.id] = el }"
-                :auto-connect="true"
+                :auto-connect="tab.wasConnected !== false"
+                :show-bottom-panel="showBottomPanel"
                 @onClose="handleTerminalClose(tab.id)"
                 @commandSent="handleCommandSent"
                 @onConnect="() => { if (tab.comName) connectedSerialPorts[tab.comName] = true }"
@@ -177,6 +184,8 @@
                 v-if="tab.connectionType === 'telnet' || tab.connectionType === 'ftp'"
                 v-show="isTabActiveInItsPanel(tab.id.toString())"
                 :connection="tab"
+                :auto-connect="tab.wasConnected !== false"
+                :show-bottom-panel="showBottomPanel"
                 :ref="(el: any) => { if (el) telnetTerminalRefs[tab.id] = el }"
                 @onClose="handleTerminalClose(tab.id)"
                 @commandSent="handleCommandSent"
@@ -210,13 +219,15 @@
           </template>
         </div>
       </div>
-    </main>
+    </div>
 
     <!-- 状态栏 -->
-    <div class="status-bar">
-      <div class="resource-monitor"><ResourceMonitor /></div>
-      <div class="command-status" v-if="lastSentCommand">{{ t('notification.commandSent', { command: lastSentCommand }) }}</div>
-    </div>
+    <template #statusbar>
+      <StatusBar>
+        <template #left><div class="resource-monitor"><ResourceMonitor /></div></template>
+        <template #right><div v-if="lastSentCommand" class="command-status">{{ t('notification.commandSent', { command: lastSentCommand }) }}</div></template>
+      </StatusBar>
+    </template>
 
     <!-- 弹窗 -->
     <ConnectionDialog ref="connectionDialogRef" @submit="handleConnectionSubmit" />
@@ -231,7 +242,7 @@
       @opened="onRemarkDialogOpened"
       @save="saveSerialRemarkHandler"
     />
-  </div>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
@@ -243,30 +254,35 @@ import NotifyContainer from './components/NotifyContainer.vue'
 import ResourceMonitor from './components/ResourceMonitor.vue'
 import AboutDialog from './components/AboutDialog.vue'
 import UpdateDialog from './components/UpdateDialog.vue'
-import ConnectionDialog from './components/ConnectionDialog.vue'
-import ConnectionSidebar from './components/app/ConnectionSidebar.vue'
+import ConnectionDialog from './features/connections/ConnectionDialog.vue'
+import ConnectionSidebar from './features/connections/ConnectionSidebar.vue'
 import TerminalPanel from './components/app/TerminalPanel.vue'
 import SuperSplit from './components/app/SuperSplit.vue'
-import SerialRemarkDialog from './components/app/SerialRemarkDialog.vue'
-import ComTerminal from './components/ComTerminal.vue'
-import TelnetTerminal from './components/TelnetTerminal.vue'
-import CommandEditor from './components/CommandEditor.vue'
+import SerialRemarkDialog from './features/connections/SerialRemarkDialog.vue'
+import ComTerminal from './features/terminal/ComTerminal.vue'
+import TelnetTerminal from './features/terminal/TelnetTerminal.vue'
+import CommandEditor from './features/commands/CommandEditor.vue'
 import ShortcutsPage from './components/ShortcutsPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
-import VirtualPortPage from './components/VirtualPortPage.vue'
+import VirtualPortPage from './features/virtual-port/VirtualPortPage.vue'
+import AppShell from './foundation/shell/AppShell.vue'
+import StatusBar from './foundation/shell/StatusBar.vue'
+import SidebarResizeHandle from './foundation/shell/SidebarResizeHandle.vue'
+import { useSidebarResize } from './foundation/shell/useSidebarResize'
 import logoImage from './assets/icon.png'
 
 // Composables
-import { useConnectionSidebar } from './composables/app/useConnectionSidebar'
-import { useTabManager } from './composables/app/useTabManager'
+import { useConnectionSidebar } from './features/connections/useConnectionSidebar'
+import { useTabManager } from './features/tabs/useTabManager'
 import { useSplitPanel } from './composables/app/useSplitPanel'
 import type { Panel } from './composables/app/useSplitPanel'
-import { useSerialRemarks } from './composables/app/useSerialRemarks'
-import { useShortcuts } from './composables/app/useShortcuts'
-import { useTerminalDisplay } from './composables/app/useTerminalDisplay'
-import { useFontManager } from './composables/app/useFontManager'
-import { loadSendDisplayText, initSendDisplayTextListener } from './composables/app/useSettingsStore'
-import { useConnectionDialog } from './composables/app/useConnectionDialog'
+import { useSerialRemarks } from './features/connections/useSerialRemarks'
+import { useShortcuts } from './features/shortcuts/useShortcuts'
+import { useTerminalDisplay } from './features/terminal/useTerminalDisplay'
+import { useFontManager } from './features/terminal/useFontManager'
+import { loadTerminalDisplayText, initTerminalDisplayTextListener } from './features/terminal/useTerminalDisplayText'
+import { useConnectionDialog } from './features/connections/useConnectionDialog'
+import { useSessionRestore } from './composables/app/useSessionRestore'
 
 const { t } = useI18n()
 
@@ -310,10 +326,11 @@ const panelRefs = reactive<Record<string, InstanceType<typeof TerminalPanel> | n
 // ---- Sidebar ----
 const {
   connections, serialPorts,
-  showConnectionList, sidebarWidth, serialPortExpanded, showPortType,
+  showConnectionList, showBottomPanel, sidebarWidth, serialPortExpanded, showPortType,
+  showSerialPortFriendlyName, showSerialPortDetails,
   connectionGroupExpanded, filteredSerialPorts, connectionGroups,
   handleSearch, loadConnections, loadSerialPorts, loadSidebarState,
-  handleSerialPortsChanged, toggleConnectionList
+  handleSerialPortsChanged, toggleConnectionList, toggleBottomPanel
 } = useConnectionSidebar()
 
 // ---- Tab Manager ----
@@ -342,6 +359,64 @@ const {
 
 // 记录右键菜单所在的面板 ID
 const rightClickedPanelId = ref('panel-0')
+
+// ---- Session Restore（会话恢复） ----
+const isConnectedForSession = (tab: any): boolean => {
+  if (tab.connectionType === 'com') {
+    return !!comTerminalRefs[tab.id]?.isConnected
+  }
+  if (tab.connectionType === 'telnet' || tab.connectionType === 'ftp') {
+    return !!telnetTerminalRefs[tab.id]?.isConnected
+  }
+  return false
+}
+
+const sessionRestore = useSessionRestore({
+  connectionTabs,
+  activeTabId,
+  pinnedTabs,
+  splitState,
+  isConnected: isConnectedForSession,
+  connectionStateDependency: connectionChangeCounter
+})
+
+// 从保存的会话中重建选项卡
+const applySessionRestore = async () => {
+  const { savedTabs, savedPinnedTabIds, savedActiveTabId, savedSplitPanels, savedSplitDirection, savedSplitRatio } = sessionRestore
+
+  if (!savedTabs.value || savedTabs.value.length === 0) return
+
+  // 重建选项卡（保持原有顺序）
+  const restored = savedTabs.value.map((tab) => ({
+    ...JSON.parse(JSON.stringify(tab)),
+    wasConnected: !!tab.wasConnected
+  }))
+  connectionTabs.value = restored
+
+  // 恢复固定状态
+  for (const id of savedPinnedTabIds.value) {
+    pinnedTabs.add(id)
+  }
+
+  // 恢复活动选项卡
+  if (savedActiveTabId.value) {
+    activeTabId.value = savedActiveTabId.value
+  }
+
+  // 恢复分屏布局（先清空默认面板，再按保存的面板重建）
+  if (savedSplitPanels.value && savedSplitPanels.value.length > 0) {
+    const mappedPanels: Panel[] = savedSplitPanels.value.map((p, index) => ({
+      id: index === 0 ? 'panel-0' : p.id,
+      activeTabId: p.activeTabId,
+      tabIds: [...p.tabIds]
+    }))
+    splitState.panels.splice(0, splitState.panels.length, ...mappedPanels)
+    splitState.direction = savedSplitDirection.value || 'horizontal'
+    splitState.splitRatio = savedSplitRatio.value ?? 0.5
+  }
+
+  await nextTick()
+}
 
 // 判断右键菜单是否应该在指定面板显示
 // 两个面板共享 showTabMenu ref，但只有右键所在面板才应显示菜单
@@ -423,7 +498,7 @@ watch(connectionTabs, (tabs) => {
 const {
   showRemarkDialog, editingRemark, editingRemarkComName,
   serialRemarks,
-  loadAllSerialRemarks, openRemarkDialog, onRemarkDialogOpened, saveSerialRemark
+  loadAllSerialRemarks, openRemarkDialog, openSerialPortRemark, onRemarkDialogOpened, saveSerialRemark
 } = useSerialRemarks(comTerminalRefs)
 
 const openRemarkDialogHandler = async () => {
@@ -434,20 +509,7 @@ const openRemarkDialogHandler = async () => {
 
 // 串口右键菜单处理
 const handleSerialPortContextMenu = async (data: { event: MouseEvent; port: any }) => {
-  const { port } = data
-  // 打开备注对话框
-  editingRemarkComName.value = port.path
-  if (serialRemarks[port.path]) {
-    editingRemark.value = serialRemarks[port.path]
-  } else {
-    try {
-      const settings = await window.storageApi.getComSettings(port.path)
-      editingRemark.value = settings?.remark || ''
-    } catch {
-      editingRemark.value = ''
-    }
-  }
-  showRemarkDialog.value = true
+  await openSerialPortRemark(data.port.path)
 }
 
 // ---- 分屏操作 ----
@@ -836,41 +898,10 @@ const {
 } = useFontManager(activeTabId, comTerminalRefs, telnetTerminalRefs)
 
 // ---- Sidebar Resize ----
-const isResizing = ref(false)
-const resizeStartX = ref(0)
-const resizeStartWidth = ref(0)
-const MIN_SIDEBAR_WIDTH = 200
-
-const startResize = (e: MouseEvent) => {
-  isResizing.value = true
-  resizeStartX.value = e.clientX
-  resizeStartWidth.value = sidebarWidth.value
-  document.addEventListener('mousemove', onResize)
-  document.addEventListener('mouseup', stopResize)
-}
-
-const onResize = (e: MouseEvent) => {
-  if (!isResizing.value) return
-  const delta = e.clientX - resizeStartX.value
-  const newWidth = resizeStartWidth.value + delta
-  if (newWidth <= 500) {
-    const hideThreshold = MIN_SIDEBAR_WIDTH * 2 / 3
-    if (newWidth < hideThreshold) {
-      showConnectionList.value = false
-      sidebarWidth.value = MIN_SIDEBAR_WIDTH
-    } else {
-      sidebarWidth.value = newWidth
-    }
-  }
-}
-
-const stopResize = () => {
-  if (isResizing.value) {
-    isResizing.value = false
-    document.removeEventListener('mousemove', onResize)
-    document.removeEventListener('mouseup', stopResize)
-  }
-}
+const { isResizing, startResize, stopResize } = useSidebarResize({
+  width: sidebarWidth,
+  visible: showConnectionList
+})
 
 // ---- 重写 switchTabById，同步到分屏面板 ----
 const originalSwitchTabById = switchTabById
@@ -1085,10 +1116,16 @@ const handleSettingsUpdated = (event: Event) => {
   if (settings && 'showPortType' in settings) {
     showPortType.value = settings.showPortType
   }
+  if (settings && 'showSerialPortFriendlyName' in settings) {
+    showSerialPortFriendlyName.value = settings.showSerialPortFriendlyName
+  }
+  if (settings && 'showSerialPortDetails' in settings) {
+    showSerialPortDetails.value = settings.showSerialPortDetails
+  }
 }
 
 // ---- Lifecycle ----
-onMounted(() => {
+onMounted(async () => {
   // 初始化主题
   const savedTheme = localStorage.getItem('app-theme') || 'dark'
   document.documentElement.setAttribute('data-theme', savedTheme)
@@ -1099,8 +1136,12 @@ onMounted(() => {
   loadShortcutActions()
   loadShortcuts()
   loadTerminalDisplaySettings()
-  loadSendDisplayText()
-  initSendDisplayTextListener()
+  loadTerminalDisplayText()
+  initTerminalDisplayTextListener()
+
+  // 会话恢复：重建上次退出时打开的选项卡，并恢复连接状态
+  await sessionRestore.restore()
+  await applySessionRestore()
 
   if (activeTabId.value) {
     updateCurrentFont(activeTabId.value)
@@ -1141,6 +1182,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   clearInterval(_pollTimer)
+  stopResize()
   window.removeEventListener('shortcuts-updated', handleShortcutsUpdated)
   window.removeEventListener('settings-updated', handleSettingsUpdated)
   window.removeEventListener('terminal-text-cleared', handleTerminalTextCleared)
@@ -1149,16 +1191,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.app-container {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-primary);
-  color: var(--text-white);
-  overflow: hidden;
-}
-
 .app-main {
   display: flex;
   flex: 1;
@@ -1183,29 +1215,6 @@ onUnmounted(() => {
   height: 0;
   overflow: hidden;
   visibility: hidden;
-}
-
-/* 侧边栏分隔条 */
-.sidebar-resizer {
-  width: 4px;
-  height: 100%;
-  background: transparent;
-  cursor: col-resize;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 10;
-  transition: background-color 0.2s;
-}
-
-.sidebar-resizer:hover,
-.sidebar-resizer.resizing {
-  background-color: var(--sidebar-resizer-hover);
-}
-
-.status-bar {
-  height: 25px;
-  background-color: var(--statusbar-bg-hover);
-  display: flex;
 }
 
 .resource-monitor {

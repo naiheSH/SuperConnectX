@@ -1,26 +1,12 @@
 <template>
   <div class="settings-page">
     <!-- 设置内容区 -->
-    <div class="settings-content">
-      <!-- 左侧分类导航 -->
-      <div class="settings-nav">
-        <div
-          v-for="category in categories"
-          :key="category.key"
-          class="nav-item"
-          :class="{ active: activeCategory === category.key }"
-          @click="activeCategory = category.key"
-        >
-          {{ category.label }}
-        </div>
-        <div class="nav-footer">
+    <SettingsLayout v-model="activeCategory" :categories="categories" :fill-panel="activeCategory === 'syntax'">
+      <template #footer>
           <el-button class="btn-primary" size="small" @click="resetSettings">{{ t('settings.reset') }}</el-button>
-        </div>
-      </div>
+      </template>
 
-      <!-- 右侧设置项 -->
-      <div class="settings-panel">
-        <div>
+      <div>
         <!-- 基本设置 -->
         <div v-if="activeCategory === 'basic'" class="settings-group">
           <!-- 基本配置 -->
@@ -167,6 +153,20 @@
                 <span class="label-desc">{{ t('serialSettings.showPortTypeDesc') }}</span>
               </div>
               <el-switch class="terminal-switch" v-model="settings.showPortType" />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('serialSettings.showFriendlyName') }}</span>
+                <span class="label-desc">{{ t('serialSettings.showFriendlyNameDesc') }}</span>
+              </div>
+              <el-switch class="terminal-switch" v-model="settings.showSerialPortFriendlyName" />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('serialSettings.showPortDetails') }}</span>
+                <span class="label-desc">{{ t('serialSettings.showPortDetailsDesc') }}</span>
+              </div>
+              <el-switch class="terminal-switch" v-model="settings.showSerialPortDetails" />
             </div>
           </div>
         </div>
@@ -408,9 +408,8 @@
             </div>
           </div>
         </div>
-        </div>
       </div>
-    </div>
+    </SettingsLayout>
 
   </div>
 </template>
@@ -421,6 +420,8 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { setLocale } from '../locales'
 import SyntaxHighlightPage from './SyntaxHighlightPage.vue'
+import SettingsLayout from '../foundation/settings/SettingsLayout.vue'
+import { SettingsRegistry } from '../foundation/settings/SettingsRegistry'
 
 const { t } = useI18n()
 
@@ -458,14 +459,14 @@ const saveActiveCategory = async () => {
   }
 }
 
-const categories = computed(() => [
-  { key: 'basic', label: t('settingsNav.basic') },
-  { key: 'serial', label: t('settingsNav.serial') },
-  { key: 'log', label: t('settingsNav.log') },
-  { key: 'syntax', label: t('settingsNav.syntax') },
-  { key: 'history', label: t('settingsNav.history') },
-  { key: 'backup', label: t('settingsNav.backup') }
-])
+const settingsRegistry = new SettingsRegistry()
+settingsRegistry.register({ key: 'basic', getLabel: () => t('settingsNav.basic'), order: 0 })
+settingsRegistry.register({ key: 'serial', getLabel: () => t('settingsNav.serial'), order: 10 })
+settingsRegistry.register({ key: 'log', getLabel: () => t('settingsNav.log'), order: 20 })
+settingsRegistry.register({ key: 'syntax', getLabel: () => t('settingsNav.syntax'), order: 30 })
+settingsRegistry.register({ key: 'history', getLabel: () => t('settingsNav.history'), order: 40 })
+settingsRegistry.register({ key: 'backup', getLabel: () => t('settingsNav.backup'), order: 50 })
+const categories = computed(() => settingsRegistry.getCategories())
 
 // 默认配置从后端获取
 const defaultSettings = ref<Record<string, any>>({})
@@ -803,67 +804,6 @@ const handleSettingsUpdated = (event: Event) => {
 
 .clear-btn:hover {
   color: var(--search-clear-hover);
-}
-
-.settings-content {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.settings-nav {
-  width: 140px;
-  background: var(--settings-nav-bg);
-  border-right: 1px solid var(--settings-nav-border);
-  padding: 8px 0;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.nav-item {
-  padding: 8px 16px;
-  color: var(--settings-nav-item-color);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.nav-item:hover {
-  background: var(--settings-nav-item-hover);
-}
-
-.nav-item.active {
-  background: var(--settings-nav-item-active-bg);
-  color: var(--settings-nav-item-active-color);
-}
-
-.nav-footer {
-  margin-top: auto;
-  padding: 16px 8px;
-  border-top: 1px solid var(--settings-nav-footer-border);
-}
-
-
-
-.settings-panel {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.settings-panel:has(.syntax-embed-group) {
-  padding: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.settings-panel:has(.syntax-embed-group) > div {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .settings-group {

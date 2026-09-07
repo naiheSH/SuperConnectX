@@ -1,24 +1,13 @@
 <template>
-  <div class="custom-titlebar">
+  <WindowTitleBar
+    class="custom-titlebar"
+    :is-maximized="isMaximized"
+    @minimize="minimizeWindow"
+    @toggle-maximize="maximizeWindow"
+    @close="closeWindow"
+  >
+    <template #left>
     <div class="titlebar-left">
-      <button
-        class="titlebar-btn toggle-connection-btn"
-        @click="toggleConnectionList"
-        :class="{ toggled: !showConnectionList }"
-      >
-        <svg
-          viewBox="0 0 1024 1024"
-          fill="currentColor"
-          xmlns="http://www.w3.org/2000/svg"
-          width="15"
-          height="15"
-        >
-          <path
-            d="M901.632 896H122.368c-30.72 0-55.808-25.088-55.808-55.808v-1.536c0-30.72 25.088-55.808 55.808-55.808h779.776c30.72 0 55.808 25.088 55.808 55.808v1.536c-0.512 30.72-25.6 55.808-56.32 55.808zM901.632 568.32H122.368c-30.72 0-55.808-25.088-55.808-55.808v-1.536c0-30.72 25.088-55.808 55.808-55.808h779.776c30.72 0 55.808 25.088 55.808 55.808v1.536c-0.512 30.72-25.6 55.808-56.32 55.808zM901.632 240.64H122.368c-30.72 0-55.808-25.088-55.808-55.808v-1.536c0-30.72 25.088-55.808 55.808-55.808h779.776c30.72 0 55.808 25.088 55.808 55.808v1.536c-0.512 30.72-25.6 55.808-56.32 55.808z"
-            p-id="15235"
-          ></path>
-        </svg>
-      </button>
       <div class="app-logo">
         <img class="logo-img" src="../assets/icon.png" alt="App Icon" />
       </div>
@@ -135,9 +124,45 @@
       </div>
     </div>
 
-    <div class="titlebar-right">
-      <!-- 皮肤切换按钮 -->
-      <div class="theme-switcher-wrapper" ref="themeSwitcherRef">
+    </template>
+
+    <template #right>
+      <div class="titlebar-actions">
+        <div class="layout-controls">
+          <button
+            class="layout-toggle"
+            :class="{ 'is-visible': showConnectionList }"
+            type="button"
+            :title="t('titlebar.togglePrimarySidebar')"
+            :aria-label="t('titlebar.togglePrimarySidebar')"
+            :aria-pressed="showConnectionList"
+            @click="emit('toggle-primary-sidebar')"
+          >
+            <svg viewBox="0 0 18 18" aria-hidden="true">
+              <rect class="layout-outline" x="2" y="2.5" width="14" height="13" rx="2" />
+              <path class="layout-divider" d="M6.5 3v12" />
+              <rect class="layout-fill" x="3" y="3.5" width="2.5" height="11" rx="0.75" />
+            </svg>
+          </button>
+          <button
+            class="layout-toggle"
+            :class="{ 'is-visible': showBottomPanel }"
+            type="button"
+            :title="t('titlebar.toggleBottomPanel')"
+            :aria-label="t('titlebar.toggleBottomPanel')"
+            :aria-pressed="showBottomPanel"
+            @click="emit('toggle-bottom-panel')"
+          >
+            <svg viewBox="0 0 18 18" aria-hidden="true">
+              <rect class="layout-outline" x="2" y="2.5" width="14" height="13" rx="2" />
+              <path class="layout-divider" d="M2.5 10.5h13" />
+              <rect class="layout-fill" x="3" y="11.5" width="12" height="3" rx="0.75" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 皮肤切换按钮：保留项目原版图标与选择面板 -->
+        <div class="theme-switcher-wrapper" ref="themeSwitcherRef">
         <button class="titlebar-btn theme-btn" @click="toggleThemePanel" title="切换皮肤">
           <svg
             viewBox="0 0 1024 1024"
@@ -187,69 +212,10 @@
             </div>
           </div>
         </Transition>
+        </div>
       </div>
-      <button class="titlebar-btn" @click="minimizeWindow">
-        <svg
-          fill="currentColor"
-          width="20"
-          height="20"
-          viewBox="0 0 1024 900"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M256 469.333333m42.666667 0l426.666666 0q42.666667 0 42.666667 42.666667l0 0q0 42.666667-42.666667 42.666667l-426.666666 0q-42.666667 0-42.666667-42.666667l0 0q0-42.666667 42.666667-42.666667Z"
-            p-id="10596"
-          ></path>
-        </svg>
-      </button>
-      <button class="titlebar-btn" @click="maximizeWindow">
-        <svg
-          v-if="isMaximized"
-          fill="currentColor"
-          width="12"
-          height="12"
-          viewBox="0 0 1024 900"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M646.4 938.667H224C147.2 938.667 85.333 876.8 85.333 800V377.6c0-76.8 61.867-138.667 138.667-138.667h422.4c76.8 0 138.667 61.867 138.667 138.667V800c0 76.8-61.867 138.667-138.667 138.667zM224 302.933c-40.533 0-74.667 34.134-74.667 74.667V800c0 40.533 34.134 74.667 74.667 74.667h422.4c40.533 0 74.667-34.134 74.667-74.667V377.6c0-40.533-34.134-74.667-74.667-74.667H224z"
-            p-id="1614"
-          ></path>
-          <path
-            d="M793.6 785.067c-17.067 0-32-14.934-32-32s14.933-32 32-32c44.8 0 81.067-36.267 81.067-81.067V224c0-42.667-32-74.667-74.667-74.667H386.133c-44.8 0-81.066 36.267-81.066 81.067 0 17.067-14.934 32-32 32s-32-14.933-32-32c-2.134-81.067 64-145.067 145.066-145.067h416C878.933 85.333 940.8 147.2 940.8 224v416c-2.133 78.933-66.133 145.067-147.2 145.067z"
-            p-id="1615"
-          ></path>
-        </svg>
-        <svg
-          v-else
-          viewBox="0 0 1024 1024"
-          xmlns="http://www.w3.org/2000/svg"
-          width="12"
-          height="12"
-          fill="currentColor"
-        >
-          <path
-            d="M770.9 923.3H253.1c-83.8 0-151.9-68.2-151.9-151.9V253.6c0-83.8 68.2-151.9 151.9-151.9h517.8c83.8 0 151.9 68.2 151.9 151.9v517.8c0 83.8-68.1 151.9-151.9 151.9zM253.1 181.7c-39.7 0-71.9 32.3-71.9 71.9v517.8c0 39.7 32.3 71.9 71.9 71.9h517.8c39.7 0 71.9-32.3 71.9-71.9V253.6c0-39.7-32.3-71.9-71.9-71.9H253.1z"
-            p-id="4422"
-          ></path>
-        </svg>
-      </button>
-      <button class="titlebar-btn close-btn" @click="closeWindow">
-        <svg
-          fill="currentColor"
-          viewBox="0 0 1024 1024"
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-        >
-          <path
-            d="M512 451.669333l165.973333-165.973333a21.333333 21.333333 0 0 1 30.122667 0l30.165333 30.208a21.333333 21.333333 0 0 1 0 30.165333L572.330667 512l165.973333 165.973333a21.333333 21.333333 0 0 1 0 30.122667l-30.208 30.165333a21.333333 21.333333 0 0 1-30.165333 0L512 572.330667l-165.973333 165.973333a21.333333 21.333333 0 0 1-30.122667 0l-30.165333-30.208a21.333333 21.333333 0 0 1 0-30.165333L451.669333 512l-165.973333-165.973333a21.333333 21.333333 0 0 1 0-30.122667l30.208-30.165333a21.333333 21.333333 0 0 1 30.165333 0L512 451.669333z"
-            p-id="7103"
-          ></path>
-        </svg>
-      </button>
-    </div>
-  </div>
+    </template>
+  </WindowTitleBar>
   <ExportDialog ref="exportDialogRef" @notifyExport="(payload) => emit('notifyImport', payload)" />
 </template>
 
@@ -259,6 +225,8 @@ import { ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getSystemFonts, formatFontName, getDefaultTerminalFont } from '../utils/FontDetector'
 import ExportDialog from './ExportDialog.vue'
+import { useTheme } from '../foundation/theme/useTheme'
+import WindowTitleBar from '../foundation/shell/WindowTitleBar.vue'
 
 const { t } = useI18n()
 
@@ -275,24 +243,19 @@ const currentFontFamily = ref(getDefaultTerminalFont()) // 当前活动的字体
 
 // ---- 皮肤切换 ----
 const showThemePanel = ref(false)
-const currentTheme = ref(localStorage.getItem('app-theme') || 'dark')
-
-const applyTheme = (theme: string) => {
-  currentTheme.value = theme
-  localStorage.setItem('app-theme', theme)
-  document.documentElement.setAttribute('data-theme', theme)
-}
+const { theme: currentTheme, applyTheme } = useTheme()
 
 const toggleThemePanel = () => {
   showThemePanel.value = !showThemePanel.value
 }
 
-const switchTheme = (theme: string) => {
+const switchTheme = (theme: 'dark' | 'light') => {
   applyTheme(theme)
   showThemePanel.value = false
 }
 const emit = defineEmits([
-  'toggle-connection-list',
+  'toggle-primary-sidebar',
+  'toggle-bottom-panel',
   'refreshCommands',
   'refreshConnections',
   'notifyImport',
@@ -311,6 +274,10 @@ const emit = defineEmits([
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = defineProps({
   showConnectionList: {
+    type: Boolean,
+    default: true
+  },
+  showBottomPanel: {
     type: Boolean,
     default: true
   },
@@ -337,7 +304,6 @@ const handleWindowUnmaximized = () => (isMaximized.value = false)
 const minimizeWindow = () => window.windowApi.minimizeWindow()
 const maximizeWindow = () => window.windowApi.maximizeWindow()
 const closeWindow = () => window.windowApi.closeWindow()
-const toggleConnectionList = () => emit('toggle-connection-list')
 
 const hideFileMenu = () => {
   setTimeout(() => {
@@ -615,10 +581,6 @@ watch(() => props.currentFont, (newFont) => {
 }, { immediate: true })
 
 onMounted(async () => {
-  // 初始化主题
-  const savedTheme = localStorage.getItem('app-theme') || 'dark'
-  applyTheme(savedTheme)
-
   window.windowApi.getWindowState().then((state) => (isMaximized.value = state))
   window.addEventListener('window-maximized', handleWindowMaximized)
   window.addEventListener('window-unmaximized', handleWindowUnmaximized)
@@ -739,26 +701,78 @@ const handleClickOutside = (event: MouseEvent) => {
   width: 30px;
   height: 30px;
 }
-.toggle-connection-btn {
+
+.titlebar-actions {
+  display: flex;
+  align-items: center;
+  height: 30px;
   -webkit-app-region: no-drag;
-  margin-left: -10px;
+}
+
+.layout-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  -webkit-app-region: no-drag;
+}
+
+.layout-toggle {
+  width: 28px;
+  height: 30px;
+  padding: 0;
   border: none;
   background: transparent;
+  color: var(--text-titlebar);
   cursor: pointer;
-
-  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  opacity: 0.58;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
-.toggle-connection-btn:hover {
+.layout-toggle:hover {
   background-color: var(--overlay-hover);
+  color: var(--text-white);
+  opacity: 1;
 }
 
-.toggle-connection-btn:active {
+.layout-toggle:active {
   background-color: var(--overlay-active);
 }
 
-.toggle-connection-btn.toggled svg {
-  transform: rotate(90deg);
+.layout-toggle:focus-visible {
+  outline: 1px solid var(--focus-border-color);
+  outline-offset: -2px;
+}
+
+.layout-toggle.is-visible {
+  color: var(--text-white);
+  opacity: 1;
+}
+
+.layout-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.layout-outline,
+.layout-divider {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.35;
+}
+
+.layout-fill {
+  fill: currentColor;
+  opacity: 0.18;
+  transition: opacity 0.15s ease;
+}
+
+.layout-toggle.is-visible .layout-fill {
+  opacity: 0.78;
 }
 
 .titlebar-menu {
