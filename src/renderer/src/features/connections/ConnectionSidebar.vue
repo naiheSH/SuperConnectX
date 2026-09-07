@@ -62,7 +62,7 @@
                         </template>
                         <div class="serial-port-device" tabindex="0">
                           <div class="serial-port-row">
-                            <span class="conn-name" :title="port.path">{{ port.path }}</span>
+                            <span class="conn-name" :title="port.path">{{ getSerialPortDisplayName(port.path) }}</span>
                             <span v-if="showPortType" class="serial-port-type">
                               <el-tag v-if="port.type === 'virtual'" type="info" size="small" effect="dark">{{ t('sidebar.virtual') }}</el-tag>
                               <el-tag v-else-if="port.type === 'usb'" type="success" size="small" effect="dark">{{ t('sidebar.usb') }}</el-tag>
@@ -194,6 +194,7 @@ import { useI18n } from 'vue-i18n'
 import SearchInput from '../../components/SearchInput.vue'
 import { TOOLTIP_SHOW_AFTER } from '../../utils/constants'
 import SidebarLayout from '../../foundation/shell/SidebarLayout.vue'
+import { getSerialPortDisplayName } from './useConnectionSidebar'
 
 const { t } = useI18n()
 
