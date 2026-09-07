@@ -5,11 +5,8 @@
 ## 仓库信息
 
 - 上游仓库：`https://github.com/SuperStudio/SuperConnectX`
-- 本次推送仓库：`https://github.com/naiheSH/SuperConnectX`
-- 本地路径：`/home/naihe/SuperConnectX`
-- 当前分支：`master`
-- 本次工作推送 remote：`fork`
-- 不要推送到 `origin`，`origin` 指向上游原项目。
+- 个人 fork：`https://github.com/naiheSH/SuperConnectX`
+- 分支、remote 和本地路径以当前 Git 工作树为准；本文档不假设具体本地路径或推送目标。
 
 ## 项目概览
 
@@ -121,13 +118,9 @@ macOS：
 ~/Library/Application Support/superconnectx/logs
 ```
 
-开发模式下，本地曾出现日志目录：
+开发模式下日志目录可能位于 Electron 运行时目录；请以应用实际日志目录和当前 `userData` 配置为准，不要依赖固定本地路径。
 
-```text
-/home/naihe/SuperConnectX/node_modules/electron/dist/logs
-```
-
-日志当前不会自动删除。代码里默认按 20 MB 分片，超过大小会切新日志文件，但旧日志不会自动清理。
+日志默认按 20 MB 分片；用户可以关闭分片或设置为“不限制”。
 
 ## Linux 串口权限处理
 
@@ -194,22 +187,12 @@ release/superconnectx_1.1.8_amd64.snap
 
 ## GitHub Actions
 
-新增 workflow：
-
-```text
-.github/workflows/release-windows-linux.yml
-```
-
-作用：
-
-- 构建 Windows 和 Linux 安装包。
-- 上传构建产物 artifact。
-- tag `v*` 触发时，创建 GitHub Release 并上传 Windows/Linux 产物。
+发布 workflow 位于 `.github/workflows/release.yml`，构建矩阵和发布行为以该文件为准。
 
 关键决策：
 
 - 使用 Node `24`，避免 GitHub Actions 的 Node 20 deprecated warning。
-- 不使用 `cache: npm`，因为仓库没有提交可供 setup-node 缓存识别的 lockfile。
+- 使用 lockfile 哈希和 runner 架构区分依赖缓存。
 - Linux 打包命令：
 
 ```bash
@@ -236,22 +219,15 @@ linux:
   maintainer: SuperStudio
 ```
 
-## 已验证命令
+## 常用验证命令
 
-已成功执行过：
+可使用以下命令验证当前工作树：
 
 ```bash
 npm run typecheck
 npm test
 npx electron-vite build
 npx electron-builder --linux --config electron-builder.yml --publish never
-```
-
-测试结果：
-
-```text
-29 个测试文件通过
-489 个测试用例通过
 ```
 
 ## macOS 适配备注
@@ -266,15 +242,7 @@ npx electron-builder --linux --config electron-builder.yml --publish never
 ```
 
 - macOS 上建议优先使用 `/dev/cu.*`，不要优先用 `/dev/tty.*`。
-- 本次没有新增 macOS CI 或 macOS Release 流程。
 - 如果正式分发 macOS 包，建议处理签名和 notarization，否则用户首次打开体验会差。
-
-## 已推送到 fork 的近期提交
-
-- `87d0cb3` 支持中文串口编码和 Linux 打包
-- `e8c37e3` 修复发布 workflow npm 缓存配置
-- `21d82cc` 修复 Linux 发布配置
-- `eb51b8a` 添加 AI 上下文文档
 
 ## 常用命令
 
@@ -301,10 +269,4 @@ Linux 打包：
 ```bash
 npx electron-vite build
 npx electron-builder --linux --config electron-builder.yml --publish never
-```
-
-只推送到 fork：
-
-```bash
-git push fork master
 ```

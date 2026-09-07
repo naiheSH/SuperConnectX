@@ -9,3 +9,4 @@ ICON.pptx
 tests/coverage
 tests/report
 .txt
+*.tsbuildinfo

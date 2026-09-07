@@ -1,9 +1,10 @@
 import { autoUpdater } from 'electron-updater'
-import { BrowserWindow, app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { CancellationToken } from 'builder-util-runtime'
 import logger from '../ipc/IpcAppLogger'
 import {
   mapUpdateErrorToFriendlyMessage,
+  allowsNaihePrereleaseUpdates,
   type UpdateInfo,
   type UpdateStatus
 } from '../../core/updater/UpdateSupport'
@@ -27,17 +28,12 @@ export default class AppUpdater {
   init(mainWindow: BrowserWindow): void {
     this.mainWindow = mainWindow
 
-    // 开发模式下强制启用更新检查
-    if (!app.isPackaged) {
-      autoUpdater.forceDevUpdateConfig = true
-      autoUpdater.updateConfigPath = null // 使用 dev-app-update.yml
-    }
-
     // 配置 autoUpdater - 支持断点续传
     autoUpdater.autoDownload = false // 手动控制下载，让用户选择
     autoUpdater.autoInstallOnAppQuit = true // 退出时自动安装
     autoUpdater.allowDowngrade = false
-    autoUpdater.allowPrerelease = false
+    // Only numbered fork prereleases (for example, 1.2.8-naihe1) follow prereleases.
+    autoUpdater.allowPrerelease = allowsNaihePrereleaseUpdates(app.getVersion())
     autoUpdater.disableDifferentialDownload = true // 禁用差分下载，避免 ENOENT 错误
 
     // 日志输出
@@ -104,14 +100,8 @@ export default class AppUpdater {
       if (this.downloadCancellation?.cancelled) {
         return
       }
-      // 断点续传相关错误不视为致命错误
-      if (error.message?.includes('sha512') || error.message?.includes('sha512') || error.message?.includes('checksum')) {
-        this.sendStatus('error', { message: mapUpdateErrorToFriendlyMessage(error) })
-        // 清除缓存重新下载
-        autoUpdater.downloadUpdate().catch(() => {})
-      } else {
-        this.sendStatus('error', { message: mapUpdateErrorToFriendlyMessage(error) })
-      }
+      // 校验失败不能自动重试，否则损坏的远端元数据会触发无限下载循环。
+      this.sendStatus('error', { message: mapUpdateErrorToFriendlyMessage(error) })
     })
 
     logger.info('[Updater] Initialization complete')

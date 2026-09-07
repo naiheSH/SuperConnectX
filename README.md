@@ -12,7 +12,7 @@
 
 SuperConnectX 是**超级终端工具**，支持 com、telnet 等终端连接，完全**使用 vibe coding 开发**
 
-下载地址：[点此下载](https://github.com/SuperStudio/SuperConnectX/releases)
+下载地址：[个人版 Releases](https://github.com/naiheSH/SuperConnectX/releases)；上游项目：[SuperStudio/SuperConnectX](https://github.com/SuperStudio/SuperConnectX)
 
 
 ![image-20260531221403478](Image/image-20260531221403478.png)
@@ -136,14 +136,23 @@ vscode 中下载插件 codebuddy，或者使用其他 agent 进行 vibe coding �
 
 <img src="Image/image-20260531222201852.png" alt="image-20260531222201852" style="zoom:80%;" />
 
-# Fork 更新日志
+# 个人版与日志管理
 
-基于上游 SuperStudio/SuperConnectX，共 37 项提交。
+个人版基于上游 [SuperStudio/SuperConnectX](https://github.com/SuperStudio/SuperConnectX)，发布包和更新源使用个人 fork [naiheSH/SuperConnectX](https://github.com/naiheSH/SuperConnectX)。个人版额外维护跨平台串口显示、日志管理、打包和发布流程，具体行为以当前版本为准。
+
+## 日志管理用户指南
+
+- 设置中可开关日志分片，开启后按分片大小（默认 20 MB）切换文件；关闭分片或选择“不限制”时不设大小上限。
+- 工具栏当前唯一日志操作是“另存为”，调用 `saveLogFileAs` 导出日志，不轮转当前写入文件。归档/轮转是内部 `rotateLogFile` 能力，当前 UI 没有入口。
+- 另存为默认按完整分片边界导出；设置按时间导出后只导出范围内日志行，因此不保证完整分片或跨重启的完整导出。
+- 清理按最大保留天数和最大文件数执行；值为 0 表示不清理或不限制。
+- 串口备注会用于日志和导出文件名；Linux/macOS 的 `/dev/...` 名称会安全显示，Windows 的 `COMx` 名称保持可读。
+- 通知默认显示 5 秒。生产包启动后自动检查更新，开发环境不自动联网检查，更新源为个人 fork。
 
 ## 功能
 - 支持中文串口编码和 Linux 打包
 - 接收数据显示逐行时间戳
-- 另存为导出完整分片日志
+- 另存为按当前导出设置导出日志
 - 添加 AI 上下文文档并中文化
 - 添加 Windows zip 发布产物
 - 添加 Ubuntu 24 兼容构建（Electron 35 + 38）
@@ -151,7 +160,7 @@ vscode 中下载插件 codebuddy，或者使用其他 agent 进行 vibe coding �
 - 支持 naihe 标签发布
 - 发布流程自动生成变更日志
 - 添加 afterPack 钩子自动修复 chrome-sandbox 权限
-- 版本号添加 -naihe 后缀，通知自动关闭
+- 版本号添加 -naihe 后缀，通知默认显示 5 秒
 
 ## 修复
 - 修复发布 workflow npm 缓存配置

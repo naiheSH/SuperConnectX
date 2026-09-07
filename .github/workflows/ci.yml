@@ -50,27 +50,27 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            npm-${{ runner.os }}-
+            npm-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Cache npm (Windows)
         if: runner.os == 'Windows'
         uses: actions/cache@v4
         with:
           path: ~\AppData\Local\npm-cache
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            npm-${{ runner.os }}-
+            npm-${{ runner.os }}-${{ runner.arch }}-
 
       # Electron 二进制缓存：install.js 下载的解压产物（Electron 体积大，命中可省大量时间）
       - name: Cache Electron binary
         uses: actions/cache@v4
         with:
           path: node_modules/electron/dist
-          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            electron-${{ runner.os }}-
+            electron-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
@@ -290,9 +290,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: npm-ubuntu24-${{ hashFiles('package-lock.json') }}
+          key: npm-ubuntu24-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            npm-ubuntu24-
+            npm-ubuntu24-${{ runner.arch }}-
 
       - name: Install Linux build dependencies
         run: |
@@ -313,9 +313,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules/electron/dist
-          key: electron-ubuntu24-${{ hashFiles('package-lock.json') }}
+          key: electron-ubuntu24-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            electron-ubuntu24-
+            electron-ubuntu24-${{ runner.arch }}-
 
       - name: Remove problematic cpu-features
         run: |

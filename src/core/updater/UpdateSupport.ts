@@ -21,6 +21,11 @@ export interface ProgressInfo {
   bytesPerSecond: number
 }
 
+/** Only the fork's numbered prereleases opt into automatic prerelease updates. */
+export function allowsNaihePrereleaseUpdates(version: string): boolean {
+  return /^\d+\.\d+\.\d+-naihe\d+$/.test(version)
+}
+
 /** Maps transport and updater errors to display-safe messages. */
 export function mapUpdateErrorToFriendlyMessage(error: Error | string): string {
   const message = typeof error === 'string' ? error : error.message || ''
@@ -38,7 +43,7 @@ export function mapUpdateErrorToFriendlyMessage(error: Error | string): string {
     return 'Update server error, please try again later'
   }
   if (lower.includes('sha512') || lower.includes('sha256') || lower.includes('checksum')) {
-    return 'File verification failed, will re-download'
+    return 'File verification failed; retry manually or download the installer'
   }
   if (lower.includes('certificate') || lower.includes('ssl') || lower.includes('tls')) {
     return 'SSL certificate error, please check system time or network proxy'

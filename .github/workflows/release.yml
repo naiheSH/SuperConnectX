@@ -10,8 +10,29 @@ permissions:
   contents: write
 
 jobs:
+  validate:
+    name: Validate release metadata
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify tag and package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          package_version=$(node -p "require('./package.json').version")
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [[ "$GITHUB_REF_NAME" != v* || "$package_version" != "$tag_version" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $package_version"
+            exit 1
+          fi
+
   build:
     name: Build ${{ matrix.name }}
+    needs: validate
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -68,27 +89,27 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            npm-${{ runner.os }}-
+            npm-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Cache npm (Windows)
         if: runner.os == 'Windows'
         uses: actions/cache@v4
         with:
           path: ~\AppData\Local\npm-cache
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            npm-${{ runner.os }}-
+            npm-${{ runner.os }}-${{ runner.arch }}-
 
       # Electron 二进制缓存：install.js 下载的解压产物（Electron 体积大，命中可省大量时间）
       - name: Cache Electron binary
         uses: actions/cache@v4
         with:
           path: node_modules/electron/dist
-          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            electron-${{ runner.os }}-
+            electron-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
@@ -186,6 +207,7 @@ jobs:
   # Electron 38 构建的包在 Ubuntu 24.04 上无法运行，降级 Electron 35 单独构建一版兼容包
   build-ubuntu24:
     name: Build Linux (Ubuntu 24 compatible)
+    needs: validate
     runs-on: ubuntu-22.04
 
     steps:
@@ -202,9 +224,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: npm-ubuntu24-${{ hashFiles('package-lock.json') }}
+          key: npm-ubuntu24-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            npm-ubuntu24-
+            npm-ubuntu24-${{ runner.arch }}-
 
       - name: Install Linux build dependencies
         run: |
@@ -225,9 +247,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules/electron/dist
-          key: electron-ubuntu24-${{ hashFiles('package-lock.json') }}
+          key: electron-ubuntu24-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            electron-ubuntu24-
+            electron-ubuntu24-${{ runner.arch }}-
 
       - name: Remove problematic cpu-features
         run: |
@@ -271,13 +293,18 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build, build-ubuntu24]
+    needs: [validate, build, build-ubuntu24]
     if: startsWith(github.ref, 'refs/tags/v')   # 仅打 tag 时发布，手动触发只构建
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -289,19 +316,30 @@ jobs:
         run: |
           cd release-assets
           if ls *.dmg 1>/dev/null 2>&1; then
-            VERSION=$(ls *.dmg | head -1 | grep -oP '\d+\.\d+\.\d+' || echo '0.0.0')
+            VERSION=$(node -p "require('../package.json').version")
             echo "version: $VERSION" > latest-mac.yml
             echo "releaseDate: '$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'" >> latest-mac.yml
             echo "files:" >> latest-mac.yml
             for dmg in *.dmg; do
               SIZE=$(stat -c%s "$dmg" 2>/dev/null || stat -f%z "$dmg" 2>/dev/null || echo 0)
-              SHA512=$(sha512sum "$dmg" 2>/dev/null | cut -d' ' -f1 || shasum -a 512 "$dmg" 2>/dev/null | cut -d' ' -f1 || echo '')
+              SHA512=$(openssl dgst -sha512 -binary "$dmg" | base64 -w0)
               echo "  - url: $dmg" >> latest-mac.yml
               echo "    sha512: $SHA512" >> latest-mac.yml
               echo "    size: $SIZE" >> latest-mac.yml
             done
-            echo "Generated latest-mac.yml with $(ls *.dmg | wc -l) architecture(s)"
-            cat latest-mac.yml
+            VERSION="$VERSION" node <<'NODE'
+            const fs = require('fs')
+            const text = fs.readFileSync('latest-mac.yml', 'utf8')
+            const version = text.match(/^version:\s*(\S+)$/m)?.[1]
+            if (version !== process.env.VERSION) throw new Error('invalid version')
+            const entries = [...text.matchAll(/^  - url:\s*(\S+)\n    sha512:\s*(\S+)\n    size:\s*(\d+)$/gm)]
+            if (!entries.length || !text.includes('files:')) throw new Error('missing files')
+            for (const [, url, sha512, size] of entries) {
+              if (!url.endsWith('.dmg') || Number(size) <= 0) throw new Error('invalid mac update entry')
+              if (!/^[A-Za-z0-9+/]{86}==$/.test(sha512)) throw new Error('invalid sha512')
+            }
+            NODE
+            echo "Validated latest-mac.yml"
           fi
 
       # 生成 SHA256 校验和文件：让用户下载后能自证安装包完整性（开源项目无代码签名时的可信度补充）

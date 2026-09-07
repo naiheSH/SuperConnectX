@@ -12,7 +12,7 @@
 
 SuperConnectXは、COMやTelnetなどの端末接続をサポートする**スーパー端末ツール**で、完全に**Vibe Coding**で開発されています。
 
-ダウンロード：[こちらからダウンロード](https://github.com/SuperStudio/SuperConnectX/releases)
+ダウンロード：[個人版 Releases](https://github.com/naiheSH/SuperConnectX/releases)。上流：[SuperStudio/SuperConnectX](https://github.com/SuperStudio/SuperConnectX)
 
 
 ![image-20260531221403478](Image/image-20260531221403478.png)
@@ -136,14 +136,23 @@ VS CodeでCodeBuddy拡張機能をインストールするか、他のエージ�
 
 <img src="Image/image-20260531222201852.png" alt="image-20260531222201852" style="zoom:80%;" />
 
-# Fork 更新履歴
+# 個人版とログ管理
 
-上游 SuperStudio/SuperConnectX ベース、全 37 コミット。
+この個人版は上流の [SuperStudio/SuperConnectX](https://github.com/SuperStudio/SuperConnectX) を基にし、配布物と更新元は [naiheSH/SuperConnectX](https://github.com/naiheSH/SuperConnectX) です。シリアル名表示、ログ管理、パッケージング、リリース処理を追加で保守しています。
+
+## ログ管理ガイド
+
+- 設定でログ分割をオン/オフできます。オンの場合は分割サイズ（既定 20 MB）で分割され、オフまたは「無制限」ではサイズ制限がありません。
+- ツールバーの操作は現在「名前を付けて保存」のみで、`saveLogFileAs` を呼び出します。現在のファイルはローテーションしません。`rotateLogFile` は内部機能で UI の入口はありません。
+- 通常は分割ファイルの境界を含めて保存します。時間範囲を指定した場合は範囲内の行だけとなり、完全な分割ファイルや再起動をまたぐ完全なエクスポートは保証されません。
+- クリーンアップは最大保持日数と最大ファイル数に従い、0 は削除なしまたは無制限を意味します。
+- シリアルの備考はログ名と保存名に使われます。Linux/macOS の `/dev/...` は安全なファイル名として表示され、Windows の `COMx` は読みやすいままです。
+- 通知の既定表示時間は 5 秒です。本番版は起動後に更新を確認しますが、開発環境では自動確認しません。更新元は個人 fork です。
 
 ## 機能
 - 中国語シリアルポートエンコーディングと Linux パッケージングに対応
 - 受信データに行ごとのタイムスタンプを表示
-- 分割ログファイルの完全エクスポート（名前を付けて保存）
+- 現在のエクスポート設定に従ったログの保存（名前を付けて保存）
 - AI コンテキストドキュメントを追加（中国語ローカライズ）
 - Windows zip リリースアーティファクトを追加
 - Ubuntu 24 対応ビルドを追加（Electron 35 + 38）
@@ -151,7 +160,7 @@ VS CodeでCodeBuddy拡張機能をインストールするか、他のエージ�
 - naihe タグリリースに対応
 - リリースワークフローで変更ログを自動生成
 - afterPack フックで chrome-sandbox 権限を自動修正
-- バージョンサフィックス -naihe、通知の自動解除
+- バージョンサフィックス -naihe、通知は既定で 5 秒間表示
 
 ## 修正
 - リリースワークフローの npm キャッシュ設定を修正

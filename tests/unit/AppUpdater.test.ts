@@ -1,5 +1,19 @@
 import { describe, it, expect } from 'vitest'
-import { mapUpdateErrorToFriendlyMessage } from '../../src/core/updater/UpdateSupport'
+import { allowsNaihePrereleaseUpdates, mapUpdateErrorToFriendlyMessage } from '../../src/core/updater/UpdateSupport'
+
+describe('prerelease update policy', () => {
+  it('allows numbered naihe prereleases only', () => {
+    expect(allowsNaihePrereleaseUpdates('1.2.8-naihe1')).toBe(true)
+    expect(allowsNaihePrereleaseUpdates('10.0.0-naihe42')).toBe(true)
+  })
+
+  it('does not opt unrelated prerelease or malformed versions in', () => {
+    expect(allowsNaihePrereleaseUpdates('1.2.8')).toBe(false)
+    expect(allowsNaihePrereleaseUpdates('1.2.8-beta1')).toBe(false)
+    expect(allowsNaihePrereleaseUpdates('1.2.8-naihe')).toBe(false)
+    expect(allowsNaihePrereleaseUpdates('v1.2.8-naihe1')).toBe(false)
+  })
+})
 
 describe('AppUpdater - mapErrorToFriendly', () => {
   describe('network errors', () => {
@@ -69,19 +83,19 @@ describe('AppUpdater - mapErrorToFriendly', () => {
   describe('checksum errors', () => {
     it('should map sha512 error', () => {
       expect(mapUpdateErrorToFriendlyMessage(new Error('sha512 checksum mismatch'))).toBe(
-        'File verification failed, will re-download'
+        'File verification failed; retry manually or download the installer'
       )
     })
 
     it('should map sha256 error', () => {
       expect(mapUpdateErrorToFriendlyMessage(new Error('sha256 verification failed'))).toBe(
-        'File verification failed, will re-download'
+        'File verification failed; retry manually or download the installer'
       )
     })
 
     it('should map checksum error', () => {
       expect(mapUpdateErrorToFriendlyMessage(new Error('checksum error'))).toBe(
-        'File verification failed, will re-download'
+        'File verification failed; retry manually or download the installer'
       )
     })
   })

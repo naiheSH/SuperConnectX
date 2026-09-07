@@ -41,8 +41,8 @@ IpcVirtualPort.getInstance().init(protocolLogger, windows)
 IpcMain.getInstance().init(protocolLogger, windows)
 IpcDataCheck.getInstance().init()
 
-// 初始化自动更新（窗口创建后）
-if (!app.isPackaged || process.env.NODE_ENV !== 'development') {
+// 初始化自动更新（窗口创建后）；开发环境不联网检查，生产包按产品意图自动检查。
+if (app.isPackaged) {
   app.whenReady().then(() => {
     if (windows.mainWindow) {
       AppUpdater.getInstance().init(windows.mainWindow)

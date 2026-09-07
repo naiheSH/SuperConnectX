@@ -12,7 +12,7 @@
 
 SuperConnectX is a **super terminal tool** supporting COM, Telnet, and other terminal connections, fully developed using **vibe coding**.
 
-Download: [Click here](https://github.com/SuperStudio/SuperConnectX/releases)
+Download: [Personal fork Releases](https://github.com/naiheSH/SuperConnectX/releases); upstream: [SuperStudio/SuperConnectX](https://github.com/SuperStudio/SuperConnectX)
 
 
 ![image-20260531221403478](Image/image-20260531221403478.png)
@@ -136,14 +136,23 @@ Run `release.bat` and GitHub Actions will start automatically. Once the build co
 
 <img src="Image/image-20260531222201852.png" alt="image-20260531222201852" style="zoom:80%;" />
 
-# Fork Changelog
+# Personal Edition and Log Management
 
-Based on upstream SuperStudio/SuperConnectX, 37 commits in total.
+This personal edition is based on [SuperStudio/SuperConnectX](https://github.com/SuperStudio/SuperConnectX). Packages and update metadata are published from [naiheSH/SuperConnectX](https://github.com/naiheSH/SuperConnectX). It additionally maintains cross-platform serial display, log management, packaging, and release workflow changes.
+
+## Log Management Guide
+
+- Log splitting can be enabled or disabled in Settings. Enabled splitting uses the configured split size (20 MB by default); disabled splitting or “unlimited” sets no size limit.
+- The only log toolbar action is **Save As**, calling `saveLogFileAs` without rotating the active file. Archive/rotation remains the internal `rotateLogFile` capability and has no UI entry.
+- Save As exports complete split-file boundaries by default. With an export time range configured, only lines in that range are exported, so complete split files or complete cross-restart exports are not guaranteed.
+- Cleanup follows maximum retention days and maximum file count; 0 means no cleanup or no limit.
+- Serial remarks are used in log and export filenames. Linux/macOS `/dev/...` names are made safe for filenames, while Windows `COMx` names remain readable.
+- Notifications display for 5 seconds by default. Production packages check for updates after startup; development environments do not automatically check online. The update source is the personal fork.
 
 ## Features
 - Support Chinese serial port encoding and Linux packaging
 - Display per-line timestamps for received data
-- Export complete split log files via Save As
+- Export logs via Save As according to the current export settings
 - Add AI context documentation (localized to Chinese)
 - Add Windows zip release artifacts
 - Add Ubuntu 24 compatible builds (Electron 35 + 38)
@@ -151,7 +160,7 @@ Based on upstream SuperStudio/SuperConnectX, 37 commits in total.
 - Support naihe tag releases
 - Auto-generate changelog in release workflow
 - Add afterPack hook to auto-fix chrome-sandbox permissions
-- Version suffix -naihe, auto-dismiss notifications
+- Version suffix -naihe, notifications display for 5 seconds by default
 
 ## Fixes
 - Fix release workflow npm cache config
