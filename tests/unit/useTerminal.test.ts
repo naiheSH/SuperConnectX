@@ -98,6 +98,7 @@ function createOptions(overrides: Partial<UseTerminalOptions> = {}): UseTerminal
 describe('useTerminal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked((window as any).storageApi.getSettings).mockResolvedValue({ enableLogStorage: true })
   })
 
   describe('initialization', () => {
@@ -366,6 +367,18 @@ describe('useTerminal', () => {
   })
 
   describe('saveLogFileAs', () => {
+    it('should warn before opening the dialog when log storage is disabled', async () => {
+      const { ElMessage } = await import('element-plus')
+      vi.mocked((window as any).storageApi.getSettings).mockResolvedValueOnce({ enableLogStorage: false })
+      const terminal = useTerminal(createOptions())
+
+      await terminal.saveLogFileAs()
+
+      expect(ElMessage.warning).toHaveBeenCalledWith('terminal.logStorageDisabled')
+      expect(mockSaveFileDialog).not.toHaveBeenCalled()
+      expect(mockCopyLogFile).not.toHaveBeenCalled()
+    })
+
     it('should export the log through copyLogFile without rotating it', async () => {
       const opts = createOptions()
       const terminal = useTerminal(opts)

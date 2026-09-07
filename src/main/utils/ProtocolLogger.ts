@@ -707,14 +707,20 @@ export default class ProtocolLogger {
     options?: { hours?: number }
   ): Promise<{ success: boolean; message?: string }> {
     try {
-      // Flush this connection synchronously before taking a consistent export snapshot.
-      if (!this.flushConnLog(connId)) {
-        return { success: false, message: 'Failed to flush pending log data before export' }
+      if (!this.enableLogStorage) {
+        return { success: false, message: 'Log storage is not enabled, please enable it in settings' }
       }
 
       const fileNames = this.connLogFileHistory.get(connId) || []
-      if (fileNames.length === 0) {
+      if (!this.connLogFiles.has(connId) || fileNames.length === 0) {
         return { success: false, message: 'Log file not found' }
+      }
+
+      const hasPendingLogs = (this.logCache.get(connId)?.length || 0) > 0
+        || (this.failedCache.get(connId)?.length || 0) > 0
+      // Only a session with unwritten data needs to be flushed before export.
+      if (hasPendingLogs && !this.flushConnLog(connId)) {
+        return { success: false, message: 'Failed to flush pending log data before export' }
       }
 
       const logDir = this.getConnLogDir(connId)

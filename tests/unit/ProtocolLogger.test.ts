@@ -365,11 +365,84 @@ describe('ProtocolLogger', () => {
   })
 
   describe('copyLogFile', () => {
-    it('未创建连接时返回失败', async () => {
+    it('日志存储关闭时返回明确错误', async () => {
+      const logger = await createLogger()
+      logger.setEnableLogStorage(false)
+      const destPath = path.join(TEST_ROOT, 'disabled.log')
+
+      const result = await logger.copyLogFile('nonexistent', destPath)
+
+      expect(result).toEqual({
+        success: false,
+        message: 'Log storage is not enabled, please enable it in settings'
+      })
+    })
+
+    it('未知 session 返回日志不存在而不是刷盘失败', async () => {
       const logger = await createLogger()
       const destPath = path.join(TEST_ROOT, 'copy-test.log')
       const result = await logger.copyLogFile('nonexistent', destPath)
-      expect(result.success).toBe(false)
+
+      expect(result).toEqual({ success: false, message: 'Log file not found' })
+    })
+
+    it('已注册且无待写缓存时直接导出', async () => {
+      const logger = await createLogger()
+      logger.createConnLogFile('conn-empty', 'Empty')
+      const flushSpy = vi.spyOn(logger, 'flushConnLog')
+      const destPath = path.join(TEST_ROOT, 'empty.log')
+
+      const result = await logger.copyLogFile('conn-empty', destPath)
+
+      expect(result.success).toBe(true)
+      expect(flushSpy).not.toHaveBeenCalled()
+      expect(fs.existsSync(destPath)).toBe(true)
+    })
+
+    it('有待写缓存时刷盘后导出', async () => {
+      const logger = await createLogger()
+      logger.createConnLogFile('conn-pending', 'Pending')
+      logger.writeToConnLog('pending data', 'conn-pending')
+      const flushSpy = vi.spyOn(logger, 'flushConnLog')
+      const destPath = path.join(TEST_ROOT, 'pending.log')
+
+      const result = await logger.copyLogFile('conn-pending', destPath)
+
+      expect(result.success).toBe(true)
+      expect(flushSpy).toHaveBeenCalledWith('conn-pending')
+      expect(fs.readFileSync(destPath, 'utf8')).toContain('pending data')
+    })
+
+    it('断开后仍可导出已保留的日志上下文', async () => {
+      const logger = await createLogger()
+      logger.createConnLogFile('conn-disconnected', 'Disconnected')
+      logger.writeToConnLog('before disconnect', 'conn-disconnected')
+      logger.markConnLogRotate('conn-disconnected')
+      const destPath = path.join(TEST_ROOT, 'disconnected.log')
+
+      const result = await logger.copyLogFile('conn-disconnected', destPath)
+
+      expect(result.success).toBe(true)
+      expect(fs.readFileSync(destPath, 'utf8')).toContain('before disconnect')
+    })
+
+    it('有待写缓存且刷盘失败时返回 flush error', async () => {
+      const logger = await createLogger()
+      const fileName = logger.createConnLogFile('conn-flush-fail', 'FlushFail')
+      logger.writeToConnLog('cannot flush', 'conn-flush-fail')
+      const sourcePath = path.join(logger.getLogDir(), fileName)
+      fs.unlinkSync(sourcePath)
+      fs.mkdirSync(sourcePath)
+      const destPath = path.join(TEST_ROOT, 'flush-fail.log')
+
+      const result = await logger.copyLogFile('conn-flush-fail', destPath)
+
+      expect(result).toEqual({
+        success: false,
+        message: 'Failed to flush pending log data before export'
+      })
+      expect(fs.existsSync(destPath)).toBe(false)
+      fs.rmdirSync(sourcePath)
     })
 
     it('可以拷贝已创建的日志文件', async () => {

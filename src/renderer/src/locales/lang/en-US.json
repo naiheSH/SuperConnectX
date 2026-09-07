@@ -430,6 +430,7 @@
     "openLogFileFailedWithError": "Failed to open log file: {error}",
     "saveLogAs": "Save As",
     "logFileFilter": "Log Files",
+    "logStorageDisabled": "Log storage is disabled. Enable it in Settings first",
     "saveLogSuccess": "Log saved successfully",
     "saveFailed": "Save failed: {message}",
     "saveFailedWithError": "Save failed: {error}",

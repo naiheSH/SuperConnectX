@@ -430,6 +430,7 @@
     "openLogFileFailedWithError": "打开日志文件失败：{error}",
     "saveLogAs": "另存为",
     "logFileFilter": "日志文件",
+    "logStorageDisabled": "日志存储已关闭，请先在设置中启用日志存储",
     "saveLogSuccess": "日志保存成功",
     "saveFailed": "保存失败：{message}",
     "saveFailedWithError": "保存失败：{error}",

@@ -141,6 +141,12 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
 
   const saveLogFileAs = async () => {
     try {
+      const settings = await window.storageApi.getSettings()
+      if (settings?.enableLogStorage === false) {
+        ElMessage.warning(t('terminal.logStorageDisabled'))
+        return
+      }
+
       let remark = conn.remark || ''
       if (connectionType === 'com' && conn.comName) {
         try {
@@ -165,7 +171,6 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
       })
       if (!dialogResult.filePath) return
 
-      const settings = await window.storageApi.getSettings()
       const exportHours = settings?.exportTimeRange || 0
       ElMessage.info(t('terminal.exporting'))
       const result = await window.connectApi.copyLogFile(
