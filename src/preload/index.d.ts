@@ -86,8 +86,8 @@ declare global {
       uploadFile: (data: { conn: any; localFilePath: string; remoteFileName: string }) => Promise<any>
       stopConnect: (conn: any) => Promise<any>
       updateConnect: (conn: any, config: any) => Promise<{ success: boolean; message?: string }>
-      onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
-      onConnectClose: (callback: (connId: number) => void) => () => void
+      onRecvData: (callback: (data: { connId: string | number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
+      onConnectClose: (callback: (connId: string | number) => void) => () => void
       onLogSplit: (callback: (data: { connId: string; oldFileName: string; newFileName: string }) => void) => () => void
       onCopyLogProgress: (callback: (data: { sessionId: string; percent: number }) => void) => () => void
       openConnectLog: (sessionId: string, mode?: 'folder' | 'file') => Promise<{ success: boolean; message?: string; filePath?: string }>
@@ -98,7 +98,7 @@ declare global {
       fixSerialPermissions: () => Promise<{ success: boolean; message?: string }>
       onSerialPortsChanged: (callback: (ports: SerialPortInfo[]) => void) => () => void
       writeToLog: (sessionId: string, content: string) => Promise<any>
-      cleanupLogs: () => Promise<{ deletedCount: number; deletedSize: number }>
+      cleanupLogs: () => Promise<{ success: boolean; deletedCount: number; deletedSize: number; failedCount: number; failedFiles: string[] }>
     }
     windowApi: {
       minimizeWindow: () => Promise<void>
@@ -107,6 +107,7 @@ declare global {
       getWindowState: () => Promise<boolean>
       getAppVersion: () => Promise<string>
       toggleFullscreenWindow: () => Promise<void>
+      onMaximizedChanged: (callback: (maximized: boolean) => void) => () => void
     }
     toolApi: {
       openDevtools: () => Promise<void>

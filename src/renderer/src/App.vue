@@ -851,7 +851,7 @@ const handleMergePanel = () => {
 */
 
 const saveSerialRemarkHandler = () => {
-  saveSerialRemark(rightClickedTab.value)
+  saveSerialRemark()
 }
 
 // ---- Connection Dialog ----

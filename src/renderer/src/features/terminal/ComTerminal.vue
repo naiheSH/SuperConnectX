@@ -13,7 +13,7 @@
       @on-reconnect="reconnect"
       @on-open-log-folder="openLogFolder"
       @on-open-log-file="openLogFile"
-      @on-save-log="saveLog"
+      @on-save-log="saveLogFileAs"
       @on-send="handleSendCommand"
       @on-command-sent="handleCommandSent"
       @on-open-command-editor="emit('openCommandEditor', connection.connectionType)"
@@ -479,6 +479,11 @@ const updateRemark = async (newRemark: string) => {
   emit('remarkUpdated', { comName: props.connection.comName, remark: newRemark })
 }
 
+const setRemark = (newRemark: string) => {
+  remark.value = newRemark
+  emit('remarkUpdated', { comName: props.connection.comName, remark: newRemark })
+}
+
 // 通知后端更新日志时间戳配置
 const notifyLogTimestampToBackend = async (showTs: boolean) => {
   if (!isConnected.value) return
@@ -711,10 +716,6 @@ const handleSendCommand = async (command: string, originalInput?: string) => {
 }
 
 
-const saveLog = async () => {
-  await saveLogFileAs()
-}
-
 const handleCommandSent = (cmdName: string) => emit('commandSent', cmdName)
 
 const refreshGroupsCmds = () => unifiedTerminalRef.value?.refreshGroupsCmds?.()
@@ -739,8 +740,10 @@ defineExpose({
   disconnect: handleClose,
   isConnected: isConnectedValue,
   preventAutoReconnect: () => { preventAutoReconnect.value = true },
+  getComName: () => props.connection.comName,
   getRemark: () => remark.value,
   updateRemark,
+  setRemark,
   handleFontChange,
   getFontFamily: () => {
     const unifiedFont = unifiedTerminalRef.value?.getFontFamily?.()

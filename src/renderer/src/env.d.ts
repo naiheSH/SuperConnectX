@@ -65,11 +65,11 @@ interface ConnectApi {
   uploadFile: (data: { conn: any; localFilePath: string; remoteFileName: string }) => Promise<any>
   stopConnect: (conn: any) => Promise<any>
   updateConnect: (conn: any, config: any) => Promise<any>
-  onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
-  onConnectClose: (callback: (connId: number) => void) => () => void
+  onRecvData: (callback: (data: { connId: string | number; data: string; timestamp?: string; isHex?: boolean }) => void) => () => void
+  onConnectClose: (callback: (connId: string | number) => void) => () => void
   onLogSplit: (callback: (data: { connId: string; oldFileName: string; newFileName: string }) => void) => () => void
   onCopyLogProgress: (callback: (data: { sessionId: string; percent: number }) => void) => () => void
-  openConnectLog: (sessionId: string) => Promise<any>
+  openConnectLog: (sessionId: string, mode?: 'folder' | 'file') => Promise<any>
   getLogFilePath: (sessionId: string) => Promise<string>
   copyLogFile: (sessionId: string, destPath: string, hours?: number) => Promise<any>
   rotateLogFile: (sessionId: string) => Promise<any>
@@ -77,7 +77,7 @@ interface ConnectApi {
   fixSerialPermissions: () => Promise<{ success: boolean; message?: string }>
   onSerialPortsChanged: (callback: (ports: any[]) => void) => () => void
   writeToLog: (sessionId: string, content: string) => Promise<any>
-  cleanupLogs: () => Promise<{ deletedCount: number; deletedSize: number }>
+  cleanupLogs: () => Promise<{ success: boolean; deletedCount: number; deletedSize: number; failedCount: number; failedFiles: string[] }>
 }
 
 interface DialogApi {
@@ -93,6 +93,7 @@ interface WindowApi {
   getWindowState: () => Promise<any>
   getAppVersion: () => Promise<string>
   toggleFullscreenWindow: () => Promise<void>
+  onMaximizedChanged: (callback: (maximized: boolean) => void) => () => void
 }
 
 declare global {

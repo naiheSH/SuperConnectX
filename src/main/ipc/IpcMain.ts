@@ -10,6 +10,7 @@ import AppSettingsStorage from '../storage/AppSettingsStorage'
 import BackupManager from '../utils/BackupManager'
 import fs from 'fs'
 import path from 'path'
+import { WINDOW_IPC_CHANNELS } from '../../shared/ipc/window'
 
 (app as any).isQuitting = false
 let isQuitting = false
@@ -78,17 +79,14 @@ export default class IpcMain {
       })
 
       // 监听窗口最大化状态变化（多事件兜底，兼容 Ubuntu 24 等 Linux 窗口管理器）
-      // 仅在状态真正变化时才通知渲染进程，避免 resize 事件风暴期间
-      // 频繁 executeJavaScript 造成窗口卡顿
+      // 仅在状态真正变化时才通知渲染进程，避免 resize 事件风暴期间频繁 IPC。
       let lastMaximized: boolean | null = null
       const dispatchMaximizeState = () => {
         const maximized = mainWindow.isMaximized()
         if (maximized === lastMaximized) return
         lastMaximized = maximized
         if (mainWindow.isDestroyed()) return
-        mainWindow.webContents.executeJavaScript(
-          `window.dispatchEvent(new CustomEvent("${maximized ? 'window-maximized' : 'window-unmaximized'}"))`
-        )
+        mainWindow.webContents.send(WINDOW_IPC_CHANNELS.maximizedChanged, maximized)
       }
       mainWindow.on('maximize', dispatchMaximizeState)
       mainWindow.on('unmaximize', dispatchMaximizeState)

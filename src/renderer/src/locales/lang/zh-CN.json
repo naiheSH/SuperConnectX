@@ -150,7 +150,9 @@
     "cleanupNow": "立即清理",
     "cleanupNowDesc": "手动触发日志清理，按当前规则删除旧日志",
     "cleanupButton": "清理",
+    "cleanupConfirm": "将按当前保留天数和文件数量规则删除非活动日志，删除后无法恢复。是否继续？",
     "cleanupSuccess": "清理完成，删除了 {count} 个文件",
+    "cleanupPartial": "清理完成，删除 {count} 个文件，{failed} 个文件删除失败",
     "cleanupFailed": "清理失败"
   },
   "syntaxSettings": {
@@ -426,7 +428,7 @@
     "openLogFolderFailedWithError": "打开日志文件夹失败：{error}",
     "openLogFileFailed": "打开日志文件失败：{message}",
     "openLogFileFailedWithError": "打开日志文件失败：{error}",
-    "saveLogAs": "保存日志",
+    "saveLogAs": "另存为",
     "logFileFilter": "日志文件",
     "saveLogSuccess": "日志保存成功",
     "saveFailed": "保存失败：{message}",

@@ -15,7 +15,10 @@ export interface NotificationCenter {
   clear: () => void
 }
 
-/** Domain-neutral, de-duplicating notification queue for a desktop application shell. */
+/**
+ * Domain-neutral, de-duplicating notification queue for a desktop application shell.
+ * Positive durations run continuously; hover and focus do not pause the countdown.
+ */
 export function useNotificationCenter(onItemAdded?: () => void): NotificationCenter {
   const items = ref<NotificationItem[]>([])
   const timers = new Map<number, ReturnType<typeof setTimeout>>()

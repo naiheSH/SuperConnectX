@@ -78,14 +78,14 @@ contextBridge.exposeInMainWorld('connectApi', {
   stopConnect: (conn: any) => ipcRenderer.invoke('stop-connect', conn),
   updateConnect: (conn: any, config: any) => ipcRenderer.invoke('update-connect', { conn, config }),
 
-  onRecvData: (callback: (data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, data: { connId: number; data: string; timestamp?: string; isHex?: boolean }) =>
+  onRecvData: (callback: (data: { connId: string | number; data: string; timestamp?: string; isHex?: boolean }) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: { connId: string | number; data: string; timestamp?: string; isHex?: boolean }) =>
       callback(data)
     ipcRenderer.on('on-recv-data', listener)
     return () => ipcRenderer.removeListener('on-recv-data', listener)
   },
-  onConnectClose: (callback: (connId: number) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, connId: number) => callback(connId)
+  onConnectClose: (callback: (connId: string | number) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, connId: string | number) => callback(connId)
     ipcRenderer.on('on-connect-close', listener)
     return () => ipcRenderer.removeListener('on-connect-close', listener)
   },
@@ -128,7 +128,12 @@ contextBridge.exposeInMainWorld('windowApi', {
   closeWindow: () => ipcRenderer.invoke(WINDOW_IPC_CHANNELS.close),
   getWindowState: () => ipcRenderer.invoke(WINDOW_IPC_CHANNELS.getMaximized),
   getAppVersion: () => ipcRenderer.invoke(WINDOW_IPC_CHANNELS.getAppVersion),
-  toggleFullscreenWindow: () => ipcRenderer.invoke(WINDOW_IPC_CHANNELS.toggleFullscreen)
+  toggleFullscreenWindow: () => ipcRenderer.invoke(WINDOW_IPC_CHANNELS.toggleFullscreen),
+  onMaximizedChanged: (callback: (maximized: boolean) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, maximized: boolean) => callback(maximized)
+    ipcRenderer.on(WINDOW_IPC_CHANNELS.maximizedChanged, listener)
+    return () => ipcRenderer.removeListener(WINDOW_IPC_CHANNELS.maximizedChanged, listener)
+  }
 })
 
 contextBridge.exposeInMainWorld('toolApi', {

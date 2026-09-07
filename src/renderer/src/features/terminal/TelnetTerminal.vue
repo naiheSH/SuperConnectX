@@ -179,7 +179,7 @@ const handleReconnect = () => {
 
 const reconnect = () => handleReconnect()
 
-const handleTelnetClose = (_connId: number) => {
+const handleTelnetClose = (_connId: string | number) => {
   cleanup()
   if (preventAutoReconnect) {
     unifiedTerminalRef.value?.appendToTerminal(`\n连接已关闭\n`)
@@ -263,7 +263,7 @@ const connect = async () => {
         }
 
         removeDataListener = window.connectApi.onRecvData((data) => {
-          if (data.connId !== currentConnId) return
+          if (String(data.connId) !== String(currentConnId)) return
           terminal.totalRxSize += data.data.length
           unifiedTerminalRef.value?.updateRxBytes(data.data.length)
           const recvLabel = recvDisplayText.value ? `${recvDisplayText.value} ` : ''

@@ -45,7 +45,6 @@ export interface UseTerminalReturn {
   openLogFile: () => Promise<void>
   saveLogFileAs: () => Promise<void>
   rotateLogFile: () => Promise<void>
-  saveLogFile: () => Promise<void>
   handleClose: () => Promise<void>
   handleSend: (command: string, originalInput?: string) => Promise<void>
   reconnect: () => void
@@ -198,8 +197,6 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     }
   }
 
-  const saveLogFile = rotateLogFile
-
   const cleanup = () => {
     removeDataListener?.()
     removeDataListener = null
@@ -278,7 +275,6 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
     openLogFile,
     saveLogFileAs,
     rotateLogFile,
-    saveLogFile,
     handleClose,
     handleSend,
     reconnect,

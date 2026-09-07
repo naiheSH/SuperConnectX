@@ -289,7 +289,12 @@
                 <span class="label-text">{{ t('logSettings.cleanupNow') }}</span>
                 <span class="label-desc">{{ t('logSettings.cleanupNowDesc') }}</span>
               </div>
-              <el-button size="small" @click="handleCleanupLogs" :loading="isCleaningUp">
+              <el-button
+                size="small"
+                @click="handleCleanupLogs"
+                :loading="isCleaningUp"
+                :disabled="settings.maxLogAgeDays === 0 && settings.maxLogCount === 0"
+              >
                 {{ t('logSettings.cleanupButton') }}
               </el-button>
             </div>
@@ -524,10 +529,27 @@ const saveSettings = async () => {
 // 手动清理日志
 const isCleaningUp = ref(false)
 const handleCleanupLogs = async () => {
+  try {
+    await ElMessageBox.confirm(
+      t('logSettings.cleanupConfirm'),
+      t('logSettings.cleanupNow'),
+      { type: 'warning' }
+    )
+  } catch {
+    return
+  }
+
   isCleaningUp.value = true
   try {
     const result = await window.connectApi.cleanupLogs()
-    ElMessage.success(t('logSettings.cleanupSuccess', { count: result.deletedCount }))
+    if (result.success) {
+      ElMessage.success(t('logSettings.cleanupSuccess', { count: result.deletedCount }))
+    } else {
+      ElMessage.warning(t('logSettings.cleanupPartial', {
+        count: result.deletedCount,
+        failed: result.failedCount
+      }))
+    }
   } catch (error) {
     ElMessage.error(t('logSettings.cleanupFailed'))
   } finally {

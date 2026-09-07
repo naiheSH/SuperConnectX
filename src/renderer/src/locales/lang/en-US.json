@@ -150,7 +150,9 @@
     "cleanupNow": "Cleanup Now",
     "cleanupNowDesc": "Manually trigger log cleanup based on current rules",
     "cleanupButton": "Cleanup",
+    "cleanupConfirm": "Inactive logs will be deleted using the current retention age and file-count rules. This cannot be undone. Continue?",
     "cleanupSuccess": "Cleanup done, deleted {count} files",
+    "cleanupPartial": "Cleanup done: deleted {count} files; failed to delete {failed} files",
     "cleanupFailed": "Cleanup failed"
   },
   "syntaxSettings": {
@@ -426,7 +428,7 @@
     "openLogFolderFailedWithError": "Failed to open log folder: {error}",
     "openLogFileFailed": "Failed to open log file: {message}",
     "openLogFileFailedWithError": "Failed to open log file: {error}",
-    "saveLogAs": "Save Log As",
+    "saveLogAs": "Save As",
     "logFileFilter": "Log Files",
     "saveLogSuccess": "Log saved successfully",
     "saveFailed": "Save failed: {message}",
