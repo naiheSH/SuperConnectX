@@ -154,8 +154,10 @@ export default class ProtocolLogger {
       .replace(/%s/g, s)
       .replace(/%f/g, f)
 
-    // 替换非法文件名字符（保留 \ / : 作为路径分隔符和盘符）
-    return result.replace(/[*?"<>|]/g, '-')
+    // 相对模板统一放在默认日志目录下，避免 Linux 从不同启动目录运行时
+    // 出现“写入目录”和“清理扫描目录”不一致。
+    const safeResult = result.replace(/[*?"<>|]/g, '-')
+    return isAbsolute(safeResult) ? safeResult : resolve(this.defaultLogDir, safeResult)
   }
 
   // 确保目录存在

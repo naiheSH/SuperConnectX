@@ -104,6 +104,14 @@ describe('ProtocolLogger', () => {
       expect(dir).toContain('logs')
     })
 
+    it('相对日志目录模板与扫描目录使用同一基准', async () => {
+      const logger = await createLogger()
+      logger.setLogDir('relative-logs/%Y')
+      const dir = logger.createConnLogFile('relative-1', 'Test')
+      expect(dir).toContain('.log')
+      expect(logger.getLogDir()).toContain('logs/relative-logs/')
+    })
+
     it('设置空目录回退到默认', async () => {
       const logger = await createLogger()
       logger.setLogDir('')
