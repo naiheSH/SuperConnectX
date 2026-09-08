@@ -532,7 +532,7 @@ describe('ProtocolLogger', () => {
   })
 
   describe('manualCleanup', () => {
-    it('respects zero retention values and returns exact result', async () => {
+    it('manual cleanup removes inactive logs even when retention rules are unlimited', async () => {
       const logger = await createLogger()
       logger.setMaxLogAgeDays(0)
       logger.setMaxLogCount(0)
@@ -541,8 +541,11 @@ describe('ProtocolLogger', () => {
       fs.mkdirSync(dir, { recursive: true })
       fs.writeFileSync(path.join(dir, 'old.log'), '1234')
       const result = logger.manualCleanup()
-      expect(result).toMatchObject({ success: true, deletedCount: 0, deletedSize: 0, failedCount: 0 })
-      expect(fs.existsSync(path.join(dir, 'old.log'))).toBe(true)
+      expect(result.success).toBe(true)
+      expect(result.deletedCount).toBeGreaterThanOrEqual(1)
+      expect(result.deletedSize).toBeGreaterThanOrEqual(4)
+      expect(result.failedCount).toBe(0)
+      expect(fs.existsSync(path.join(dir, 'old.log'))).toBe(false)
     })
 
     it('cleans all configured connection directories while protecting active absolute paths', async () => {

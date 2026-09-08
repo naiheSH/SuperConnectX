@@ -246,12 +246,12 @@ export default class ProtocolLogger {
   }
 
   manualCleanup(): { success: boolean; deletedCount: number; deletedSize: number; failedCount: number; failedFiles: string[] } {
-    return this.cleanupLogs()
+    return this.cleanupLogs(true)
   }
 
-  private cleanupLogs(): { success: boolean; deletedCount: number; deletedSize: number; failedCount: number; failedFiles: string[] } {
+  private cleanupLogs(force = false): { success: boolean; deletedCount: number; deletedSize: number; failedCount: number; failedFiles: string[] } {
     const result = { success: true, deletedCount: 0, deletedSize: 0, failedCount: 0, failedFiles: [] as string[] }
-    if (this.maxLogAgeDays <= 0 && this.maxLogCount <= 0) return result
+    if (!force && this.maxLogAgeDays <= 0 && this.maxLogCount <= 0) return result
     const active = new Set<string>()
     this.connLogFiles.forEach((fileName, connId) => active.add(resolve(this.getConnLogDir(connId), fileName)))
     const files: { path: string; mtime: number; size: number; active: boolean }[] = []
@@ -308,7 +308,9 @@ export default class ProtocolLogger {
 
     files.sort((a, b) => b.mtime - a.mtime)
     const deletePaths = new Set<string>()
-    if (this.maxLogAgeDays > 0) {
+    if (force && this.maxLogAgeDays <= 0 && this.maxLogCount <= 0) {
+      files.forEach(file => { if (!file.active) deletePaths.add(file.path) })
+    } else if (this.maxLogAgeDays > 0) {
       const age = this.maxLogAgeDays * 24 * 60 * 60 * 1000
       files.forEach(file => { if (!file.active && Date.now() - file.mtime > age) deletePaths.add(file.path) })
     }

@@ -293,7 +293,7 @@
                 size="small"
                 @click="handleCleanupLogs"
                 :loading="isCleaningUp || isSavingSettings"
-                :disabled="isCleaningUp || isSavingSettings || (settings.maxLogAgeDays === 0 && settings.maxLogCount === 0)"
+                :disabled="isCleaningUp || isSavingSettings"
               >
                 {{ t('logSettings.cleanupButton') }}
               </el-button>
@@ -539,7 +539,7 @@ const saveSettings = async (): Promise<boolean> => {
 // 手动清理日志
 const isCleaningUp = ref(false)
 const handleCleanupLogs = async () => {
-  if (isCleaningUp.value || (settings.value.maxLogAgeDays === 0 && settings.value.maxLogCount === 0)) return
+  if (isCleaningUp.value) return
   isCleaningUp.value = true
   try {
     await ElMessageBox.confirm(
