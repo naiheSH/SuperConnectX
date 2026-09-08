@@ -316,7 +316,7 @@ jobs:
         run: |
           cd release-assets
           if ls *.dmg 1>/dev/null 2>&1; then
-            VERSION=$(node -p "require('../package.json').version")
+            VERSION="${GITHUB_REF_NAME#v}"
             echo "version: $VERSION" > latest-mac.yml
             echo "releaseDate: '$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'" >> latest-mac.yml
             echo "files:" >> latest-mac.yml

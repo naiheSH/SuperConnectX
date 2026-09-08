@@ -21,11 +21,6 @@ export interface ProgressInfo {
   bytesPerSecond: number
 }
 
-/** Only the fork's numbered prereleases opt into automatic prerelease updates. */
-export function allowsNaihePrereleaseUpdates(version: string): boolean {
-  return /^\d+\.\d+\.\d+-naihe\d+$/.test(version)
-}
-
 /** Maps transport and updater errors to display-safe messages. */
 export function mapUpdateErrorToFriendlyMessage(error: Error | string): string {
   const message = typeof error === 'string' ? error : error.message || ''

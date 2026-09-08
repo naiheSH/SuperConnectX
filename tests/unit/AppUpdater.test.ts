@@ -1,17 +1,31 @@
-import { describe, it, expect } from 'vitest'
-import { allowsNaihePrereleaseUpdates, mapUpdateErrorToFriendlyMessage } from '../../src/core/updater/UpdateSupport'
+import { describe, it, expect, vi } from 'vitest'
+import { mapUpdateErrorToFriendlyMessage } from '../../src/core/updater/UpdateSupport'
 
-describe('prerelease update policy', () => {
-  it('allows numbered naihe prereleases only', () => {
-    expect(allowsNaihePrereleaseUpdates('1.2.8-naihe1')).toBe(true)
-    expect(allowsNaihePrereleaseUpdates('10.0.0-naihe42')).toBe(true)
-  })
+const { mockAutoUpdater } = vi.hoisted(() => ({
+  mockAutoUpdater: {
+    autoDownload: true,
+    autoInstallOnAppQuit: false,
+    allowDowngrade: true,
+    allowPrerelease: true,
+    disableDifferentialDownload: false,
+    logger: null as unknown,
+    on: vi.fn()
+  }
+}))
 
-  it('does not opt unrelated prerelease or malformed versions in', () => {
-    expect(allowsNaihePrereleaseUpdates('1.2.8')).toBe(false)
-    expect(allowsNaihePrereleaseUpdates('1.2.8-beta1')).toBe(false)
-    expect(allowsNaihePrereleaseUpdates('1.2.8-naihe')).toBe(false)
-    expect(allowsNaihePrereleaseUpdates('v1.2.8-naihe1')).toBe(false)
+vi.mock('electron-updater', () => ({ autoUpdater: mockAutoUpdater }))
+vi.mock('builder-util-runtime', () => ({ CancellationToken: class {} }))
+vi.mock('../../src/main/ipc/IpcAppLogger', () => ({
+  default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }
+}))
+
+import AppUpdater from '../../src/main/updater/AppUpdater'
+
+describe('AppUpdater - release channel', () => {
+  it('uses normal GitHub Releases for naihe builds', () => {
+    AppUpdater.getInstance().init({ isDestroyed: () => false, webContents: { send: vi.fn() } } as any)
+
+    expect(mockAutoUpdater.allowPrerelease).toBe(false)
   })
 })
 

@@ -1,10 +1,9 @@
 import { autoUpdater } from 'electron-updater'
-import { app, BrowserWindow } from 'electron'
+import { BrowserWindow } from 'electron'
 import { CancellationToken } from 'builder-util-runtime'
 import logger from '../ipc/IpcAppLogger'
 import {
   mapUpdateErrorToFriendlyMessage,
-  allowsNaihePrereleaseUpdates,
   type UpdateInfo,
   type UpdateStatus
 } from '../../core/updater/UpdateSupport'
@@ -32,8 +31,9 @@ export default class AppUpdater {
     autoUpdater.autoDownload = false // 手动控制下载，让用户选择
     autoUpdater.autoInstallOnAppQuit = true // 退出时自动安装
     autoUpdater.allowDowngrade = false
-    // Only numbered fork prereleases (for example, 1.2.8-naihe1) follow prereleases.
-    autoUpdater.allowPrerelease = allowsNaihePrereleaseUpdates(app.getVersion())
+    // naihe builds are published as normal GitHub Releases. Enabling prerelease mode
+    // would treat "naihe1" as a channel and search for matching historical tags.
+    autoUpdater.allowPrerelease = false
     autoUpdater.disableDifferentialDownload = true // 禁用差分下载，避免 ENOENT 错误
 
     // 日志输出
