@@ -345,6 +345,7 @@ export default class IpcConnector {
    */
   async cleanup(): Promise<void> {
     await this.ftpConnector.cleanup()
+    await this.directConnector.cleanup()
     await this.workerConnector.shutdown()
   }
 }
