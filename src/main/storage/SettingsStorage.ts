@@ -28,6 +28,7 @@ interface SyntaxRuleGroup {
 interface Settings extends Record<string, any> {
   // 基本设置
   minimizeToTray?: boolean
+  notificationDuration?: number
   logSplit?: boolean
   logSplitSize?: number
   autoScroll?: boolean
@@ -75,6 +76,7 @@ interface Settings extends Record<string, any> {
 const defaultSettings: Settings = {
   // 基本设置
   minimizeToTray: false,
+  notificationDuration: 0,
   logSplit: true,
   autoScroll: true,
   autoScrollToast: true,
