@@ -1,5 +1,8 @@
 # v1.2.9-naihe1
 
+基于上游 `v1.2.9`（`377450a`）合并，个人版提交：`cee577b`（合并上游 v1.2.9 更新）。
+相对上一发布标签：`v1.2.7-naihe4` → `v1.2.9-naihe1`。
+
 ### 个人版功能与行为
 1. **发布与更新源** - 个人版发布包和自动更新使用 [naiheSH/SuperConnectX](https://github.com/naiheSH/SuperConnectX)，不跟踪上游 GitHub Releases；`naihe` 版本号按普通 Release 处理，不会被当成预发布通道
 2. **日志另存为与归档** - 日志另存为入口在文件菜单（`Ctrl+Shift+S`，支持自定义改绑），工具栏为「日志归档」
@@ -18,3 +21,34 @@
 5. **串口名称显示优化** - 优化跨平台串口名称显示、修复显示宽度并保留 macOS 串口访问模式标识
 6. **界面布局修复** - 修复分屏与终端底部面板状态：恢复标签拖拽创建分屏的目标区域适配，消除连接、关闭和窗口缩放时底部面板的瞬时跳动，每个终端标签独立保存底部面板高度
 7. **其他** - 通知默认改为常驻显示；补充 macOS 未签名安装与更新指引文档；修复 macOS 个人版更新检查
+
+### 关键提交（first-parent，自 `v1.2.7-naihe4`）
+- `cee577b` 合并上游 v1.2.9 更新
+- `2fe8bc5` fix: 修复 macOS 个人版更新检查
+- `c39266c` fix: 通知默认常驻并支持自定义时长
+- `d7cf795` fix: 修复 macOS 窗口交互与串口资源释放
+- `7a5a20f` / `68cb70e` / `f70ecb5` / `20bd9aa` 日志清理与相对路径修复
+- `dbaa197` 修复连接启动与重连竞态
+- `ae3b8a0` 修复日志另存为失败
+- `cd965e7` 完善个人版更新发布与使用文档
+- `3418338` 完善终端交互与平台兼容行为
+- `87a7586` 完善日志写入导出与清理安全性
+- `4af9fa1` / `0e2e60c` 优化跨平台串口名称显示
+- `6b694c5` / `2e5b88d` 修正日志分片与不限制选项
+- `046b111` 合并上游 v1.2.8 更新
+- `3e02493` 同步 Telnet 多字符编码支持
+- `00cda07` / `f472ae2` / `8319936` 长时间运行内存与多字节边界修复
+
+### 上游合并进来的相关 PR / merge
+- `5e5b450` Merge PR #284 `feat/log-cleanup-robustness`
+- `1bbb34c` Merge PR #285 `fix/macos-window-serial-cleanup`
+- `bdabb1a` Merge PR #282 `feat/notification-duration`
+- `8946e92` Merge PR #286 `docs/macos-unsigned-install`
+- `c7d7495` Merge PR #283 `fix/maximized-state-ipc`
+- `73afec1` Merge PR #281 `fix/serial-remark-race`
+- `ee5c95d` Merge PR #280 `fix/connect-race`
+- `219dd95` Merge PR #278 `fix/serial-port-display`
+- `8fc152e` Merge PR #273 `fix/recv-buffer-cap`
+- `c62dc54` Merge PR #272 `pr/telnet-encoding`
+- `5519ad2` Merge PR #254 `fix/linux-serial-permissions`
+- `377450a` 上游：更新版本为 1.2.9
