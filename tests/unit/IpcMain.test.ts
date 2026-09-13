@@ -4,10 +4,10 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockAppHandlers, mockBrowserWindows, mockConnectorCleanup, mockDialogHandlers } = vi.hoisted(() => ({
+const { mockAppHandlers, mockConnectorCleanup, mockBrowserWindows, mockDialogHandlers } = vi.hoisted(() => ({
   mockAppHandlers: new Map<string, Function>(),
-  mockBrowserWindows: [] as any[],
   mockConnectorCleanup: vi.fn((): Promise<void> => Promise.resolve()),
+  mockBrowserWindows: [] as any[],
   mockDialogHandlers: new Map<string, Function>()
 }))
 

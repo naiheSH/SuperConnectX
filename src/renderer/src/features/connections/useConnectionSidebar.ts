@@ -9,9 +9,7 @@ import { ElMessage } from 'element-plus'
 export type SerialPortType = 'virtual' | 'usb' | 'bluetooth' | 'none'
 
 export function getSerialPortDisplayName(path: string): string {
-  if (/^\\\\\.\\COM\d+$/i.test(path)) return path.slice(4)
-  if (path.startsWith('/dev/')) return path.slice('/dev/'.length)
-  return path
+  return path.replace(/\\/g, '/').split('/').pop() || path
 }
 
 export function useConnectionSidebar() {
