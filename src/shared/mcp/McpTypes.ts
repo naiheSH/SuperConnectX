@@ -1,5 +1,19 @@
 export type McpPermission = 'read' | 'write' | 'destructive' | 'export'
 
+export interface McpPermissionPolicy {
+  read: boolean
+  write: boolean
+  destructive: boolean
+  export: boolean
+}
+
+export const DEFAULT_MCP_PERMISSION_POLICY: McpPermissionPolicy = {
+  read: true,
+  write: false,
+  destructive: false,
+  export: false
+}
+
 export interface SerialPortInfo {
   path: string
   manufacturer?: string

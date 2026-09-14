@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import type { McpFacade } from './types.js'
+import type { McpFacade, McpPermissionPolicy } from './types.js'
+import { DEFAULT_MCP_PERMISSION_POLICY } from './types.js'
 
 const result = (data: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify({ data }) }] })
 const lease = (facade: McpFacade, sessionId: string, ownerId: string) => {
@@ -8,7 +9,22 @@ const lease = (facade: McpFacade, sessionId: string, ownerId: string) => {
   facade.assertWriteLease(sessionId, ownerId)
 }
 
-export function createMcpServer(facade: McpFacade): McpServer {
+const WRITE = new Set(['sendSession', 'sendSessionAndWait', 'runTemplateCommand', 'startSessionPort', 'startSavedSession', 'acquireWriteLease', 'releaseWriteLease'])
+const DESTRUCTIVE = new Set(['stopSession'])
+const EXPORT = new Set(['uploadSessionFile'])
+function applyPolicy(facade: McpFacade, policy: McpPermissionPolicy): McpFacade {
+  return new Proxy(facade, { get(target, property, receiver) {
+    const value = Reflect.get(target, property, receiver)
+    if (typeof value !== 'function') return value
+    const name = String(property)
+    const permission = WRITE.has(name) ? 'write' : DESTRUCTIVE.has(name) ? 'destructive' : EXPORT.has(name) ? 'export' : undefined
+    if (!permission || policy[permission]) return value.bind(target)
+    return () => { throw new Error(`MCP permission denied: ${permission}`) }
+  } }) as McpFacade
+}
+
+export function createMcpServer(facade: McpFacade, policy: McpPermissionPolicy = DEFAULT_MCP_PERMISSION_POLICY): McpServer {
+  facade = applyPolicy(facade, { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy })
   const server = new McpServer({ name: 'superconnectx-mcp', version: '0.1.0' })
   server.registerTool('serial_list_ports', { title: 'List serial ports', description: 'List available serial ports.', annotations: { readOnlyHint: true, idempotentHint: true } }, async () => result(await facade.listSerialPorts()))
   server.registerTool('session_list', { title: 'List sessions', description: 'List active SuperConnectX sessions.', annotations: { readOnlyHint: true, idempotentHint: true } }, async () => result(await facade.listSessions()))

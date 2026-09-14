@@ -113,6 +113,10 @@ declare global {
       getStatus: () => Promise<{ enabled: boolean; port: number | null; endpoint: string | null }>
       getClientConfig: () => Promise<{ endpoint: string | null; token: string | null }>
       rotateToken: () => Promise<string | null>
+      getSettings: () => Promise<{ enabled: boolean; port: number; accessMode: 'read-only' | 'read-write' | 'full'; allowExport: boolean }>
+      saveSettings: (settings: { enabled: boolean; port: number; accessMode: 'read-only' | 'read-write' | 'full'; allowExport: boolean }) => Promise<boolean>
+      start: () => Promise<boolean>
+      stop: () => Promise<boolean>
     }
     toolApi: {
       openDevtools: () => Promise<void>

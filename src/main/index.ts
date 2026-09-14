@@ -15,6 +15,8 @@ import McpHttpServer from './mcp/McpHttpServer'
 import SuperConnectXMcpFacade from './mcp/SuperConnectXMcpFacade'
 import { McpTemplateRegistry } from './mcp/McpTemplateRegistry'
 import { join } from 'node:path'
+import SettingsStorage from './storage/SettingsStorage'
+import { DEFAULT_MCP_PERMISSION_POLICY, type McpPermissionPolicy } from '../shared/mcp/McpTypes'
 
 // 禁用 Chromium 自动网络请求，避免公司内网代理环境触发安全告警（同步上游 83a8ac6）
 app.commandLine.appendSwitch('disable-component-update')         // 禁用组件更新
@@ -30,10 +32,53 @@ const instanceIdx = getInstanceIndex()
 const protocolLogger = new ProtocolLogger()
 const windows = { mainWindow: undefined as BrowserWindow | undefined }
 let mcpHttpServer: McpHttpServer | null = null
+const mcpTemplateRegistry = new McpTemplateRegistry()
+const settingsStorage = new SettingsStorage()
+const mcpFacade = new SuperConnectXMcpFacade(mcpTemplateRegistry)
+const getMcpPolicy = (): McpPermissionPolicy => {
+  const settings = settingsStorage.getSettings()
+  const mode = settings.mcpAccessMode ?? 'read-only'
+  return {
+    ...DEFAULT_MCP_PERMISSION_POLICY,
+    write: mode === 'read-write' || mode === 'full',
+    destructive: mode === 'full',
+    export: Boolean(settings.mcpAllowExport) && mode === 'full'
+  }
+}
+const startMcpRuntime = async (): Promise<boolean> => {
+  const settings = settingsStorage.getSettings()
+  if (!settings.mcpEnabled) return false
+  if (!mcpHttpServer) mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy())
+  if (mcpHttpServer.status.enabled) return true
+  await mcpHttpServer.start(Number(settings.mcpPort ?? 32180))
+  logger.info(`[MCP] enabled at ${mcpHttpServer.endpoint}`)
+  return true
+}
+const stopMcpRuntime = async (): Promise<boolean> => {
+  if (!mcpHttpServer) return true
+  await mcpHttpServer.close()
+  return true
+}
 ipcMain.handle('mcp:get-status', () => mcpHttpServer?.status ?? { enabled: false, port: null, endpoint: null })
 ipcMain.handle('mcp:get-client-config', () => mcpHttpServer?.getClientConfig() ?? { endpoint: null, token: null })
 ipcMain.handle('mcp:rotate-token', () => mcpHttpServer?.rotateToken() ?? null)
-const mcpTemplateRegistry = new McpTemplateRegistry()
+ipcMain.handle('mcp:get-settings', () => { const s = settingsStorage.getSettings(); return { enabled: Boolean(s.mcpEnabled), port: Number(s.mcpPort ?? 32180), accessMode: s.mcpAccessMode ?? 'read-only', allowExport: Boolean(s.mcpAllowExport) } })
+ipcMain.handle('mcp:save-settings', async (_, input) => {
+  const value = input && typeof input === 'object' ? input as Record<string, unknown> : {}
+  const port = Number(value.port)
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('端口必须在 1024-65535 之间')
+  const accessMode = value.accessMode === 'read-write' || value.accessMode === 'full' ? value.accessMode : 'read-only'
+  const enabled = value.enabled === true
+  settingsStorage.saveSettings({ mcpEnabled: enabled, mcpPort: port, mcpAccessMode: accessMode, mcpAllowExport: value.allowExport === true })
+  const wasRunning = Boolean(mcpHttpServer?.status.enabled)
+  const oldPort = mcpHttpServer?.status.port
+  if (mcpHttpServer) mcpHttpServer.setPermissionPolicy(getMcpPolicy())
+  if (wasRunning && oldPort !== port) await stopMcpRuntime()
+  if (enabled) await startMcpRuntime(); else await stopMcpRuntime()
+  return true
+})
+ipcMain.handle('mcp:start', async () => { settingsStorage.saveSettings({ mcpEnabled: true }); return startMcpRuntime() })
+ipcMain.handle('mcp:stop', async () => { settingsStorage.saveSettings({ mcpEnabled: false }); return stopMcpRuntime() })
 
 logger.info(`======== start superconnect-x (instance ${instanceIdx}) ========`)
 logger.info(JSON.stringify(IpcMain.getInstance().getVersionInfo()))
@@ -71,12 +116,12 @@ app.whenReady().then(async () => {
   }
 })
 
-// MCP 默认关闭；仅在显式传入 --mcp-port=PORT 或 SCX_MCP_PORT 时启用。
+// MCP 默认关闭；兼容旧的启动参数，同时支持设置页启停。
 const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='))?.split('=')[1]
 const mcpPortValue = mcpPortArgument ?? process.env.SCX_MCP_PORT
 if (mcpPortValue) {
   const mcpPort = Number.parseInt(mcpPortValue, 10)
-  mcpHttpServer = new McpHttpServer(new SuperConnectXMcpFacade(mcpTemplateRegistry), process.env.SCX_MCP_TOKEN)
+  mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy())
   app.whenReady().then(async () => {
     try {
       const info = await mcpHttpServer!.start(mcpPort)
@@ -87,6 +132,7 @@ if (mcpPortValue) {
     }
   })
 }
+app.whenReady().then(() => { if (!mcpPortValue) void startMcpRuntime().catch((error) => logger.error(`[MCP] failed to start: ${error instanceof Error ? error.message : error}`)) })
 
 // 初始化自动更新（窗口创建后）；开发环境不联网检查，生产包按产品意图自动检查。
 if (app.isPackaged) {

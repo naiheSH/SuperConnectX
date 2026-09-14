@@ -189,5 +189,9 @@ contextBridge.exposeInMainWorld('virtualPortApi', {
 contextBridge.exposeInMainWorld('mcpApi', {
   getStatus: () => ipcRenderer.invoke('mcp:get-status'),
   getClientConfig: () => ipcRenderer.invoke('mcp:get-client-config'),
-  rotateToken: () => ipcRenderer.invoke('mcp:rotate-token')
+  rotateToken: () => ipcRenderer.invoke('mcp:rotate-token'),
+  getSettings: () => ipcRenderer.invoke('mcp:get-settings'),
+  saveSettings: (settings: unknown) => ipcRenderer.invoke('mcp:save-settings', settings),
+  start: () => ipcRenderer.invoke('mcp:start'),
+  stop: () => ipcRenderer.invoke('mcp:stop')
 })

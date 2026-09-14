@@ -1,7 +1,8 @@
 import http, { type IncomingMessage, type ServerResponse } from 'node:http'
 import crypto from 'node:crypto'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import type { McpFacade } from '../../shared/mcp/McpTypes'
+import type { McpFacade, McpPermissionPolicy } from '../../shared/mcp/McpTypes'
+import { DEFAULT_MCP_PERMISSION_POLICY } from '../../shared/mcp/McpTypes'
 import { createMcpServer } from './McpServer'
 
 const MAX_BODY_BYTES = 1_048_576
@@ -20,10 +21,19 @@ export default class McpHttpServer {
   private readonly sessions = new Map<string, McpSession>()
   private server: http.Server | null = null
   private port: number | null = null
+  private policy: McpPermissionPolicy
 
-  constructor(facade: McpFacade, token = crypto.randomBytes(32).toString('hex')) {
+  constructor(facade: McpFacade, token = crypto.randomBytes(32).toString('hex'), policy: McpPermissionPolicy = DEFAULT_MCP_PERMISSION_POLICY) {
     this.facade = facade
     this.token = Buffer.from(token, 'utf8')
+    this.policy = { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy }
+  }
+
+  get permissionPolicy(): McpPermissionPolicy { return { ...this.policy } }
+
+  setPermissionPolicy(policy: McpPermissionPolicy): void {
+    this.policy = { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy }
+    for (const session of this.sessions.values()) void session.close()
   }
 
   get endpoint(): string | null {
@@ -131,7 +141,7 @@ export default class McpHttpServer {
           return
         }
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID() })
-        const server = createMcpServer(this.facade)
+        const server = createMcpServer(this.facade, this.policy)
         const close = async () => {
           if (transport.sessionId) this.sessions.delete(transport.sessionId)
           await server.close()

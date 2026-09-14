@@ -316,7 +316,11 @@
         <div v-else-if="activeCategory === 'mcp'" class="settings-group">
           <div class="group-section">
             <div class="group-title">MCP</div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">服务状态</span><span class="label-desc">MCP 默认关闭，需要通过启动参数启用。</span></div><el-tag :type="mcpStatus.enabled ? 'success' : 'info'" size="small">{{ mcpStatus.enabled ? '运行中' : '未启用' }}</el-tag></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">启用 MCP</span><span class="label-desc">仅监听本机 127.0.0.1，默认关闭。</span></div><el-switch v-model="mcpSettings.enabled" @change="saveMcpSettings" /></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">监听端口</span><span class="label-desc">范围 1024-65535，默认 32180。</span></div><el-input-number v-model="mcpSettings.port" :min="1024" :max="65535" size="small" @change="saveMcpSettings" /></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">操作权限</span><span class="label-desc">控制 AI 是否可以打开连接、发送命令或停止会话。</span></div><el-radio-group v-model="mcpSettings.accessMode" @change="saveMcpSettings"><el-radio label="read-only">只读</el-radio><el-radio label="read-write">可操作</el-radio><el-radio label="full">完整操作</el-radio></el-radio-group></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">文件上传/导出</span><span class="label-desc">只有“完整操作”模式下才会生效。</span></div><el-switch v-model="mcpSettings.allowExport" :disabled="mcpSettings.accessMode !== 'full'" @change="saveMcpSettings" /></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">服务状态</span></div><el-tag :type="mcpStatus.enabled ? 'success' : 'info'" size="small">{{ mcpStatus.enabled ? '运行中' : '未启用' }}</el-tag></div>
             <div class="setting-item"><div class="setting-label"><span class="label-text">Endpoint</span></div><el-input :model-value="mcpConfig.endpoint || '未启用'" readonly size="small" style="width:320px" /></div>
             <div class="setting-item" v-if="mcpConfig.token"><div class="setting-label"><span class="label-text">Bearer Token</span><span class="label-desc">仅本机显示，不写入日志。</span></div><div style="display:flex;gap:8px;width:320px"><el-input :model-value="mcpConfig.token" readonly size="small" show-password /><el-button size="small" @click="copyMcpConfig">复制</el-button></div></div>
             <div class="setting-item"><div class="setting-label"><span class="label-text">Token 轮换</span><span class="label-desc">轮换会使现有 MCP HTTP 会话失效。</span></div><el-button size="small" type="warning" :disabled="!mcpStatus.enabled" @click="rotateMcpToken">轮换 Token</el-button></div>
@@ -510,10 +514,14 @@ const defaultSettings = ref<Record<string, any>>({})
 const settings = ref<Record<string, any>>({})
 const mcpStatus = ref({ enabled: false, port: null as number | null, endpoint: null as string | null })
 const mcpConfig = ref({ endpoint: null as string | null, token: null as string | null })
+const mcpSettings = ref({ enabled: false, port: 32180, accessMode: 'read-only' as 'read-only' | 'read-write' | 'full', allowExport: false })
 let isLoading = true
 
 const loadMcpConfig = async () => {
-  try { mcpStatus.value = await window.mcpApi.getStatus(); mcpConfig.value = await window.mcpApi.getClientConfig() } catch { /* MCP may be unavailable in tests */ }
+  try { mcpSettings.value = await window.mcpApi.getSettings(); mcpStatus.value = await window.mcpApi.getStatus(); mcpConfig.value = await window.mcpApi.getClientConfig() } catch { /* MCP may be unavailable in tests */ }
+}
+const saveMcpSettings = async () => {
+  try { await window.mcpApi.saveSettings(mcpSettings.value); await loadMcpConfig(); ElMessage.success('MCP 设置已保存') } catch (error) { ElMessage.error(error instanceof Error ? error.message : 'MCP 设置保存失败') }
 }
 const copyMcpConfig = async () => {
   if (!mcpConfig.value.endpoint || !mcpConfig.value.token) return

@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { McpFacade } from '../../shared/mcp/McpTypes'
+import type { McpFacade, McpPermission, McpPermissionPolicy } from '../../shared/mcp/McpTypes'
+import { DEFAULT_MCP_PERMISSION_POLICY } from '../../shared/mcp/McpTypes'
 import { z } from 'zod'
 
 function textResult(data: unknown) {
@@ -8,7 +9,28 @@ function textResult(data: unknown) {
   }
 }
 
-export function createMcpServer(facade: McpFacade): McpServer {
+const WRITE_METHODS = new Set(['sendSession', 'sendSessionAndWait', 'runTemplateCommand', 'startSessionPort', 'startSavedSession', 'acquireWriteLease', 'releaseWriteLease'])
+const DESTRUCTIVE_METHODS = new Set(['stopSession'])
+const EXPORT_METHODS = new Set(['uploadSessionFile'])
+
+function guardedFacade(facade: McpFacade, policy: McpPermissionPolicy): McpFacade {
+  return new Proxy(facade, {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver)
+      if (typeof value !== 'function') return value
+      const name = String(property)
+      let permission: McpPermission | undefined
+      if (WRITE_METHODS.has(name)) permission = 'write'
+      else if (DESTRUCTIVE_METHODS.has(name)) permission = 'destructive'
+      else if (EXPORT_METHODS.has(name)) permission = 'export'
+      if (!permission || policy[permission]) return value.bind(target)
+      return () => { throw new Error(`MCP permission denied: ${permission}`) }
+    }
+  }) as McpFacade
+}
+
+export function createMcpServer(facade: McpFacade, policy: McpPermissionPolicy = DEFAULT_MCP_PERMISSION_POLICY): McpServer {
+  facade = guardedFacade(facade, { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy })
   const server = new McpServer({
     name: 'superconnectx-ai',
     version: '2.0.0'
