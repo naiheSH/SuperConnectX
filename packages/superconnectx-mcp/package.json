@@ -7,7 +7,8 @@
   "types": "dist/index.d.ts",
   "bin": { "scx-mcp": "dist/cli.js" },
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./cli": { "types": "./dist/cli.d.ts", "import": "./dist/cli.js" }
   },
   "files": ["dist", "README.md"],
   "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc -p tsconfig.json --noEmit", "test": "node --test", "pack:check": "npm pack --dry-run" },
