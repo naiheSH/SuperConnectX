@@ -3,6 +3,9 @@ import { pathToFileURL } from 'node:url'
 import { startMcpStdio, McpLoopbackServer } from './transports.js'
 import type { McpFacade, McpPermissionPolicy } from './types.js'
 import { NativeMcpFacade } from './native-facade.js'
+import { TemplateRegistry } from './templates.js'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 
 function usage(): never {
   console.error('Usage: scx-mcp [--facade ./facade.mjs] [--stdio | --http] [--port 32180] [--token TOKEN] [--mode read-only|read-write|full] [--allow-export]')
@@ -14,8 +17,11 @@ const facadePath = value('--facade') ?? process.env.SCX_MCP_FACADE_MODULE
 const mode = value('--mode') ?? 'read-only'
 if (!['read-only', 'read-write', 'full'].includes(mode)) usage()
 const policy: McpPermissionPolicy = { read: true, write: mode !== 'read-only', destructive: mode === 'full', export: mode === 'full' && args.includes('--allow-export') }
+const registry = new TemplateRegistry()
+const templateDirectory = value('--templates') ?? process.env.SCX_MCP_TEMPLATES ?? join(homedir(), '.superconnectx', 'templates')
+await registry.loadDirectory(templateDirectory)
 const facade = facadePath ? ((() => { return import(pathToFileURL(facadePath!).href) })()) : null
-const resolvedFacade = facade ? ((await facade).default ?? (await facade).facade) as McpFacade : new NativeMcpFacade()
+const resolvedFacade = facade ? ((await facade).default ?? (await facade).facade) as McpFacade : new NativeMcpFacade(registry)
 if (!resolvedFacade || typeof resolvedFacade.listSerialPorts !== 'function') throw new Error('Facade module must export default or facade implementing McpFacade')
 if (args.includes('--http')) {
   const server = new McpLoopbackServer(resolvedFacade, value('--token') ?? process.env.SCX_MCP_TOKEN, policy)

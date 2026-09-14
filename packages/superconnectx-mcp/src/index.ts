@@ -1,3 +1,5 @@
 export * from './types.js'
 export * from './server.js'
 export * from './transports.js'
+export * from './templates.js'
+export * from './native-facade.js'

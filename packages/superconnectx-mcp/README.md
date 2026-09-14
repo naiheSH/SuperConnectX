@@ -42,6 +42,14 @@ scx-mcp --stdio
 scx-mcp --http --port 32180 --token CHANGE_ME --mode full --allow-export
 ```
 
+用户模板导入：把符合模板格式的 `.json` 文件放入 `~/.superconnectx/templates`，或启动时指定目录：
+
+```bash
+scx-mcp --templates ./my-templates --stdio
+```
+
+同一 `id` 只接受更高版本，非法文件会被跳过并记录到启动诊断中。
+
 ## 安全约束
 
 - HTTP 只应绑定 `127.0.0.1`，并使用 Bearer Token。

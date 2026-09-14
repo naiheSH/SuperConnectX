@@ -1,10 +1,14 @@
 import { SerialPort } from 'serialport'
 import type { McpFacade, SerialPortInfo, SessionSummary, LogTailResult } from './types.js'
+import type { TemplateRegistry } from './templates.js'
 
 type NativeSession = { port: SerialPort; lines: string[]; state: SessionSummary['state']; info: SessionSummary }
 
 export class NativeMcpFacade implements McpFacade {
   private readonly sessions = new Map<string, NativeSession>()
+  constructor(private readonly templates?: TemplateRegistry) {}
+  async listTemplates() { return this.templates?.list() ?? [] }
+  async getTemplate(id: string) { return this.templates?.get(id) }
   async listSerialPorts(): Promise<SerialPortInfo[]> {
     return (await SerialPort.list()).map((port) => ({ path: port.path, manufacturer: port.manufacturer, serialNumber: port.serialNumber, vendorId: port.vendorId, productId: port.productId }))
   }
