@@ -12,11 +12,12 @@ export async function startMcpStdio(facade: McpFacade): Promise<() => Promise<vo
 export class McpLoopbackServer {
   private server: http.Server | null = null
   private port: number | null = null
-  private readonly token: Buffer
+  private token: Buffer
   private readonly sessions = new Map<string, { transport: StreamableHTTPServerTransport; close: () => Promise<void> }>()
   constructor(private readonly facade: McpFacade, token = crypto.randomBytes(32).toString('hex')) { this.token = Buffer.from(token) }
   get endpoint() { return this.port == null ? null : `http://127.0.0.1:${this.port}/mcp` }
   getClientConfig() { return { endpoint: this.endpoint, token: this.token.toString() } }
+  rotateToken(token = crypto.randomBytes(32).toString('hex')) { this.token = Buffer.from(token); for (const session of this.sessions.values()) void session.close(); this.sessions.clear(); return token }
   async start(port: number) {
     if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid MCP port')
     if (this.server) throw new Error('MCP server already running')

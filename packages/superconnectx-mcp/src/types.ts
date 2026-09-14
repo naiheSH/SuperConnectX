@@ -6,12 +6,21 @@ export interface McpFacade {
   listSerialPorts(): Promise<SerialPortInfo[]>
   listSessions(): Promise<SessionSummary[]>
   readLogTail(sessionId: string, options?: { maxBytes?: number; maxLines?: number }): Promise<LogTailResult>
+  readSession?(sessionId: string, options?: { maxLines?: number }): Promise<unknown>
   listTemplates?(): Promise<Array<Pick<DeviceTemplate, 'id' | 'version' | 'name' | 'description'>>>
   getTemplate?(id: string): Promise<DeviceTemplate | undefined>
   searchLogs?(sessionId: string, query: string, options?: { maxBytes?: number; maxMatches?: number }): Promise<unknown>
   analyzeLog?(sessionId: string, templateId: string, options?: { maxBytes?: number }): Promise<unknown>
+  summarizeLog?(sessionId: string, options?: { maxBytes?: number }): Promise<unknown>
+  findLogAnomalies?(sessionId: string, options?: { maxBytes?: number }): Promise<unknown>
+  compareLogs?(leftSessionId: string, rightSessionId: string, options?: { maxBytes?: number }): Promise<unknown>
+  startSessionPort?(port: string, baudRate?: number, ownerId?: string): Promise<unknown>
+  startSavedSession?(connectionId: number, ownerId?: string): Promise<unknown>
   sendSession?(sessionId: string, command: string): Promise<unknown>
+  sendSessionAndWait?(sessionId: string, command: string, wait: { type: 'literal' | 'regex'; pattern: string; timeoutMs: number }): Promise<unknown>
+  runTemplateCommand?(sessionId: string, templateId: string, commandId: string, ownerId: string): Promise<unknown>
   stopSession?(sessionId: string): Promise<unknown>
+  uploadSessionFile?(sessionId: string, localFilePath: string, remoteFileName: string, ownerId: string): Promise<unknown>
   acquireWriteLease?(sessionId: string, ownerId: string, ttlMs?: number): Promise<unknown>
   releaseWriteLease?(sessionId: string, ownerId: string): Promise<void>
   assertWriteLease?(sessionId: string, ownerId: string): void

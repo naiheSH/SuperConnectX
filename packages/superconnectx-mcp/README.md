@@ -42,3 +42,10 @@ await server.start(32180)
 ## 工具命名说明
 
 以下名称是协议 API，不翻译：`serial_list_ports`、`session_list`、`log_tail`、`template_list`、`session_send`。用户界面、Skill 和诊断报告使用中文解释这些工具的用途。
+
+## 维护边界
+
+- `src/server.ts` 只维护 MCP 工具契约和输入校验。
+- `src/transports.ts` 只维护 STDIO/HTTP 生命周期、安全和 session。
+- 设备连接、日志文件、模板加载和权限由宿主实现 `McpFacade`。
+- 修改工具契约时，同时更新 `src/types.ts`、Skill 的 `references/tools.md` 和宿主适配器测试。
