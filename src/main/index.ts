@@ -11,6 +11,8 @@ import IpcDataCheck from './ipc/IpcDataCheck'
 import AppUpdater from './updater/AppUpdater'
 import logger from './ipc/IpcAppLogger'
 import { migrateDataIfNeeded, initAppPaths, cleanupChromiumClutter, getInstanceIndex } from './utils/AppDir'
+import McpHttpServer from './mcp/McpHttpServer'
+import SuperConnectXMcpFacade from './mcp/SuperConnectXMcpFacade'
 
 // 禁用 Chromium 自动网络请求，避免公司内网代理环境触发安全告警（同步上游 83a8ac6）
 app.commandLine.appendSwitch('disable-component-update')         // 禁用组件更新
@@ -25,6 +27,7 @@ const instanceIdx = getInstanceIndex()
 
 const protocolLogger = new ProtocolLogger()
 const windows = { mainWindow: undefined as BrowserWindow | undefined }
+let mcpHttpServer: McpHttpServer | null = null
 
 logger.info(`======== start superconnect-x (instance ${instanceIdx}) ========`)
 logger.info(JSON.stringify(IpcMain.getInstance().getVersionInfo()))
@@ -40,6 +43,23 @@ IpcSerialPort.getInstance().init(protocolLogger, windows)
 IpcVirtualPort.getInstance().init(protocolLogger, windows)
 IpcMain.getInstance().init(protocolLogger, windows)
 IpcDataCheck.getInstance().init()
+
+// MCP 默认关闭；仅在显式传入 --mcp-port=PORT 或 SCX_MCP_PORT 时启用。
+const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='))?.split('=')[1]
+const mcpPortValue = mcpPortArgument ?? process.env.SCX_MCP_PORT
+if (mcpPortValue) {
+  const mcpPort = Number.parseInt(mcpPortValue, 10)
+  mcpHttpServer = new McpHttpServer(new SuperConnectXMcpFacade(), process.env.SCX_MCP_TOKEN)
+  app.whenReady().then(async () => {
+    try {
+      const info = await mcpHttpServer!.start(mcpPort)
+      logger.info(`[MCP] enabled at ${info.endpoint}`)
+    } catch (error) {
+      logger.error(`[MCP] failed to start: ${error instanceof Error ? error.message : error}`)
+      mcpHttpServer = null
+    }
+  })
+}
 
 // 初始化自动更新（窗口创建后）；开发环境不联网检查，生产包按产品意图自动检查。
 if (app.isPackaged) {
@@ -58,6 +78,10 @@ if (app.isPackaged) {
 // 清理 Chromium 在 userData 根目录下残留的杂散目录
 app.whenReady().then(() => {
   cleanupChromiumClutter(logger)
+})
+
+app.on('before-quit', () => {
+  void mcpHttpServer?.close()
 })
 
 logger.info(`======== start superconnect-x ok (instance ${instanceIdx}) ========`)
