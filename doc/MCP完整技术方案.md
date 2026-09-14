@@ -452,26 +452,26 @@ CLI 和 MCP 必须调用同一个 Application Facade，不能各自复制连接�
 ### 阶段二：MCP MVP
 
 - 引入 MCP SDK。
-- 实现 STDIO transport。
-- 完成 `serial_list_ports`、`session_list`、`session_read`、`log_tail`、`session_send`。
-- 默认只读，写操作显式开启。
+- 实现 STDIO 和安全的 loopback Streamable HTTP transport。
+- 完成 `serial_list_ports`、`session_list`、`session_read`、`log_tail`、`log_search`、`session_send`。
+- 默认只读；写入、停止、上传必须持有短时写租约。
 
 ### 阶段三：模板和分析
 
-- 实现模板 schema、加载、校验和版本管理。
-- 实现 `session_run_template_command`。
-- 实现 `log_analyze`、`log_search`、`log_summarize`。
-- 提供第一个 GW01 或通用串口模板。
+- 实现模板 schema、加载、校验和版本管理，支持内置、用户和项目模板目录。
+- 实现 `template_list`、`template_get`、`session_run_template_command`。
+- 实现 `log_analyze`、`log_search`、`log_summarize`、`log_find_anomalies`、`log_compare`。
+- 提供声明式设备模板扩展点。
 
 ### 阶段四：桌面集成
 
-- Electron 设置页管理 MCP 启停、Token、权限和模板。
-- 按需启用 Streamable HTTP。
-- 提供配置复制和连接自检。
+- Electron 设置页展示 MCP 状态、Endpoint、Token，支持配置复制和 Token 轮换。
+- 按需启用 Streamable HTTP，具备 session 空闲过期和连接数上限。
+- 支持 AI 创建串口/已保存连接、会话停止及本地配置自检。
 
 ### 阶段五：CLI、Skill 和发布
 
-- 发布 CLI/SDK。
+- 发布 CLI/SDK（MCP 核心已保持可复用）。
 - 发布 SuperConnectX MCP Skill 模板。
 - 完成 Windows、Linux、macOS 打包测试。
 

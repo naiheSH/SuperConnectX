@@ -109,6 +109,11 @@ declare global {
       toggleFullscreenWindow: () => Promise<void>
       onMaximizedChanged: (callback: (maximized: boolean) => void) => () => void
     }
+    mcpApi: {
+      getStatus: () => Promise<{ enabled: boolean; port: number | null; endpoint: string | null }>
+      getClientConfig: () => Promise<{ endpoint: string | null; token: string | null }>
+      rotateToken: () => Promise<string | null>
+    }
     toolApi: {
       openDevtools: () => Promise<void>
       getAppResource: () => Promise<any>

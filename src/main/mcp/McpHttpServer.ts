@@ -5,15 +5,18 @@ import type { McpFacade } from '../../shared/mcp/McpTypes'
 import { createMcpServer } from './McpServer'
 
 const MAX_BODY_BYTES = 1_048_576
+const MAX_SESSIONS = 16
+const SESSION_IDLE_MS = 30 * 60_000
 
 interface McpSession {
   transport: StreamableHTTPServerTransport
   close: () => Promise<void>
+  idleTimer: NodeJS.Timeout
 }
 
 export default class McpHttpServer {
   private readonly facade: McpFacade
-  private readonly token: Buffer
+  private token: Buffer
   private readonly sessions = new Map<string, McpSession>()
   private server: http.Server | null = null
   private port: number | null = null
@@ -34,6 +37,12 @@ export default class McpHttpServer {
   /** Returns local client configuration for an explicit user-initiated copy action. */
   getClientConfig(): { endpoint: string | null; token: string } {
     return { endpoint: this.endpoint, token: this.token.toString('utf8') }
+  }
+
+  rotateToken(token = crypto.randomBytes(32).toString('hex')): string {
+    this.token = Buffer.from(token, 'utf8')
+    for (const session of this.sessions.values()) void session.close()
+    return token
   }
 
   async start(port: number): Promise<{ port: number; endpoint: string }> {
@@ -99,17 +108,28 @@ export default class McpHttpServer {
 
       const sessionId = this.header(req, 'mcp-session-id')
       if (req.method === 'POST') {
-        const body = await this.readJsonBody(req)
+        let body: unknown
+        try {
+          body = await this.readJsonBody(req)
+        } catch (error) {
+          this.sendError(res, 400, error instanceof Error ? error.message : 'Invalid JSON body')
+          return
+        }
         if (sessionId) {
           const existing = this.sessions.get(sessionId)
           if (!existing) {
             this.sendError(res, 404, 'MCP session not found')
             return
           }
+          this.refreshSession(sessionId, existing)
           await existing.transport.handleRequest(req, res, body)
           return
         }
 
+        if (this.sessions.size >= MAX_SESSIONS) {
+          this.sendError(res, 429, 'Too many MCP sessions')
+          return
+        }
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID() })
         const server = createMcpServer(this.facade)
         const close = async () => {
@@ -119,7 +139,10 @@ export default class McpHttpServer {
         transport.onclose = () => { void close() }
         await server.connect(transport)
         await transport.handleRequest(req, res, body)
-        if (transport.sessionId) this.sessions.set(transport.sessionId, { transport, close })
+        if (transport.sessionId) {
+          const session = { transport, close, idleTimer: setTimeout(() => { void close() }, SESSION_IDLE_MS) }
+          this.sessions.set(transport.sessionId, session)
+        }
         return
       }
 
@@ -132,11 +155,19 @@ export default class McpHttpServer {
         this.sendError(res, 404, 'MCP session not found')
         return
       }
+      this.refreshSession(sessionId, existing)
       await existing.transport.handleRequest(req, res)
     } catch (error) {
       if (!res.headersSent) this.sendError(res, 500, error instanceof Error ? error.message : 'Internal error')
       else res.end()
     }
+  }
+
+  private refreshSession(sessionId: string, session: McpSession): void {
+    clearTimeout(session.idleTimer)
+    session.idleTimer = setTimeout(() => {
+      if (this.sessions.get(sessionId) === session) void session.close()
+    }, SESSION_IDLE_MS)
   }
 
   private isAuthorized(req: IncomingMessage): boolean {

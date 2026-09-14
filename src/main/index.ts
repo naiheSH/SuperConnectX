@@ -32,6 +32,7 @@ const windows = { mainWindow: undefined as BrowserWindow | undefined }
 let mcpHttpServer: McpHttpServer | null = null
 ipcMain.handle('mcp:get-status', () => mcpHttpServer?.status ?? { enabled: false, port: null, endpoint: null })
 ipcMain.handle('mcp:get-client-config', () => mcpHttpServer?.getClientConfig() ?? { endpoint: null, token: null })
+ipcMain.handle('mcp:rotate-token', () => mcpHttpServer?.rotateToken() ?? null)
 const mcpTemplateRegistry = new McpTemplateRegistry()
 
 logger.info(`======== start superconnect-x (instance ${instanceIdx}) ========`)
@@ -55,7 +56,8 @@ IpcDataCheck.getInstance().init()
 app.whenReady().then(async () => {
   const templateDirectories = [
     join(app.getAppPath(), 'resources', 'mcp', 'templates'),
-    join(app.getPath('userData'), 'mcp', 'templates')
+    join(app.getPath('userData'), 'mcp', 'templates'),
+    join(process.cwd(), '.superconnectx', 'templates')
   ]
   for (const directory of templateDirectories) {
     try {
@@ -74,7 +76,7 @@ const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--m
 const mcpPortValue = mcpPortArgument ?? process.env.SCX_MCP_PORT
 if (mcpPortValue) {
   const mcpPort = Number.parseInt(mcpPortValue, 10)
-  mcpHttpServer = new McpHttpServer(new SuperConnectXMcpFacade(), process.env.SCX_MCP_TOKEN)
+  mcpHttpServer = new McpHttpServer(new SuperConnectXMcpFacade(mcpTemplateRegistry), process.env.SCX_MCP_TOKEN)
   app.whenReady().then(async () => {
     try {
       const info = await mcpHttpServer!.start(mcpPort)

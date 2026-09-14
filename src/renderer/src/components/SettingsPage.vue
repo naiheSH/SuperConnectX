@@ -312,6 +312,18 @@
           </div>
         </div>
 
+        <!-- MCP -->
+        <div v-else-if="activeCategory === 'mcp'" class="settings-group">
+          <div class="group-section">
+            <div class="group-title">MCP</div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">服务状态</span><span class="label-desc">MCP 默认关闭，需要通过启动参数启用。</span></div><el-tag :type="mcpStatus.enabled ? 'success' : 'info'" size="small">{{ mcpStatus.enabled ? '运行中' : '未启用' }}</el-tag></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">Endpoint</span></div><el-input :model-value="mcpConfig.endpoint || '未启用'" readonly size="small" style="width:320px" /></div>
+            <div class="setting-item" v-if="mcpConfig.token"><div class="setting-label"><span class="label-text">Bearer Token</span><span class="label-desc">仅本机显示，不写入日志。</span></div><div style="display:flex;gap:8px;width:320px"><el-input :model-value="mcpConfig.token" readonly size="small" show-password /><el-button size="small" @click="copyMcpConfig">复制</el-button></div></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">Token 轮换</span><span class="label-desc">轮换会使现有 MCP HTTP 会话失效。</span></div><el-button size="small" type="warning" :disabled="!mcpStatus.enabled" @click="rotateMcpToken">轮换 Token</el-button></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">配置自检</span></div><el-button size="small" @click="loadMcpConfig">刷新</el-button></div>
+          </div>
+        </div>
+
         <!-- 语法高亮 -->
         <div v-else-if="activeCategory === 'syntax'" class="settings-group syntax-embed-group">
           <SyntaxHighlightPage />
@@ -489,13 +501,28 @@ settingsRegistry.register({ key: 'log', getLabel: () => t('settingsNav.log'), or
 settingsRegistry.register({ key: 'syntax', getLabel: () => t('settingsNav.syntax'), order: 30 })
 settingsRegistry.register({ key: 'history', getLabel: () => t('settingsNav.history'), order: 40 })
 settingsRegistry.register({ key: 'backup', getLabel: () => t('settingsNav.backup'), order: 50 })
+settingsRegistry.register({ key: 'mcp', getLabel: () => 'MCP', order: 60 })
 const categories = computed(() => settingsRegistry.getCategories())
 
 // 默认配置从后端获取
 const defaultSettings = ref<Record<string, any>>({})
 
 const settings = ref<Record<string, any>>({})
+const mcpStatus = ref({ enabled: false, port: null as number | null, endpoint: null as string | null })
+const mcpConfig = ref({ endpoint: null as string | null, token: null as string | null })
 let isLoading = true
+
+const loadMcpConfig = async () => {
+  try { mcpStatus.value = await window.mcpApi.getStatus(); mcpConfig.value = await window.mcpApi.getClientConfig() } catch { /* MCP may be unavailable in tests */ }
+}
+const copyMcpConfig = async () => {
+  if (!mcpConfig.value.endpoint || !mcpConfig.value.token) return
+  await navigator.clipboard.writeText(JSON.stringify({ endpoint: mcpConfig.value.endpoint, token: mcpConfig.value.token }, null, 2))
+  ElMessage.success('MCP 配置已复制')
+}
+const rotateMcpToken = async () => {
+  try { await ElMessageBox.confirm('轮换后现有 MCP 会话将失效，是否继续？', '轮换 Token', { type: 'warning' }); const token = await window.mcpApi.rotateToken(); if (token) { mcpConfig.value.token = token; ElMessage.success('Token 已轮换') } } catch { /* cancelled */ }
+}
 
 const loadDefaultSettings = async () => {
   try {
@@ -787,6 +814,7 @@ onMounted(async () => {
   await loadDefaultSettings()
   await loadSettings()
   await loadActiveCategory()
+  await loadMcpConfig()
 })
 
 onUnmounted(() => {

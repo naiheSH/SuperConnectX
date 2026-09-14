@@ -99,6 +99,7 @@ interface WindowApi {
 interface McpApi {
   getStatus: () => Promise<{ enabled: boolean; port: number | null; endpoint: string | null }>
   getClientConfig: () => Promise<{ endpoint: string | null; token: string | null }>
+  rotateToken: () => Promise<string | null>
 }
 
 declare global {
