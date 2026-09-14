@@ -13,6 +13,8 @@ import logger from './ipc/IpcAppLogger'
 import { migrateDataIfNeeded, initAppPaths, cleanupChromiumClutter, getInstanceIndex } from './utils/AppDir'
 import McpHttpServer from './mcp/McpHttpServer'
 import SuperConnectXMcpFacade from './mcp/SuperConnectXMcpFacade'
+import { McpTemplateRegistry } from './mcp/McpTemplateRegistry'
+import { join } from 'node:path'
 
 // 禁用 Chromium 自动网络请求，避免公司内网代理环境触发安全告警（同步上游 83a8ac6）
 app.commandLine.appendSwitch('disable-component-update')         // 禁用组件更新
@@ -28,6 +30,7 @@ const instanceIdx = getInstanceIndex()
 const protocolLogger = new ProtocolLogger()
 const windows = { mainWindow: undefined as BrowserWindow | undefined }
 let mcpHttpServer: McpHttpServer | null = null
+const mcpTemplateRegistry = new McpTemplateRegistry()
 
 logger.info(`======== start superconnect-x (instance ${instanceIdx}) ========`)
 logger.info(JSON.stringify(IpcMain.getInstance().getVersionInfo()))
@@ -43,6 +46,26 @@ IpcSerialPort.getInstance().init(protocolLogger, windows)
 IpcVirtualPort.getInstance().init(protocolLogger, windows)
 IpcMain.getInstance().init(protocolLogger, windows)
 IpcDataCheck.getInstance().init()
+
+// Developer templates are loaded from the packaged resources and the user's
+// writable profile. Invalid files are isolated and reported without blocking
+// application startup; later MCP tools can consume the registry.
+app.whenReady().then(async () => {
+  const templateDirectories = [
+    join(app.getAppPath(), 'resources', 'mcp', 'templates'),
+    join(app.getPath('userData'), 'mcp', 'templates')
+  ]
+  for (const directory of templateDirectories) {
+    try {
+      const result = await mcpTemplateRegistry.loadDirectory(directory)
+      if (result.loaded.length || result.skipped.length) {
+        logger.info(`[MCP] templates loaded=${result.loaded.length} skipped=${result.skipped.length} dir=${directory}`)
+      }
+    } catch (error) {
+      logger.warn(`[MCP] template directory unavailable: ${directory} (${error instanceof Error ? error.message : error})`)
+    }
+  }
+})
 
 // MCP 默认关闭；仅在显式传入 --mcp-port=PORT 或 SCX_MCP_PORT 时启用。
 const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='))?.split('=')[1]

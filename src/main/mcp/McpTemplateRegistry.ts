@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { readdir, readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import type { McpDeviceTemplate } from '../../shared/mcp/McpTemplateTypes'
 
 const commandSchema = z.object({
@@ -53,6 +55,37 @@ export class McpTemplateRegistry {
   get(id: string): McpDeviceTemplate | undefined {
     return this.templates.get(id)
   }
+
+  async loadDirectory(directory: string): Promise<TemplateLoadResult> {
+    const result: TemplateLoadResult = { loaded: [], skipped: [] }
+    let entries
+    try {
+      entries = await readdir(directory, { withFileTypes: true })
+    } catch (error) {
+      if (isMissingDirectory(error)) return result
+      throw error
+    }
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.json')) continue
+      const filePath = join(directory, entry.name)
+      try {
+        const template = this.register(JSON.parse(await readFile(filePath, 'utf8')))
+        result.loaded.push({ file: filePath, id: template.id, version: template.version })
+      } catch (error) {
+        result.skipped.push({ file: filePath, reason: error instanceof Error ? error.message : String(error) })
+      }
+    }
+    return result
+  }
+}
+
+export interface TemplateLoadResult {
+  loaded: Array<{ file: string; id: string; version: number }>
+  skipped: Array<{ file: string; reason: string }>
+}
+
+function isMissingDirectory(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
 }
 
 export { templateSchema }
