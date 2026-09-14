@@ -1,0 +1,4 @@
+interface:
+  display_name: "SuperConnectX MCP"
+  short_description: "Diagnose SuperConnectX devices and logs through MCP"
+  default_prompt: "Use $superconnectx-mcp to inspect the SuperConnectX session and explain the evidence."

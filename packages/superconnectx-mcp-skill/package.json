@@ -1,0 +1,7 @@
+{
+  "name": "@superconnectx/mcp-skill",
+  "version": "0.1.0",
+  "description": "Standalone Codex skill for SuperConnectX MCP",
+  "private": false,
+  "files": ["SKILL.md", "references", "agents"]
+}
