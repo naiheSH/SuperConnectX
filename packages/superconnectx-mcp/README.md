@@ -2,6 +2,8 @@
 
 独立的 SuperConnectX MCP 封装，不依赖 Electron。工具名称和 MCP 协议字段保留英文，以兼容 Claude、Codex、Cursor 等 MCP 客户端；说明、错误信息和 Skill 文档提供中文。
 
+CLI 可以直接访问本机串口，不需要打开 SuperConnectX；也可以通过 `--facade` 接入其它设备后端。Skill/MCP 配置在桌面端时需要客户端运行，而独立 CLI 不依赖桌面端。
+
 宿主只需要实现 `McpFacade`，即可复用同一套工具契约，并选择：
 
 - `startMcpStdio(facade)`：单客户端 STDIO
@@ -14,6 +16,8 @@
 
 ```bash
 npm install @superconnectx/mcp
+# 直接使用 CLI（无需打开桌面客户端）
+npx @superconnectx/mcp --stdio --mode read-write
 ```
 
 ## 接入方式
@@ -29,6 +33,13 @@ await startMcpStdio(facade)
 // 多客户端：仅监听本机回环地址
 const server = new McpLoopbackServer(facade, process.env.SCX_MCP_TOKEN)
 await server.start(32180)
+```
+
+CLI 默认使用原生串口 Facade：
+
+```bash
+scx-mcp --stdio
+scx-mcp --http --port 32180 --token CHANGE_ME --mode full --allow-export
 ```
 
 ## 安全约束
