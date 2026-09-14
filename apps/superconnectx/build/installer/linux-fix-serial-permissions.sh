@@ -3,7 +3,7 @@
 # as root via pkexec. Keep the udev rules in sync with linux-after-install.sh.
 set -eu
 
-UDEV_RULE="/etc/udev/rules.d/70-superconnectx-serial.rules"
+UDEV_RULE="/etc/udev/rules.d/70-superconnectx-ai-serial.rules"
 
 # Grant the active local desktop session access to every serial-device family
 # that the Linux port picker exposes. uaccess adds an ACL only for the active

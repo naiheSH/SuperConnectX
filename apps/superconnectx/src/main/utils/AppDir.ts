@@ -7,7 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import { AppPaths, type AppPathLogger } from '../../core/paths/AppPaths'
 
-const appPaths = new AppPaths({ sessionDataName: 'superconnectx-session' })
+const appPaths = new AppPaths({ sessionDataName: 'superconnectx-ai-session' })
 
 export function getInstanceIndex(): number {
   return appPaths.getInstanceIndex()

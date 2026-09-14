@@ -8,9 +8,9 @@
   >
     <div class="about-content">
       <div class="about-logo">
-        <img src="../assets/icon.png" alt="SuperConnectX" />
+        <img src="../assets/icon.png" alt="SuperConnectX AI" />
       </div>
-      <h2 class="about-title">SuperConnectX</h2>
+      <h2 class="about-title">SuperConnectX AI</h2>
       <p class="about-version">{{ t('about.version', { version }) }}</p>
       <p class="about-desc">{{ t('about.description') }}</p>
       <div class="about-divider"></div>

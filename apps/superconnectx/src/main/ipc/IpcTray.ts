@@ -23,7 +23,7 @@ export default class IpcTray {
 
   private constructor() {
     this.manager = new TrayManager({
-      tooltip: 'SuperConnectX',
+      tooltip: 'SuperConnectX AI',
       iconPath: this.getIconPath(),
       showWindowLabel: '显示窗口',
       quitLabel: '退出',

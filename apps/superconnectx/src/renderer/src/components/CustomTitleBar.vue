@@ -13,7 +13,7 @@
       <div class="app-logo">
         <img class="logo-img" src="../assets/icon.png" alt="App Icon" />
       </div>
-      <div class="app-title">SuperConnectX</div>
+      <div class="app-title">SuperConnectX AI</div>
 
       <div
         class="menu-button"

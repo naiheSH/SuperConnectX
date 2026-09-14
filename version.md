@@ -1,6 +1,10 @@
 # SuperConnectX 版本历史
 
-## v1.2.10 (2026-09-25)
+## v1.2.10-naihe1 (2026-10-06)
+
+- 基于上游 `v1.2.10` 重建个人版分支，保留 monorepo 目录和 pnpm workspace。
+- 应用包名改为 `superconnectx-ai`，显示名改为 SuperConnectX AI，可与原版 SuperConnectX 共存。
+
 
 ### 新增功能
 1. **Monorepo 工程化架构升级** - 项目迁移至 pnpm workspace monorepo 架构：抽取 `shared/foundation` 公共基础包，主应用归位 `apps/superconnectx`（233 文件），模板项目改造为 workspace 包消费者（删除源码副本），CI 全面迁移 pnpm 并启用 frozen-lockfile 实现可复现构建
