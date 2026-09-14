@@ -190,6 +190,7 @@ contextBridge.exposeInMainWorld('mcpApi', {
   getStatus: () => ipcRenderer.invoke('mcp:get-status'),
   getClientConfig: () => ipcRenderer.invoke('mcp:get-client-config'),
   rotateToken: () => ipcRenderer.invoke('mcp:rotate-token'),
+  importTemplate: (filePath: string) => ipcRenderer.invoke('mcp:import-template', filePath),
   getSettings: () => ipcRenderer.invoke('mcp:get-settings'),
   saveSettings: (settings: unknown) => ipcRenderer.invoke('mcp:save-settings', settings),
   start: () => ipcRenderer.invoke('mcp:start'),

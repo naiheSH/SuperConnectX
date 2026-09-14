@@ -325,6 +325,7 @@
             <div class="setting-item" v-if="mcpConfig.token"><div class="setting-label"><span class="label-text">Bearer Token</span><span class="label-desc">仅本机显示，不写入日志。</span></div><div style="display:flex;gap:8px;width:320px"><el-input :model-value="mcpConfig.token" readonly size="small" show-password /><el-button size="small" @click="copyMcpConfig">复制</el-button></div></div>
             <div class="setting-item"><div class="setting-label"><span class="label-text">Token 轮换</span><span class="label-desc">轮换会使现有 MCP HTTP 会话失效。</span></div><el-button size="small" type="warning" :disabled="!mcpStatus.enabled" @click="rotateMcpToken">轮换 Token</el-button></div>
             <div class="setting-item"><div class="setting-label"><span class="label-text">配置自检</span></div><el-button size="small" @click="loadMcpConfig">刷新</el-button></div>
+            <div class="setting-item"><div class="setting-label"><span class="label-text">导入设备模板</span><span class="label-desc">导入 JSON 模板后会复制到用户模板目录，并立即提供给 MCP。</span></div><el-button size="small" @click="importMcpTemplate">选择 JSON 模板</el-button></div>
           </div>
         </div>
 
@@ -522,6 +523,17 @@ const loadMcpConfig = async () => {
 }
 const saveMcpSettings = async () => {
   try { await window.mcpApi.saveSettings(mcpSettings.value); await loadMcpConfig(); ElMessage.success('MCP 设置已保存') } catch (error) { ElMessage.error(error instanceof Error ? error.message : 'MCP 设置保存失败') }
+}
+const importMcpTemplate = async () => {
+  try {
+    const result = await window.dialogApi.openFileDialog({ properties: ['openFile'], filters: [{ name: 'MCP Template', extensions: ['json'] }] })
+    const filePath = result?.filePaths?.[0]
+    if (!filePath) return
+    const template = await window.mcpApi.importTemplate(filePath)
+    ElMessage.success(`模板 ${template.name} v${template.version} 已导入`)
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '模板导入失败')
+  }
 }
 const copyMcpConfig = async () => {
   if (!mcpConfig.value.endpoint || !mcpConfig.value.token) return

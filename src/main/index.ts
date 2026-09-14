@@ -15,6 +15,7 @@ import McpHttpServer from './mcp/McpHttpServer'
 import SuperConnectXMcpFacade from './mcp/SuperConnectXMcpFacade'
 import { McpTemplateRegistry } from './mcp/McpTemplateRegistry'
 import { join } from 'node:path'
+import { mkdir, copyFile, readFile } from 'node:fs/promises'
 import SettingsStorage from './storage/SettingsStorage'
 import { DEFAULT_MCP_PERMISSION_POLICY, type McpPermissionPolicy } from '../shared/mcp/McpTypes'
 
@@ -79,6 +80,15 @@ ipcMain.handle('mcp:save-settings', async (_, input) => {
 })
 ipcMain.handle('mcp:start', async () => { settingsStorage.saveSettings({ mcpEnabled: true }); return startMcpRuntime() })
 ipcMain.handle('mcp:stop', async () => { settingsStorage.saveSettings({ mcpEnabled: false }); return stopMcpRuntime() })
+ipcMain.handle('mcp:import-template', async (_, filePath: string) => {
+  if (typeof filePath !== 'string' || !filePath.toLowerCase().endsWith('.json')) throw new Error('模板必须是 JSON 文件')
+  const parsed = JSON.parse(await readFile(filePath, 'utf8'))
+  const template = mcpTemplateRegistry.register(parsed)
+  const targetDir = join(app.getPath('userData'), 'mcp', 'templates')
+  await mkdir(targetDir, { recursive: true })
+  await copyFile(filePath, join(targetDir, `${template.id}.json`))
+  return { id: template.id, version: template.version, name: template.name }
+})
 
 logger.info(`======== start superconnect-x (instance ${instanceIdx}) ========`)
 logger.info(JSON.stringify(IpcMain.getInstance().getVersionInfo()))
