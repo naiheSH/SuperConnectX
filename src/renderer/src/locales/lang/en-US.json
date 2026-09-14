@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "SuperConnectX",
+    "name": "SuperConnectX AI",
     "copyright": "© 2025 SuperStudio"
   },
   "common": {
@@ -245,7 +245,7 @@
     "openAppDir": "Open App Directory",
     "openUserDataDir": "Open User Data Folder",
     "exit": "Exit",
-    "exitConfirm": "Are you sure you want to exit SuperConnectX?",
+    "exitConfirm": "Are you sure you want to exit SuperConnectX AI?",
     "doc": "Documentation",
     "about": "About",
     "feedback": "Feedback",
@@ -565,9 +565,9 @@
     "shortcutAvailable": "Shortcut available"
   },
   "about": {
-    "title": "About SuperConnectX",
+    "title": "About SuperConnectX AI",
     "version": "Version {version}",
-    "description": "SuperConnectX - Multi-protocol Terminal Tool",
+    "description": "SuperConnectX AI - AI-enabled multi-protocol terminal tool",
     "author": "Author: SuperStudio",
     "copyright": "Copyright © 2025 SuperStudio",
     "doc": "Documentation"

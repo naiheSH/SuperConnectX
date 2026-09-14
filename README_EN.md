@@ -3,7 +3,7 @@
 [中文](README.md) [English](README_EN.md) [日本語](README_JP.md)
 
 
-<h1 align="center">SuperConnectX</h1>
+<h1 align="center">SuperConnectX AI</h1>
 
 [![LICENSE](https://img.shields.io/badge/license-GPL%203.0-blue)](#)
 [![Star](https://img.shields.io/github/stars/SuperStudio/SuperConnectX?label=Star%20this%20repo)](https://github.com/SuperStudio/SuperConnectX)
@@ -21,7 +21,7 @@ Download: [Personal fork Releases](https://github.com/naiheSH/SuperConnectX/rele
 - If **Open Anyway** is unavailable, only after confirming that the app came from this project's Releases and verifying `SHA256SUMS`, run the following command in Terminal:
 
 ```bash
-xattr -r -d com.apple.quarantine "/Applications/superconnectx.app"
+xattr -r -d com.apple.quarantine "/Applications/SuperConnectX AI.app"
 ```
 
 - If the app is installed elsewhere, replace the path with the actual `.app` path. Target the individual app; do not remove quarantine attributes from the entire `/Applications` directory.

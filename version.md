@@ -1,5 +1,11 @@
 # SuperConnectX 版本历史
 
+## v2.0.0-naihe1 (2026-09-14)
+
+- 重大变更：应用包名改为 `superconnectx-ai`，显示名改为 SuperConnectX AI。
+- 使用独立 Electron App ID、可执行文件名和 session 数据目录，可与原版 SuperConnectX 共存。
+- 新增 MCP 完整技术方案文档，定义核心服务、工具、日志分析、开发者模板、Skill、CLI/SDK 和分阶段实施路线。
+
 ## v1.2.9-naihe1 (2026-09-13)
 
 ### 个人版功能与行为

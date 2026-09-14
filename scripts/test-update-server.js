@@ -4,7 +4,7 @@
  *
  * 使用方法:
  * 1. 先执行一次构建生成文件:  npm run build:win
- *    这会生成 release/superconnectx Setup X.X.X.exe 和 .blockmap 文件
+ *    这会生成 release/SuperConnectX AI Setup X.X.X.exe 和 .blockmap 文件
  * 2. 运行本脚本:             node scripts/test-update-server.js
  * 3. 在项目根目录创建或修改 dev-app-update.yml:
  *    provider: generic
@@ -51,7 +51,7 @@ function generateLatestYml(installerName, installerPath, blockmapPath) {
   const fileBuffer = fs.readFileSync(installerPath)
   const sha512 = crypto.createHash('sha512').update(fileBuffer).digest('base64')
 
-  // 从文件名提取版本号: "superconnectx Setup 1.1.3.exe" -> "1.1.3"
+  // 从文件名提取版本号: "SuperConnectX AI Setup 1.1.3.exe" -> "1.1.3"
   const versionMatch = installerName.match(/(\d+\.\d+\.\d+)/)
   const version = versionMatch ? versionMatch[1] : '0.0.0'
 

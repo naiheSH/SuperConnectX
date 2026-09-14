@@ -1,5 +1,5 @@
-appId: superconnectx.superstudio
-productName: superconnectx
+appId: superconnectx.ai
+productName: SuperConnectX AI
 directories:
   buildResources: build
   output: release
@@ -25,7 +25,7 @@ asarUnpack:
   - node_modules/serialport/**
   - node_modules/@serialport/**
 win:
-  executableName: SuperConnectX
+  executableName: SuperConnectX-AI
   # 平台级命名作用于 zip 便携包；nsis 安装包由下方 nsis.artifactName 覆盖
   artifactName: ${name}-${version}-windows-x64-portable.${ext}
 nsis:

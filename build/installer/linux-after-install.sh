@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-APP_DIR="/opt/superconnectx"
+APP_DIR="/opt/superconnectx-ai"
 SANDBOX="$APP_DIR/chrome-sandbox"
-UDEV_RULE="/etc/udev/rules.d/70-superconnectx-serial.rules"
+UDEV_RULE="/etc/udev/rules.d/70-superconnectx-ai-serial.rules"
 
 # dpkg strips the setuid bit from package payloads. Electron requires it when
 # the application is installed outside a sandboxed package format.

@@ -1,7 +1,7 @@
 {
-  "name": "superconnectx",
-  "version": "1.2.9-naihe1",
-  "description": "SuperConnectX - 超级连接",
+  "name": "superconnectx-ai",
+  "version": "2.0.0-naihe1",
+  "description": "SuperConnectX AI - 可扩展的 AI 设备调试终端",
   "main": "./out/main/index.js",
   "author": {
     "name": "SuperStudio",

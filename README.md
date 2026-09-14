@@ -3,14 +3,16 @@
 [中文](README.md) [English](README_EN.md) [日本語](README_JP.md)
 
 
-<h1 align="center">SuperConnectX</h1>
+<h1 align="center">SuperConnectX AI</h1>
 
 [![LICENSE](https://img.shields.io/badge/license-GPL%203.0-blue)](#)
 [![Star](https://img.shields.io/github/stars/SuperStudio/SuperConnectX?label=Star%20this%20repo)](https://github.com/SuperStudio/SuperConnectX)
 [![Fork](https://img.shields.io/github/forks/SuperStudio/SuperConnectX?label=Fork%20this%20repo)](https://github.com/SuperStudio/SuperConnectX/fork)
 
 
-SuperConnectX 是**超级终端工具**，支持 com、telnet 等终端连接，完全**使用 vibe coding 开发**
+SuperConnectX AI 是**超级终端工具**，支持 com、telnet 等终端连接，并为后续 MCP 和 AI 设备调试能力提供独立共存版本。
+
+本版本使用独立应用身份，可与原版 SuperConnectX 同时安装和运行。
 
 下载地址：[个人版 Releases](https://github.com/naiheSH/SuperConnectX/releases)；上游项目：[SuperStudio/SuperConnectX](https://github.com/SuperStudio/SuperConnectX)
 
@@ -21,7 +23,7 @@ SuperConnectX 是**超级终端工具**，支持 com、telnet 等终端连接，
 - 如果系统设置中没有“仍要打开”，仅在确认应用来自本项目 Releases 且已核对 `SHA256SUMS` 后，打开“终端”执行：
 
 ```bash
-xattr -r -d com.apple.quarantine "/Applications/superconnectx.app"
+xattr -r -d com.apple.quarantine "/Applications/SuperConnectX AI.app"
 ```
 
 - 如果安装到了其他目录，请将命令中的路径替换为实际 `.app` 路径。命令必须指向具体应用，避免对 `/Applications` 整体移除隔离属性。

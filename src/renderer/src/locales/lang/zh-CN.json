@@ -245,7 +245,7 @@
     "openAppDir": "打开程序所在路径",
     "openUserDataDir": "打开用户数据文件夹",
     "exit": "退出",
-    "exitConfirm": "确定要退出 SuperConnectX 吗？",
+    "exitConfirm": "确定要退出 SuperConnectX AI 吗？",
     "doc": "文档",
     "about": "关于",
     "feedback": "反馈问题",
@@ -565,7 +565,7 @@
     "shortcutAvailable": "快捷键可用"
   },
   "about": {
-    "title": "关于 SuperConnectX",
+    "title": "关于 SuperConnectX AI",
     "version": "版本 {version}",
     "description": "超级连接 - 多协议终端连接工具",
     "author": "作者：SuperStudio",

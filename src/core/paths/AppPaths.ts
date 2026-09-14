@@ -16,7 +16,7 @@ export interface AppPathLogger {
 }
 
 const DEFAULT_OPTIONS: Required<AppPathsOptions> = {
-  sessionDataName: 'superconnectx-session',
+  sessionDataName: 'superconnectx-ai-session',
   businessDirectories: ['app-logs', 'logs', 'userdata'],
   strayRuntimeBusinessDirectories: ['userdata', 'backup', 'logs', 'app-logs']
 }

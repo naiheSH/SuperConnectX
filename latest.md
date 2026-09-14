@@ -1,7 +1,9 @@
-# v1.2.9-naihe1
+# v2.0.0-naihe1
+
+本版本启用 SuperConnectX AI 独立应用身份，可与原版 SuperConnectX 并行安装和运行；同时加入 MCP 完整技术方案，后续 MCP 实现将在此版本线上演进。
 
 基于上游 `v1.2.9`（`377450a`）合并，个人版提交：`cee577b`（合并上游 v1.2.9 更新）。
-相对上一发布标签：`v1.2.7-naihe4` → `v1.2.9-naihe1`。
+相对上一发布标签：`v1.2.9-naihe1` → `v2.0.0-naihe1`。
 
 ### 个人版功能与行为
 1. **发布与更新源** - 个人版发布包和自动更新使用 [naiheSH/SuperConnectX](https://github.com/naiheSH/SuperConnectX)，不跟踪上游 GitHub Releases；`naihe` 版本号按普通 Release 处理，不会被当成预发布通道

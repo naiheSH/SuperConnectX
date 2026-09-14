@@ -57,7 +57,7 @@ export default class IpcTray {
       this.tray = new Tray(icon.resize({ width: 22, height: 22 }))
     }
 
-    this.tray.setToolTip('SuperConnectX')
+    this.tray.setToolTip('SuperConnectX AI')
 
     // 左键点击托盘图标显示窗口
     this.tray.on('click', () => {

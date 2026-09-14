@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-# This file is owned by SuperConnectX and is the only system file created by
+# This file is owned by SuperConnectX AI and is the only system file created by
 # linux-after-install.sh. Remove it when the Debian package is removed.
-UDEV_RULE="/etc/udev/rules.d/70-superconnectx-serial.rules"
+UDEV_RULE="/etc/udev/rules.d/70-superconnectx-ai-serial.rules"
 
 rm -f "$UDEV_RULE"
 

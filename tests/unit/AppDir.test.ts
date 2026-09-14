@@ -213,8 +213,8 @@ describe('AppDir - pure logic', () => {
     it('should resolve session directory at sibling level', () => {
       const userData = '/mock/userData'
       const parentDir = path.dirname(userData)
-      const sessionDir = path.join(parentDir, 'superconnectx-session')
-      expect(sessionDir).toBe(path.join('/mock', 'superconnectx-session'))
+      const sessionDir = path.join(parentDir, 'superconnectx-ai-session')
+      expect(sessionDir).toBe(path.join('/mock', 'superconnectx-ai-session'))
     })
 
     it('should resolve cache directories inside runtime', () => {
@@ -325,27 +325,27 @@ describe('AppDir - pure logic', () => {
 
   describe('sessionDir path logic', () => {
     it('should create sessionDir at userData sibling level without _N suffix for instance 0', () => {
-      const userDataBase = '/mock/Roaming/SuperConnectX'
+      const userDataBase = '/mock/Roaming/SuperConnectX AI'
       const instanceIdx = 0
       const sessionSuffix = instanceIdx > 0 ? `_${instanceIdx}` : ''
-      const sessionDir = path.join(userDataBase, `superconnectx-session${sessionSuffix}`)
-      expect(sessionDir).toBe(path.join('/mock/Roaming/SuperConnectX', 'superconnectx-session'))
+      const sessionDir = path.join(userDataBase, `superconnectx-ai-session${sessionSuffix}`)
+      expect(sessionDir).toBe(path.join('/mock/Roaming/SuperConnectX AI', 'superconnectx-ai-session'))
       // sessionDir should NOT be at Roaming root level (old behavior)
       // It should be under SuperConnectX userData directory
-      expect(sessionDir).toContain('SuperConnectX')
+      expect(sessionDir).toContain('SuperConnectX AI')
     })
 
     it('should append instance suffix for multi-instance sessionDir', () => {
-      const userDataBase = '/mock/Roaming/SuperConnectX'
+      const userDataBase = '/mock/Roaming/SuperConnectX AI'
       const instanceIdx = 2
       const sessionSuffix = instanceIdx > 0 ? `_${instanceIdx}` : ''
-      const sessionDir = path.join(userDataBase, `superconnectx-session${sessionSuffix}`)
-      expect(sessionDir).toBe(path.join('/mock/Roaming/SuperConnectX', 'superconnectx-session_2'))
+      const sessionDir = path.join(userDataBase, `superconnectx-ai-session${sessionSuffix}`)
+      expect(sessionDir).toBe(path.join('/mock/Roaming/SuperConnectX AI', 'superconnectx-ai-session_2'))
     })
 
     it('should keep sessionDir within userData directory (not scatter to parent)', () => {
-      const userDataBase = path.normalize('/mock/Roaming/SuperConnectX')
-      const sessionDir = path.join(userDataBase, 'superconnectx-session')
+      const userDataBase = path.normalize('/mock/Roaming/SuperConnectX AI')
+      const sessionDir = path.join(userDataBase, 'superconnectx-ai-session')
       // sessionDir should be a direct child of userData, not a sibling
       expect(path.normalize(path.dirname(sessionDir))).toBe(path.normalize(userDataBase))
     })

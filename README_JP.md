@@ -3,7 +3,7 @@
 [中文](README.md) [English](README_EN.md) [日本語](README_JP.md)
 
 
-<h1 align="center">SuperConnectX</h1>
+<h1 align="center">SuperConnectX AI</h1>
 
 [![LICENSE](https://img.shields.io/badge/license-GPL%203.0-blue)](#)
 [![Star](https://img.shields.io/github/stars/SuperStudio/SuperConnectX?label=Star%20this%20repo)](https://github.com/SuperStudio/SuperConnectX)
@@ -21,7 +21,7 @@ SuperConnectXは、COMやTelnetなどの端末接続をサポートする**ス�
 - 「このまま開く」が表示されない場合は、本プロジェクトの Releases から取得したアプリであることを確認し、`SHA256SUMS` を検証した上で、ターミナルから次のコマンドを実行してください。
 
 ```bash
-xattr -r -d com.apple.quarantine "/Applications/superconnectx.app"
+xattr -r -d com.apple.quarantine "/Applications/SuperConnectX AI.app"
 ```
 
 - 別の場所にインストールした場合は、実際の `.app` のパスに置き換えてください。`/Applications` 全体ではなく、対象アプリだけを指定してください。
