@@ -10,6 +10,31 @@ permissions:
   contents: write
 
 jobs:
+  standalone-packages:
+    name: Build MCP / CLI / Skill packages
+    needs: validate
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build MCP package
+        run: npm --prefix packages/superconnectx-mcp install --ignore-scripts && npm --prefix packages/superconnectx-mcp run build && npm --prefix packages/superconnectx-mcp run test
+      - name: Pack MCP, CLI and Skill
+        run: |
+          mkdir -p standalone-dist
+          (cd packages/superconnectx-mcp && npm pack --pack-destination "$GITHUB_WORKSPACE/standalone-dist")
+          (cd packages/superconnectx-mcp-cli && npm pack --pack-destination "$GITHUB_WORKSPACE/standalone-dist")
+          (cd packages/superconnectx-mcp-skill && npm pack --pack-destination "$GITHUB_WORKSPACE/standalone-dist")
+      - name: Upload standalone packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-mcp-cli-skill
+          path: standalone-dist/*.tgz
+          if-no-files-found: error
   validate:
     name: Validate release metadata
     runs-on: ubuntu-22.04
@@ -295,7 +320,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [validate, build, build-ubuntu24]
+    needs: [validate, standalone-packages, build, build-ubuntu24]
     if: startsWith(github.ref, 'refs/tags/v')   # 仅打 tag 时发布，手动触发只构建
     runs-on: ubuntu-22.04
 

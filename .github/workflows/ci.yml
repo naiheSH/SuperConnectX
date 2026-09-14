@@ -13,6 +13,31 @@ permissions:
   contents: read
 
 jobs:
+  standalone-packages:
+    name: Standalone MCP / CLI / Skill packages
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build MCP package
+        run: npm --prefix packages/superconnectx-mcp install --ignore-scripts && npm --prefix packages/superconnectx-mcp run build && npm --prefix packages/superconnectx-mcp run test
+      - name: Pack MCP, CLI and Skill
+        run: |
+          mkdir -p standalone-dist
+          (cd packages/superconnectx-mcp && npm pack --pack-destination "$GITHUB_WORKSPACE/standalone-dist")
+          (cd packages/superconnectx-mcp-cli && npm pack --pack-destination "$GITHUB_WORKSPACE/standalone-dist")
+          (cd packages/superconnectx-mcp-skill && npm pack --pack-destination "$GITHUB_WORKSPACE/standalone-dist")
+      - name: Upload standalone packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-mcp-cli-skill
+          path: standalone-dist/*.tgz
+          if-no-files-found: error
+
   build:
     name: CI ${{ matrix.name }}
     runs-on: ${{ matrix.os }}

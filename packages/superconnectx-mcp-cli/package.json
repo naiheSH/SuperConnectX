@@ -1,0 +1,11 @@
+{
+  "name": "@superconnectx/mcp-cli",
+  "version": "0.1.0",
+  "description": "Standalone SuperConnectX MCP CLI runtime",
+  "type": "module",
+  "bin": { "scx-mcp": "bin/scx-mcp.mjs" },
+  "files": ["bin", "README.md"],
+  "scripts": { "pack:check": "npm pack --dry-run" },
+  "dependencies": { "@superconnectx/mcp": "^0.1.0" },
+  "engines": { "node": ">=20" }
+}
