@@ -46,12 +46,16 @@ describe('McpHttpServer', () => {
     expect(info).toBeNull()
 
     const running = new McpHttpServer(facade, 'test-token')
+    expect(running.status).toEqual({ enabled: false, port: null, endpoint: null })
+    expect(running.getClientConfig()).toEqual({ endpoint: null, token: 'test-token' })
     const started = await running.start(32189)
+    expect(running.status).toEqual({ enabled: true, port: 32189, endpoint: started.endpoint })
     await expect(request(32189, 'wrong')).resolves.toMatchObject({ status: 401 })
     await expect(request(32189, 'test-token', { headers: { Origin: 'https://example.com' } })).resolves.toMatchObject({ status: 403 })
     await expect(request(32189, 'test-token', { headers: { Host: 'example.com' } })).resolves.toMatchObject({ status: 403 })
     expect(started.endpoint).toBe('http://127.0.0.1:32189/mcp')
     await running.close()
+    expect(running.status).toEqual({ enabled: false, port: null, endpoint: null })
   })
 
   it('completes initialize, tool discovery, tool call, and session deletion', async () => {

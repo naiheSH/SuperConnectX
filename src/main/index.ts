@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from 'electron'
+import { BrowserWindow, app, ipcMain } from 'electron'
 import ProtocolLogger from './utils/ProtocolLogger'
 import IpcStorage from './ipc/IpcStorage'
 import IpcConnector from './ipc/IpcConnector'
@@ -30,6 +30,8 @@ const instanceIdx = getInstanceIndex()
 const protocolLogger = new ProtocolLogger()
 const windows = { mainWindow: undefined as BrowserWindow | undefined }
 let mcpHttpServer: McpHttpServer | null = null
+ipcMain.handle('mcp:get-status', () => mcpHttpServer?.status ?? { enabled: false, port: null, endpoint: null })
+ipcMain.handle('mcp:get-client-config', () => mcpHttpServer?.getClientConfig() ?? { endpoint: null, token: null })
 const mcpTemplateRegistry = new McpTemplateRegistry()
 
 logger.info(`======== start superconnect-x (instance ${instanceIdx}) ========`)

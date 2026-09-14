@@ -27,6 +27,15 @@ export default class McpHttpServer {
     return this.port == null ? null : `http://127.0.0.1:${this.port}/mcp`
   }
 
+  get status(): { enabled: boolean; port: number | null; endpoint: string | null } {
+    return { enabled: this.server !== null, port: this.port, endpoint: this.endpoint }
+  }
+
+  /** Returns local client configuration for an explicit user-initiated copy action. */
+  getClientConfig(): { endpoint: string | null; token: string } {
+    return { endpoint: this.endpoint, token: this.token.toString('utf8') }
+  }
+
   async start(port: number): Promise<{ port: number; endpoint: string }> {
     if (!Number.isInteger(port) || port < 1024 || port > 65535) {
       throw new Error(`Invalid MCP port: ${port}`)

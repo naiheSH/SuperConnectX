@@ -185,3 +185,8 @@ contextBridge.exposeInMainWorld('virtualPortApi', {
   runSetup: () => ipcRenderer.invoke('virtualport:run-setup'),
   getPlatform: () => process.platform
 })
+
+contextBridge.exposeInMainWorld('mcpApi', {
+  getStatus: () => ipcRenderer.invoke('mcp:get-status'),
+  getClientConfig: () => ipcRenderer.invoke('mcp:get-client-config')
+})
