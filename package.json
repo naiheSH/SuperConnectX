@@ -31,10 +31,9 @@
     "build:win": "npm run typecheck && electron-vite build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
-    "build:mcp": "npm run build --workspace=@superconnectx/mcp",
-    "typecheck:mcp": "npm run typecheck --workspace=@superconnectx/mcp"
+    "build:mcp": "npm --prefix packages/superconnectx-mcp run build",
+    "typecheck:mcp": "npm --prefix packages/superconnectx-mcp run typecheck"
   },
-  "workspaces": ["packages/superconnectx-mcp"],
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",

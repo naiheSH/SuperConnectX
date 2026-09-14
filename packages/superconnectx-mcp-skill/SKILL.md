@@ -1,24 +1,33 @@
 ---
 name: superconnectx-mcp
-description: Use SuperConnectX MCP to inspect serial ports, sessions, device templates, and logs; acquire an explicit write lease before sending commands or performing destructive operations.
+description: 使用 SuperConnectX MCP 检查串口、连接会话、设备模板和日志；发送命令或执行破坏性操作前必须获取显式写租约。
 ---
 
-# SuperConnectX MCP Skill
+# SuperConnectX MCP Skill（SuperConnectX MCP 技能）
 
-Use the standalone `@superconnectx/mcp` package or a SuperConnectX AI desktop endpoint. Keep operations evidence-based and bounded.
+使用独立的 `@superconnectx/mcp` 包，或连接 SuperConnectX AI 桌面端提供的 MCP Endpoint。工具名和协议字段保留英文，解释和回复优先使用中文。所有操作都必须有证据、有限制、有边界。
 
-## Workflow
+## 工作流程（Workflow）
 
-1. Discover ports with `serial_list_ports`; never guess a device path.
-2. Inspect `session_list` before creating a session.
-3. Prefer `log_tail`, `log_search`, `log_summarize`, `log_find_anomalies`, and `log_analyze` for diagnosis.
-4. Load `template_list`/`template_get` before using device-specific commands.
-5. Before any write, acquire `session_acquire_write_lease`; release it immediately after the operation.
-6. Prefer `session_run_template_command` or bounded `session_send_and_wait` over unbounded writes.
-7. Require explicit confirmation for `session_stop` and file uploads.
+1. 使用 `serial_list_ports` 枚举串口，绝不猜测设备路径。
+2. 创建会话前先调用 `session_list`。
+3. 诊断优先使用 `log_tail`、`log_search`、`log_summarize`、`log_find_anomalies` 和 `log_analyze`。
+4. 执行设备专用命令前先读取 `template_list`/`template_get`。
+5. 任何写入前调用 `session_acquire_write_lease`，完成后立即调用 `session_release_write_lease`。
+6. 优先使用 `session_run_template_command` 或有超时的 `session_send_and_wait`，不要执行无边界写入。
+7. `session_stop` 和文件上传必须要求用户明确确认。
 
-## Evidence format
+## 证据输出格式（Evidence format）
 
-Return: conclusion, `sessionId`, log line number, original evidence text, impact, and next action. Do not expose passwords, bearer tokens, or authorization values.
+回复应包含：结论、`sessionId`、日志行号、原始证据文本、影响和下一步建议。不得输出密码、Bearer Token 或 Authorization 原文。
 
-Read [references/tools.md](references/tools.md) for the tool contract and [references/safety.md](references/safety.md) for write/diagnostic rules.
+推荐格式：
+
+```text
+结论：……
+证据：session=<id>，line=<行号>，text="……"
+影响：……
+建议：……
+```
+
+工具路由见 [references/tools.md](references/tools.md)；写入和诊断安全规则见 [references/safety.md](references/safety.md)。
