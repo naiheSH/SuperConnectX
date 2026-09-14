@@ -18,6 +18,7 @@ import FtpConnector from './connectors/FtpConnector'
 import ConnectionStateManager from './connectors/ConnectionStateManager'
 import path from 'path'
 import { getAppDataDir } from '../utils/AppDir'
+import type { SessionSummary } from '../../shared/mcp/McpTypes'
 
 export default class IpcConnector {
   private static sInstance: IpcConnector
@@ -109,7 +110,9 @@ export default class IpcConnector {
       logger.debug(JSON.stringify(debugConn))
       _logger.createConnLogFile(String(conn.sessionId), conn.name, conn.remark || '')
       this.initConnectionState(conn)
-      return this.routeStart(conn)
+      const result = await this.routeStart(conn)
+      this.updateSessionStateFromResult(conn.sessionId, result)
+      return result
     })
 
     // start-connect-by-id（从存储中解密密码）
@@ -131,7 +134,9 @@ export default class IpcConnector {
       logger.debug(`start-connect-by-id conn: ${JSON.stringify(debugConn)}`)
       _logger.createConnLogFile(normalizedSessionId, conn.name, conn.remark || '')
       this.initConnectionState(conn)
-      return this.routeStart(conn)
+      const result = await this.routeStart(conn)
+      this.updateSessionStateFromResult(normalizedSessionId, result)
+      return result
     })
 
     // send-data
@@ -284,9 +289,40 @@ export default class IpcConnector {
       : true
     this.stateManager.setLogTimestamp(sessionId, logTimestamp)
     this.stateManager.setConnectionType(sessionId, conn.connectionType)
+    this.stateManager.setSessionInfo({
+      sessionId: String(sessionId),
+      connectionType: String(conn.connectionType || 'unknown'),
+      name: typeof conn.name === 'string' ? conn.name : undefined,
+      endpoint: this.connectionEndpoint(conn),
+      owner: 'user',
+      state: 'connecting'
+    })
     if (conn.connectionType === 'ftp' && conn.ftpMode) {
       this.stateManager.setFtpMode(sessionId, conn.ftpMode)
     }
+  }
+
+  private connectionEndpoint(conn: any): string | undefined {
+    if (typeof conn.comName === 'string' && conn.comName.length > 0) return conn.comName
+    if (typeof conn.host === 'string' && conn.host.length > 0) {
+      return conn.port ? `${conn.host}:${conn.port}` : conn.host
+    }
+    return undefined
+  }
+
+  private updateSessionStateFromResult(sessionId: string, result: object): void {
+    const success = (result as { success?: boolean } | undefined)?.success
+    if (success !== false) this.stateManager.updateSessionState(String(sessionId), 'connected')
+  }
+
+  /** Read-only bridge for MCP and other in-process adapters. */
+  listMcpSessions(): SessionSummary[] {
+    return this.stateManager.listSessions()
+  }
+
+  async getMcpLogFilePath(sessionId: string): Promise<{ success: boolean; filePath?: string; message?: string }> {
+    if (!this._logger) return { success: false, message: 'Protocol logger is not initialized' }
+    return this._logger.getLogFilePath(sessionId)
   }
 
   // ============ 日志设置应用 ============

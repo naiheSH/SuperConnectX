@@ -7,12 +7,14 @@
  */
 import { BrowserWindow } from 'electron'
 import ProtocolLogger from '../../utils/ProtocolLogger'
+import type { SessionSummary } from '../../../shared/mcp/McpTypes'
 
 export default class ConnectionStateManager {
   private receiveHexMap = new Map<string, boolean>()
   private logTimestampMap = new Map<string, boolean>()
   private connectionTypeMap = new Map<string, string>()
   private ftpModeMap = new Map<string, string>()
+  private sessionInfoMap = new Map<string, SessionSummary>()
 
   // 外部依赖（由 IpcConnector 注入）
   private windows: { mainWindow?: BrowserWindow | null } = { mainWindow: undefined }
@@ -48,6 +50,19 @@ export default class ConnectionStateManager {
     this.connectionTypeMap.set(sessionId, value)
   }
 
+  setSessionInfo(info: SessionSummary): void {
+    this.sessionInfoMap.set(info.sessionId, { ...info })
+  }
+
+  updateSessionState(sessionId: string, state: SessionSummary['state']): void {
+    const current = this.sessionInfoMap.get(sessionId)
+    if (current) this.sessionInfoMap.set(sessionId, { ...current, state })
+  }
+
+  listSessions(): SessionSummary[] {
+    return Array.from(this.sessionInfoMap.values(), (session) => ({ ...session }))
+  }
+
   getConnectionType(sessionId: string): string | undefined {
     return this.connectionTypeMap.get(sessionId)
   }
@@ -75,6 +90,7 @@ export default class ConnectionStateManager {
     this.logTimestampMap.delete(sessionId)
     this.connectionTypeMap.delete(sessionId)
     this.ftpModeMap.delete(sessionId)
+    this.sessionInfoMap.delete(sessionId)
 
     // 通知渲染进程
     const wc = this.windows.mainWindow?.webContents
