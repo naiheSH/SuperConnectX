@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { pathToFileURL } from 'node:url'
 import { startMcpStdio, McpLoopbackServer } from './transports.js'
 import type { McpFacade, McpPermissionPolicy } from './types.js'
