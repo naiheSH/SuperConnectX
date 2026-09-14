@@ -9,7 +9,7 @@ test.describe('应用启动冒烟测试', () => {
     const { app, page, userDataDir } = await launchApp()
     try {
       // 标题栏显示应用名
-      await expect(page.locator('.app-title')).toHaveText('SuperConnectX')
+      await expect(page.locator('.app-title')).toHaveText('SuperConnectX AI')
 
       // 侧边栏存在，且包含"新建连接"按钮
       await expect(page.locator('.connection-list')).toBeVisible()
