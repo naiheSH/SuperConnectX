@@ -79,7 +79,7 @@ export interface McpFacade {
   findLogAnomalies?(sessionId: string, options?: { maxBytes?: number }): Promise<unknown>
   compareLogs?(leftSessionId: string, rightSessionId: string, options?: { maxBytes?: number }): Promise<unknown>
   listTemplates?(): Promise<Array<{ id: string; version: number; name: string; description?: string }>>
-  getTemplate?(id: string): Promise<unknown | undefined>
+  getTemplate?(id: string): Promise<import('./McpTemplateTypes').McpDeviceTemplate | undefined>
   sendSession?(sessionId: string, command: string): Promise<unknown>
   sendSessionAndWait?(sessionId: string, command: string, wait: { type: 'literal' | 'regex'; pattern: string; timeoutMs: number }): Promise<unknown>
   runTemplateCommand?(sessionId: string, templateId: string, commandId: string, ownerId: string): Promise<unknown>
@@ -89,4 +89,5 @@ export interface McpFacade {
   stopSession?(sessionId: string): Promise<unknown>
   acquireWriteLease?(sessionId: string, ownerId: string, ttlMs?: number): Promise<WriteLease>
   releaseWriteLease?(sessionId: string, ownerId: string): Promise<void>
+  assertWriteLease?(sessionId: string, ownerId: string): void
 }

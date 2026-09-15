@@ -194,5 +194,7 @@ contextBridge.exposeInMainWorld('mcpApi', {
   getSettings: () => ipcRenderer.invoke('mcp:get-settings'),
   saveSettings: (settings: unknown) => ipcRenderer.invoke('mcp:save-settings', settings),
   start: () => ipcRenderer.invoke('mcp:start'),
-  stop: () => ipcRenderer.invoke('mcp:stop')
+  stop: () => ipcRenderer.invoke('mcp:stop'),
+  installSkill: () => ipcRenderer.invoke('mcp:install-skill'),
+  getSkillInstallInfo: () => ipcRenderer.invoke('mcp:get-skill-install-info')
 })

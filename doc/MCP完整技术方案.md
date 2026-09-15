@@ -165,10 +165,10 @@ Transport 不得包含业务逻辑，所有工具都调用同一个 Application 
 ### 7.1 模板示例
 
 ```yaml
-id: gw01
+id: demo.device
 version: 1
-name: GW01 盒子
-description: 网关设备串口调试模板
+name: Demo Device
+description: 通用串口设备调试模板示例
 
 connection:
   types: [serial]
@@ -399,11 +399,11 @@ INTERNAL_ERROR
 每个设备模板可以对应一个 Skill，但 Skill 只描述使用方法，不包含秘密信息：
 
 ```markdown
-# GW01 设备调试
+# Demo Device 调试
 
 ## 适用范围
 
-- 设备模板：gw01
+- 设备模板：demo.device
 - 适用连接：串口
 
 ## 操作规则
@@ -436,7 +436,7 @@ MCP 之外建议提供稳定的本地 CLI：
 superconnectx-cli ports list
 superconnectx-cli session open --port COM3 --baud 115200
 superconnectx-cli session send --session <id> --text 'AT+VERSION'
-superconnectx-cli log analyze --session <id> --template gw01
+superconnectx-cli log analyze --session <id> --template demo.device
 ```
 
 CLI 和 MCP 必须调用同一个 Application Facade，不能各自复制连接逻辑。未来可提供 TypeScript SDK，让测试和自动化直接调用同一套类型契约。

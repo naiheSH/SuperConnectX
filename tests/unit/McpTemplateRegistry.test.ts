@@ -5,9 +5,9 @@ import { join } from 'node:path'
 import { McpTemplateRegistry } from '../../src/main/mcp/McpTemplateRegistry'
 
 const template = {
-  id: 'gw01',
+  id: 'demo.device',
   version: 1,
-  name: 'GW01',
+  name: 'Demo Device',
   connectionTypes: ['serial'],
   permissions: { defaultMode: 'read-only', allowWrite: false },
   commands: [{ id: 'version', label: '版本', text: 'AT+VERSION', risk: 'read' }],
@@ -18,8 +18,8 @@ describe('McpTemplateRegistry', () => {
   it('registers, lists and retrieves validated templates', () => {
     const registry = new McpTemplateRegistry()
     registry.register(template)
-    expect(registry.list()).toEqual([{ id: 'gw01', version: 1, name: 'GW01' }])
-    expect(registry.get('gw01')?.commands[0].text).toBe('AT+VERSION')
+    expect(registry.list()).toEqual([{ id: 'demo.device', version: 1, name: 'Demo Device' }])
+    expect(registry.get('demo.device')?.commands[0].text).toBe('AT+VERSION')
   })
 
   it('rejects a version downgrade', () => {

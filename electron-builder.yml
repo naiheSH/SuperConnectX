@@ -22,6 +22,10 @@ extraResources:
     to: icon.png
   - from: resources/exe/setup.exe
     to: exe/setup.exe
+  - from: resources/mcp/skill
+    to: mcp/skill
+  - from: resources/mcp/templates
+    to: mcp/templates
 asarUnpack:
   - node_modules/serialport/**
   - node_modules/@serialport/**

@@ -14,10 +14,16 @@ import { migrateDataIfNeeded, initAppPaths, cleanupChromiumClutter, getInstanceI
 import McpHttpServer from './mcp/McpHttpServer'
 import SuperConnectXMcpFacade from './mcp/SuperConnectXMcpFacade'
 import { McpTemplateRegistry } from './mcp/McpTemplateRegistry'
+import {
+  getSkillInstallCommands,
+  getSkillInstallTargets,
+  installBundledMcpSkill
+} from './mcp/McpSkillInstaller'
 import { join } from 'node:path'
 import { mkdir, copyFile, readFile } from 'node:fs/promises'
 import SettingsStorage from './storage/SettingsStorage'
 import { DEFAULT_MCP_PERMISSION_POLICY, type McpPermissionPolicy } from '../shared/mcp/McpTypes'
+import { CallbackAuditSink } from '@superconnectx/mcp/audit'
 
 // 禁用 Chromium 自动网络请求，避免公司内网代理环境触发安全告警（同步上游 83a8ac6）
 app.commandLine.appendSwitch('disable-component-update')         // 禁用组件更新
@@ -36,6 +42,11 @@ let mcpHttpServer: McpHttpServer | null = null
 const mcpTemplateRegistry = new McpTemplateRegistry()
 const settingsStorage = new SettingsStorage()
 const mcpFacade = new SuperConnectXMcpFacade(mcpTemplateRegistry)
+const mcpAudit = new CallbackAuditSink((event) => {
+  logger.info(
+    `[MCP][audit] tool=${event.tool} result=${event.result} session=${event.sessionId ?? '-'} owner=${event.ownerId ?? '-'} summary=${event.summary ?? '-'} requestId=${event.requestId}${event.code ? ` code=${event.code}` : ''}`
+  )
+})
 const getMcpPolicy = (): McpPermissionPolicy => {
   const settings = settingsStorage.getSettings()
   const mode = settings.mcpAccessMode ?? 'read-only'
@@ -49,7 +60,7 @@ const getMcpPolicy = (): McpPermissionPolicy => {
 const startMcpRuntime = async (): Promise<boolean> => {
   const settings = settingsStorage.getSettings()
   if (!settings.mcpEnabled) return false
-  if (!mcpHttpServer) mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy())
+  if (!mcpHttpServer) mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy(), mcpAudit)
   if (mcpHttpServer.status.enabled) return true
   await mcpHttpServer.start(Number(settings.mcpPort ?? 32180))
   logger.info(`[MCP] enabled at ${mcpHttpServer.endpoint}`)
@@ -89,6 +100,11 @@ ipcMain.handle('mcp:import-template', async (_, filePath: string) => {
   await copyFile(filePath, join(targetDir, `${template.id}.json`))
   return { id: template.id, version: template.version, name: template.name }
 })
+ipcMain.handle('mcp:install-skill', async () => installBundledMcpSkill())
+ipcMain.handle('mcp:get-skill-install-info', () => ({
+  targets: getSkillInstallTargets(),
+  commands: getSkillInstallCommands()
+}))
 
 logger.info(`======== start superconnect-x (instance ${instanceIdx}) ========`)
 logger.info(JSON.stringify(IpcMain.getInstance().getVersionInfo()))
@@ -110,6 +126,7 @@ IpcDataCheck.getInstance().init()
 // application startup; later MCP tools can consume the registry.
 app.whenReady().then(async () => {
   const templateDirectories = [
+    join(process.resourcesPath, 'mcp', 'templates'),
     join(app.getAppPath(), 'resources', 'mcp', 'templates'),
     join(app.getPath('userData'), 'mcp', 'templates'),
     join(process.cwd(), '.superconnectx', 'templates')
@@ -131,7 +148,7 @@ const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--m
 const mcpPortValue = mcpPortArgument ?? process.env.SCX_MCP_PORT
 if (mcpPortValue) {
   const mcpPort = Number.parseInt(mcpPortValue, 10)
-  mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy())
+  mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy(), mcpAudit)
   app.whenReady().then(async () => {
     try {
       const info = await mcpHttpServer!.start(mcpPort)

@@ -315,17 +315,126 @@
         <!-- MCP -->
         <div v-else-if="activeCategory === 'mcp'" class="settings-group">
           <div class="group-section">
-            <div class="group-title">MCP</div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">启用 MCP</span><span class="label-desc">仅监听本机 127.0.0.1，默认关闭。</span></div><el-switch v-model="mcpSettings.enabled" @change="saveMcpSettings" /></div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">监听端口</span><span class="label-desc">范围 1024-65535，默认 32180。</span></div><el-input-number v-model="mcpSettings.port" :min="1024" :max="65535" size="small" @change="saveMcpSettings" /></div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">操作权限</span><span class="label-desc">控制 AI 是否可以打开连接、发送命令或停止会话。</span></div><el-radio-group v-model="mcpSettings.accessMode" @change="saveMcpSettings"><el-radio label="read-only">只读</el-radio><el-radio label="read-write">可操作</el-radio><el-radio label="full">完整操作</el-radio></el-radio-group></div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">文件上传/导出</span><span class="label-desc">只有“完整操作”模式下才会生效。</span></div><el-switch v-model="mcpSettings.allowExport" :disabled="mcpSettings.accessMode !== 'full'" @change="saveMcpSettings" /></div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">服务状态</span></div><el-tag :type="mcpStatus.enabled ? 'success' : 'info'" size="small">{{ mcpStatus.enabled ? '运行中' : '未启用' }}</el-tag></div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">Endpoint</span></div><el-input :model-value="mcpConfig.endpoint || '未启用'" readonly size="small" style="width:320px" /></div>
-            <div class="setting-item" v-if="mcpConfig.token"><div class="setting-label"><span class="label-text">Bearer Token</span><span class="label-desc">仅本机显示，不写入日志。</span></div><div style="display:flex;gap:8px;width:320px"><el-input :model-value="mcpConfig.token" readonly size="small" show-password /><el-button size="small" @click="copyMcpConfig">复制</el-button></div></div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">Token 轮换</span><span class="label-desc">轮换会使现有 MCP HTTP 会话失效。</span></div><el-button size="small" type="warning" :disabled="!mcpStatus.enabled" @click="rotateMcpToken">轮换 Token</el-button></div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">配置自检</span></div><el-button size="small" @click="loadMcpConfig">刷新</el-button></div>
-            <div class="setting-item"><div class="setting-label"><span class="label-text">导入设备模板</span><span class="label-desc">导入 JSON 模板后会复制到用户模板目录，并立即提供给 MCP。</span></div><el-button size="small" @click="importMcpTemplate">选择 JSON 模板</el-button></div>
+            <div class="group-title">{{ t('mcpSettings.serviceTitle') }}</div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.enable') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.enableDesc') }}</span>
+              </div>
+              <el-switch class="terminal-switch" v-model="mcpSettings.enabled" @change="saveMcpSettings" />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.port') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.portDesc') }}</span>
+              </div>
+              <el-input-number v-model="mcpSettings.port" :min="1024" :max="65535" size="small" @change="saveMcpSettings" />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.accessMode') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.accessModeDesc') }}</span>
+              </div>
+              <el-radio-group class="mode-radio-group" v-model="mcpSettings.accessMode" size="small" @change="saveMcpSettings">
+                <el-radio-button label="read-only">{{ t('mcpSettings.modeReadOnly') }}</el-radio-button>
+                <el-radio-button label="read-write">{{ t('mcpSettings.modeReadWrite') }}</el-radio-button>
+                <el-radio-button label="full">{{ t('mcpSettings.modeFull') }}</el-radio-button>
+              </el-radio-group>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.allowExport') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.allowExportDesc') }}</span>
+              </div>
+              <el-switch
+                class="terminal-switch"
+                v-model="mcpSettings.allowExport"
+                :disabled="mcpSettings.accessMode !== 'full'"
+                @change="saveMcpSettings"
+              />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.status') }}</span>
+              </div>
+              <el-tag size="small" effect="dark" class="mcp-status-tag" :class="{ 'is-enabled': mcpStatus.enabled }">
+                {{ mcpStatus.enabled ? t('mcpSettings.statusRunning') : t('mcpSettings.statusDisabled') }}
+              </el-tag>
+            </div>
+          </div>
+
+          <div class="group-section">
+            <div class="group-title">{{ t('mcpSettings.accessTitle') }}</div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.endpoint') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.endpointDesc') }}</span>
+              </div>
+              <div class="path-input-wrapper">
+                <el-input :model-value="mcpConfig.endpoint || t('mcpSettings.endpointDisabled')" readonly size="small" class="path-input mcp-path-input" />
+                <el-button size="small" class="btn-primary path-btn" :disabled="!mcpConfig.endpoint" @click="copyMcpConfig">{{ t('mcpSettings.copy') }}</el-button>
+              </div>
+            </div>
+            <div class="setting-item" v-if="mcpConfig.token">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.token') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.tokenDesc') }}</span>
+              </div>
+              <div class="path-input-wrapper">
+                <el-input :model-value="mcpConfig.token" readonly size="small" show-password class="path-input mcp-path-input" />
+                <el-button size="small" class="btn-primary path-btn" @click="copyMcpConfig">{{ t('mcpSettings.copy') }}</el-button>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.rotateToken') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.rotateTokenDesc') }}</span>
+              </div>
+              <el-button size="small" class="btn-primary" style="width: auto !important" :disabled="!mcpStatus.enabled" @click="rotateMcpToken">
+                {{ t('mcpSettings.rotateTokenButton') }}
+              </el-button>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.refresh') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.refreshDesc') }}</span>
+              </div>
+              <el-button size="small" class="btn-primary" style="width: auto !important" @click="loadMcpConfig">{{ t('mcpSettings.refreshButton') }}</el-button>
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.importTemplate') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.importTemplateDesc') }}</span>
+              </div>
+              <el-button size="small" class="btn-primary" style="width: auto !important" @click="importMcpTemplate">{{ t('mcpSettings.importTemplateButton') }}</el-button>
+            </div>
+          </div>
+
+          <div class="group-section">
+            <div class="group-title">{{ t('mcpSettings.skillTitle') }}</div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.installSkill') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.installSkillDesc') }}</span>
+              </div>
+              <div class="path-input-wrapper">
+                <el-button size="small" class="btn-primary path-btn" @click="installMcpSkill">{{ t('mcpSettings.installSkillButton') }}</el-button>
+                <el-button size="small" class="btn-primary path-btn" @click="copySkillGitCommand">{{ t('mcpSettings.copyGitCommand') }}</el-button>
+                <el-button size="small" class="btn-primary path-btn" @click="copyCliInstallCommand">{{ t('mcpSettings.copyCliCommand') }}</el-button>
+              </div>
+            </div>
+            <div class="setting-item" v-if="mcpSkillInfo.targets.length">
+              <div class="setting-label">
+                <span class="label-text">{{ t('mcpSettings.installTargets') }}</span>
+                <span class="label-desc">{{ t('mcpSettings.installTargetsDesc') }}</span>
+              </div>
+              <el-input
+                :model-value="mcpSkillInfo.targets.map((item) => item.path).join(' | ')"
+                readonly
+                size="small"
+                class="mcp-path-input mcp-path-input-wide"
+              />
+            </div>
           </div>
         </div>
 
@@ -506,7 +615,7 @@ settingsRegistry.register({ key: 'log', getLabel: () => t('settingsNav.log'), or
 settingsRegistry.register({ key: 'syntax', getLabel: () => t('settingsNav.syntax'), order: 30 })
 settingsRegistry.register({ key: 'history', getLabel: () => t('settingsNav.history'), order: 40 })
 settingsRegistry.register({ key: 'backup', getLabel: () => t('settingsNav.backup'), order: 50 })
-settingsRegistry.register({ key: 'mcp', getLabel: () => 'MCP', order: 60 })
+settingsRegistry.register({ key: 'mcp', getLabel: () => t('settingsNav.mcp'), order: 60 })
 const categories = computed(() => settingsRegistry.getCategories())
 
 // 默认配置从后端获取
@@ -516,10 +625,19 @@ const settings = ref<Record<string, any>>({})
 const mcpStatus = ref({ enabled: false, port: null as number | null, endpoint: null as string | null })
 const mcpConfig = ref({ endpoint: null as string | null, token: null as string | null })
 const mcpSettings = ref({ enabled: false, port: 32180, accessMode: 'read-only' as 'read-only' | 'read-write' | 'full', allowExport: false })
+const mcpSkillInfo = ref({
+  targets: [] as Array<{ id: string; path: string }>,
+  commands: { gitClone: '', cliInstall: '', symlink: '' }
+})
 let isLoading = true
 
 const loadMcpConfig = async () => {
-  try { mcpSettings.value = await window.mcpApi.getSettings(); mcpStatus.value = await window.mcpApi.getStatus(); mcpConfig.value = await window.mcpApi.getClientConfig() } catch { /* MCP may be unavailable in tests */ }
+  try {
+    mcpSettings.value = await window.mcpApi.getSettings()
+    mcpStatus.value = await window.mcpApi.getStatus()
+    mcpConfig.value = await window.mcpApi.getClientConfig()
+    mcpSkillInfo.value = await window.mcpApi.getSkillInstallInfo()
+  } catch { /* MCP may be unavailable in tests */ }
 }
 const saveMcpSettings = async () => {
   try {
@@ -532,8 +650,8 @@ const saveMcpSettings = async () => {
     }
     await window.mcpApi.saveSettings(payload)
     await loadMcpConfig()
-    ElMessage.success('MCP 设置已保存')
-  } catch (error) { ElMessage.error(error instanceof Error ? error.message : 'MCP 设置保存失败') }
+    ElMessage.success(t('mcpSettings.saved'))
+  } catch (error) { ElMessage.error(error instanceof Error ? error.message : t('mcpSettings.saveFailed')) }
 }
 const importMcpTemplate = async () => {
   try {
@@ -541,18 +659,44 @@ const importMcpTemplate = async () => {
     const filePath = result?.filePaths?.[0]
     if (!filePath) return
     const template = await window.mcpApi.importTemplate(filePath)
-    ElMessage.success(`模板 ${template.name} v${template.version} 已导入`)
+    ElMessage.success(t('mcpSettings.templateImported', { name: template.name, version: template.version }))
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '模板导入失败')
+    ElMessage.error(error instanceof Error ? error.message : t('mcpSettings.templateImportFailed'))
   }
 }
 const copyMcpConfig = async () => {
   if (!mcpConfig.value.endpoint || !mcpConfig.value.token) return
   await navigator.clipboard.writeText(JSON.stringify({ endpoint: mcpConfig.value.endpoint, token: mcpConfig.value.token }, null, 2))
-  ElMessage.success('MCP 配置已复制')
+  ElMessage.success(t('mcpSettings.configCopied'))
 }
 const rotateMcpToken = async () => {
-  try { await ElMessageBox.confirm('轮换后现有 MCP 会话将失效，是否继续？', '轮换 Token', { type: 'warning' }); const token = await window.mcpApi.rotateToken(); if (token) { mcpConfig.value.token = token; ElMessage.success('Token 已轮换') } } catch { /* cancelled */ }
+  try {
+    await ElMessageBox.confirm(t('mcpSettings.rotateConfirm'), t('mcpSettings.rotateTitle'), { type: 'warning' })
+    const token = await window.mcpApi.rotateToken()
+    if (token) {
+      mcpConfig.value.token = token
+      ElMessage.success(t('mcpSettings.rotateSuccess'))
+    }
+  } catch { /* cancelled */ }
+}
+const installMcpSkill = async () => {
+  try {
+    const result = await window.mcpApi.installSkill()
+    mcpSkillInfo.value = await window.mcpApi.getSkillInstallInfo()
+    ElMessage.success(t('mcpSettings.skillInstalled', { paths: result.installed.map((item) => item.path).join(' , ') }))
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('mcpSettings.skillInstallFailed'))
+  }
+}
+const copySkillGitCommand = async () => {
+  if (!mcpSkillInfo.value.commands.gitClone) mcpSkillInfo.value = await window.mcpApi.getSkillInstallInfo()
+  await navigator.clipboard.writeText(mcpSkillInfo.value.commands.gitClone)
+  ElMessage.success(t('mcpSettings.gitCopied'))
+}
+const copyCliInstallCommand = async () => {
+  if (!mcpSkillInfo.value.commands.cliInstall) mcpSkillInfo.value = await window.mcpApi.getSkillInstallInfo()
+  await navigator.clipboard.writeText(mcpSkillInfo.value.commands.cliInstall)
+  ElMessage.success(t('mcpSettings.cliCopied'))
 }
 
 const loadDefaultSettings = async () => {
@@ -1222,6 +1366,27 @@ const handleSettingsUpdated = (event: Event) => {
 
 .baudrate-tag:hover {
   background: var(--settings-baudrate-tag-hover);
+}
+
+.mcp-status-tag {
+  background: var(--settings-baudrate-tag-bg);
+  border-color: var(--settings-baudrate-tag-border);
+  color: var(--settings-baudrate-tag-color);
+}
+
+.mcp-status-tag.is-enabled {
+  background: color-mix(in srgb, var(--focus-border-color) 28%, var(--settings-baudrate-tag-bg));
+  border-color: var(--focus-border-color);
+  color: var(--settings-label-text);
+}
+
+.mcp-path-input {
+  width: 280px;
+}
+
+.mcp-path-input-wide {
+  width: 420px;
+  max-width: 100%;
 }
 
 /* 滚动条美化 */

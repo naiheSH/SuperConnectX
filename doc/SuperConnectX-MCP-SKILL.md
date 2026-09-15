@@ -1,32 +1,38 @@
-# SuperConnectX MCP Skill
+# SuperConnectX MCP / Skill / CLI
 
-## 适用范围
+## 结论：当前逻辑可以定版
 
-使用 `superconnectx-ai` MCP 读取串口、连接会话和日志；需要写入时必须先获取会话写租约。
+| 组件 | 角色 |
+| --- | --- |
+| MCP | 真正的能力（工具 + 权限 + 连接/日志） |
+| Skill | 只是 MCP 的使用封装，方便 AI 按规范调用 |
+| CLI `scx-mcp` | 独立 MCP runtime，不需要开客户端 |
+| 桌面 MCP HTTP | 可选 runtime，复用 GUI 已连接会话 |
 
-## 推荐工作流
+## Runtime 能力差异
 
-1. 调用 `serial_list_ports` 确认端口，不猜测设备路径。
-2. 调用 `session_list` 查看 GUI 已有会话。
-3. 优先使用 `log_tail`、`log_search`、`log_summarize` 和 `log_find_anomalies` 读取证据。
-4. 需要设备差异化解析时先调用 `template_list`/`template_get`，再使用 `log_analyze`。
-5. 需要创建连接时使用 `session_start_port` 或 `session_start_saved`，并记录返回的 `sessionId`。
-6. 任何写操作前调用 `session_acquire_write_lease`，完成后调用 `session_release_write_lease`。
-7. 写命令优先使用 `session_run_template_command` 或 `session_send_and_wait`，避免无边界等待。
+| 能力 | 桌面 MCP | 独立 CLI |
+| --- | --- | --- |
+| 看到 GUI 已连接会话 | 能 | 不能 |
+| 读会话缓冲 / 日志 | 能 | 仅 CLI 自己建的会话 |
+| 对 GUI 会话发命令 | 持有写租约后可以 | 否 |
+| 关闭 GUI 会话 | **禁止**（user-owned） | 无此会话 |
+| 同端口再开连接 | 明确报占用 | 通常 OS 独占失败 |
 
-## 安全约束
+## 安装
 
-- 不把 Token、密码或 Authorization 原文写入消息和日志。
-- 不通过模板执行 Shell、JavaScript 或任意网络请求。
-- `session_stop` 和 `session_upload_file` 属于破坏性操作，必须传入显式 `confirm: true`（停止）并持有写租约。
-- 所有结论必须引用 session、日志文件、行号或原始证据行。
-- 遇到端口不存在、会话不存在、写租约冲突或超时，应停止重试并向用户说明。
+- CLI：`npm install -g @superconnectx/mcp-cli` → `scx-mcp --doctor`
+- Skill：`packages/superconnectx-mcp-skill/INSTALL.md`，或设置页「Skill 封装 → 一键安装」
+- 桌面：设置 → MCP → 启用服务
 
-## 日志解读输出格式
+Skill 改文档后执行：`npm run sync:mcp-skill`
 
-```text
-结论：...
-证据：session=<id>, line=<n>, text="..."
-影响：...
-建议：...
-```
+## 返回契约与审计
+
+- 工具返回统一：`{ data, meta: { requestId, truncated, source: "superconnectx" } }`
+- 业务失败：`data.error = { code, message, retryable }`
+- 写操作审计：CLI → `~/.superconnectx/mcp-audit.jsonl`；桌面 → 应用日志 `[MCP][audit]`（只记脱敏摘要，不落命令原文）
+
+## 暂缓
+
+- `@superconnectx/mcp-cli` 正式发布到 npm

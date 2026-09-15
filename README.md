@@ -16,6 +16,14 @@ SuperConnectX AI 是**超级终端工具**，支持 com、telnet 等终端连接
 
 下载地址：[个人版 Releases](https://github.com/naiheSH/SuperConnectX/releases)；上游项目：[SuperStudio/SuperConnectX](https://github.com/SuperStudio/SuperConnectX)
 
+## MCP / CLI / Skill
+
+- **CLI（不需要开客户端）**：`npm install -g @superconnectx/mcp-cli`，然后 `scx-mcp --doctor` / `scx-mcp --print-config`
+- **Skill（可 Git 克隆、可本地改）**：见 `packages/superconnectx-mcp-skill/INSTALL.md`，或桌面端「设置 → MCP → 安装 Skill」
+- **桌面 MCP HTTP（可选）**：在设置页启用，复用 GUI 会话与日志
+
+详细说明：`doc/SuperConnectX-MCP-SKILL.md`
+
 ## macOS 安装与更新
 
 - Apple Silicon（M1/M2/M3/M4 等）请选择文件名包含 `macos-arm64.dmg` 的安装包；Intel Mac 请选择 `macos-x64.dmg`。

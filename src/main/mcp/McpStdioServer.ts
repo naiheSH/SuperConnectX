@@ -1,13 +1,10 @@
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import type { McpFacade } from '../../shared/mcp/McpTypes'
-import { createMcpServer } from './McpServer'
+import type { McpPermissionPolicy } from '../../shared/mcp/McpTypes'
+import type { McpFacade } from '@superconnectx/mcp/types'
+import { startMcpStdio } from '@superconnectx/mcp/transports'
 
-/** Connects the shared MCP tool core to stdin/stdout for a host process. */
-export async function startMcpStdioServer(facade: McpFacade): Promise<() => Promise<void>> {
-  const server = createMcpServer(facade)
-  const transport = new StdioServerTransport()
-  await server.connect(transport)
-  return async () => {
-    await server.close()
-  }
+export async function startMcpStdioServer(
+  facade: McpFacade,
+  policy?: McpPermissionPolicy
+): Promise<() => Promise<void>> {
+  return startMcpStdio(facade, policy)
 }

@@ -5,10 +5,17 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": { "scx-mcp": "dist/cli.js" },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./cli": { "types": "./dist/cli.d.ts", "import": "./dist/cli.js" }
+    "./cli": { "types": "./dist/cli.d.ts", "import": "./dist/cli.js" },
+    "./server": { "types": "./dist/server.d.ts", "import": "./dist/server.js" },
+    "./transports": { "types": "./dist/transports.d.ts", "import": "./dist/transports.js" },
+    "./templates": { "types": "./dist/templates.d.ts", "import": "./dist/templates.js" },
+    "./leases": { "types": "./dist/leases.d.ts", "import": "./dist/leases.js" },
+    "./log-analysis": { "types": "./dist/log-analysis.d.ts", "import": "./dist/log-analysis.js" },
+    "./result": { "types": "./dist/result.d.ts", "import": "./dist/result.js" },
+    "./audit": { "types": "./dist/audit.d.ts", "import": "./dist/audit.js" },
+    "./types": { "types": "./dist/types.d.ts", "import": "./dist/types.js" }
   },
   "files": ["dist", "README.md"],
   "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc -p tsconfig.json --noEmit", "test": "node --test", "pack:check": "npm pack --dry-run" },
