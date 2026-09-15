@@ -24,8 +24,17 @@ function applyPolicy(facade: McpFacade, policy: McpPermissionPolicy): McpFacade 
 }
 
 export function createMcpServer(facade: McpFacade, policy: McpPermissionPolicy = DEFAULT_MCP_PERMISSION_POLICY): McpServer {
-  facade = applyPolicy(facade, { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy })
+  const effectivePolicy = { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy }
+  facade = applyPolicy(facade, effectivePolicy)
   const server = new McpServer({ name: 'superconnectx-mcp', version: '0.1.0' })
+  const originalRegisterTool = server.registerTool.bind(server)
+  const registerTool = server.registerTool.bind(server)
+  server.registerTool = ((name: string, config: any, handler: any) => {
+    const method = toolMethod(name)
+    const permission = WRITE.has(method) ? 'write' : DESTRUCTIVE.has(method) ? 'destructive' : EXPORT.has(method) ? 'export' : undefined
+    if (permission && !effectivePolicy[permission]) return server
+    return originalRegisterTool(name as never, config, handler)
+  }) as typeof registerTool
   server.registerTool('serial_list_ports', { title: 'List serial ports', description: 'List available serial ports.', annotations: { readOnlyHint: true, idempotentHint: true } }, async () => result(await facade.listSerialPorts()))
   server.registerTool('session_list', { title: 'List sessions', description: 'List active SuperConnectX sessions.', annotations: { readOnlyHint: true, idempotentHint: true } }, async () => result(await facade.listSessions()))
   server.registerTool('session_read', { title: 'Read session buffer', description: 'Read bounded session output.', inputSchema: { sessionId: z.string().min(1), maxLines: z.number().int().min(1).max(2000).optional() }, annotations: { readOnlyHint: true, idempotentHint: true } }, async ({ sessionId, maxLines }) => result(await (facade as any).readSession(sessionId, { maxLines })))
@@ -67,4 +76,9 @@ export function createMcpServer(facade: McpFacade, policy: McpPermissionPolicy =
   server.registerTool('session_upload_file', { title: 'Upload file', description: 'Upload a file to an FTP session with a write lease.', inputSchema: { sessionId: z.string().min(1), localFilePath: z.string().min(1), remoteFileName: z.string().min(1), ownerId: z.string().min(1) }, annotations: { destructiveHint: true } }, async ({ sessionId, localFilePath, remoteFileName, ownerId }) => { return result(await facade.uploadSessionFile?.(sessionId, localFilePath, remoteFileName, ownerId)) })
   server.registerTool('session_stop', { title: 'Stop session', description: 'Stop a session with explicit confirmation and a write lease.', inputSchema: { sessionId: z.string().min(1), ownerId: z.string().min(1), confirm: z.literal(true) }, annotations: { destructiveHint: true } }, async ({ sessionId, ownerId, confirm }) => { if (!confirm) throw new Error('Explicit confirmation required'); lease(facade, sessionId, ownerId); return result(await facade.stopSession?.(sessionId)) })
   return server
+}
+
+function toolMethod(name: string): string {
+  const methods: Record<string, string> = { session_send: 'sendSession', session_send_and_wait: 'sendSessionAndWait', session_run_template_command: 'runTemplateCommand', session_start_port: 'startSessionPort', session_start_saved: 'startSavedSession', session_acquire_write_lease: 'acquireWriteLease', session_release_write_lease: 'releaseWriteLease', session_stop: 'stopSession', session_upload_file: 'uploadSessionFile' }
+  return methods[name] ?? name
 }

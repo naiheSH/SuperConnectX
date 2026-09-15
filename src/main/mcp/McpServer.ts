@@ -30,11 +30,19 @@ function guardedFacade(facade: McpFacade, policy: McpPermissionPolicy): McpFacad
 }
 
 export function createMcpServer(facade: McpFacade, policy: McpPermissionPolicy = DEFAULT_MCP_PERMISSION_POLICY): McpServer {
-  facade = guardedFacade(facade, { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy })
+  const effectivePolicy = { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy }
+  facade = guardedFacade(facade, effectivePolicy)
   const server = new McpServer({
     name: 'superconnectx-ai',
     version: '2.0.0'
   })
+  const originalRegisterTool = server.registerTool.bind(server)
+  const registerTool = server.registerTool.bind(server)
+  server.registerTool = ((name: string, config: any, handler: any) => {
+    const permission = WRITE_METHODS.has(toolMethod(name)) ? 'write' : DESTRUCTIVE_METHODS.has(toolMethod(name)) ? 'destructive' : EXPORT_METHODS.has(toolMethod(name)) ? 'export' : undefined
+    if (permission && !effectivePolicy[permission]) return server
+    return originalRegisterTool(name as never, config, handler)
+  }) as typeof registerTool
 
   server.registerTool(
     'serial_list_ports',
@@ -295,4 +303,13 @@ export function createMcpServer(facade: McpFacade, policy: McpPermissionPolicy =
   )
 
   return server
+}
+
+function toolMethod(name: string): string {
+  const methods: Record<string, string> = {
+    session_send: 'sendSession', session_send_and_wait: 'sendSessionAndWait', session_run_template_command: 'runTemplateCommand',
+    session_start_port: 'startSessionPort', session_start_saved: 'startSavedSession', session_acquire_write_lease: 'acquireWriteLease',
+    session_release_write_lease: 'releaseWriteLease', session_stop: 'stopSession', session_upload_file: 'uploadSessionFile'
+  }
+  return methods[name] ?? name
 }
