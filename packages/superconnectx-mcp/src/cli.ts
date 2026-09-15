@@ -13,13 +13,27 @@ function usage(): never {
 }
 const args = process.argv.slice(2)
 const value = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined }
+if (args.includes('--version')) { console.log('0.1.0'); process.exit(0) }
 const facadePath = value('--facade') ?? process.env.SCX_MCP_FACADE_MODULE
 const mode = value('--mode') ?? 'full'
 if (!['read-only', 'read-write', 'full'].includes(mode)) usage()
 const policy: McpPermissionPolicy = { read: true, write: mode !== 'read-only', destructive: mode === 'full', export: mode === 'full' && (!args.includes('--no-export') || args.includes('--allow-export')) }
 const registry = new TemplateRegistry()
 const templateDirectory = value('--templates') ?? process.env.SCX_MCP_TEMPLATES ?? join(homedir(), '.superconnectx', 'templates')
-await registry.loadDirectory(templateDirectory)
+const templateResult = await registry.loadDirectory(templateDirectory)
+if (args.includes('--doctor')) {
+  const probe = new NativeMcpFacade(registry)
+  console.log(JSON.stringify({ ok: true, mode, templateDirectory, templates: templateResult.loaded.length, skippedTemplates: templateResult.skipped, serialPorts: await probe.listSerialPorts() }, null, 2))
+  process.exit(0)
+}
+if (args.includes('--print-config')) {
+  const command = ['scx-mcp', '--stdio', '--mode', mode]
+  if (args.includes('--no-export')) command.push('--no-export')
+  if (facadePath) command.push('--facade', facadePath)
+  if (templateDirectory !== join(homedir(), '.superconnectx', 'templates')) command.push('--templates', templateDirectory)
+  console.log(JSON.stringify({ mcpServers: { superconnectx: { command: command[0], args: command.slice(1) } } }, null, 2))
+  process.exit(0)
+}
 const facade = facadePath ? ((() => { return import(pathToFileURL(facadePath!).href) })()) : null
 const resolvedFacade = facade ? ((await facade).default ?? (await facade).facade) as McpFacade : new NativeMcpFacade(registry)
 if (!resolvedFacade || typeof resolvedFacade.listSerialPorts !== 'function') throw new Error('Facade module must export default or facade implementing McpFacade')

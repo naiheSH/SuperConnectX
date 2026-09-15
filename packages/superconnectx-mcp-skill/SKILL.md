@@ -7,6 +7,14 @@ description: 使用 SuperConnectX MCP 检查串口、连接会话、设备模板
 
 使用独立的 `@superconnectx/mcp` 包，或连接 SuperConnectX AI 桌面端提供的 MCP Endpoint。工具名和协议字段保留英文，解释和回复优先使用中文。所有操作都必须有证据、有限制、有边界。
 
+## 运行时选择
+
+- `scx-mcp --stdio`：独立 CLI，桌面客户端可以关闭；默认完整操作权限，可用 `--mode read-only` 限制。
+- 桌面端 MCP：需要 SuperConnectX 客户端运行，在“设置 → MCP”中启用并选择权限。
+- HTTP MCP：连接本机或受控远端 Endpoint，必须提供 Bearer Token。
+
+Skill 本身不连接设备，也不启动进程；它必须配合上述任一 MCP runtime 使用。
+
 ## 工作流程（Workflow）
 
 1. 使用 `serial_list_ports` 枚举串口，绝不猜测设备路径。
