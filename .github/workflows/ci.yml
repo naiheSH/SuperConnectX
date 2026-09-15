@@ -142,6 +142,9 @@ jobs:
           rm -rf node_modules/cpu-features
           rm -rf node_modules/ssh2/node_modules/cpu-features
 
+      - name: Build MCP package
+        run: npm run build:mcp
+
       # ---- 测试与覆盖率：Linux 上额外生成覆盖率报告（用于上传可视化）----
       - name: Run unit tests
         if: runner.os != 'Linux'
@@ -354,6 +357,9 @@ jobs:
         run: |
           rm -rf node_modules/cpu-features
           rm -rf node_modules/ssh2/node_modules/cpu-features
+
+      - name: Build MCP package
+        run: npm run build:mcp
 
       # ---- 测试与覆盖率：Linux 上额外生成覆盖率报告（用于上传可视化）----
       - name: Run unit tests
