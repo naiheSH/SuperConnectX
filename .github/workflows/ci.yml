@@ -25,6 +25,9 @@ jobs:
           node-version: '24'
       - name: Build MCP package
         run: npm --prefix packages/superconnectx-mcp install --ignore-scripts && npm --prefix packages/superconnectx-mcp run build && npm --prefix packages/superconnectx-mcp run test
+      - name: Build CLI package
+        run: |
+          (cd packages/superconnectx-mcp-cli && npm install --ignore-scripts --no-package-lock --no-save ../superconnectx-mcp && npm run build)
       - name: Pack MCP, CLI and Skill
         run: |
           mkdir -p standalone-dist

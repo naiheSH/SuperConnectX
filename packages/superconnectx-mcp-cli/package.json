@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "description": "Standalone SuperConnectX MCP CLI runtime",
   "type": "module",
-  "bin": { "scx-mcp": "bin/scx-mcp.mjs" },
-  "files": ["bin", "README.md"],
-  "scripts": { "pack:check": "npm pack --dry-run" },
+  "main": "dist/index.js",
+  "bin": { "scx-mcp": "dist/cli.js" },
+  "files": ["dist", "README.md"],
+  "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc -p tsconfig.json --noEmit", "pack:check": "npm run build && npm pack --dry-run" },
   "dependencies": { "@superconnectx/mcp": "^0.1.0" },
+  "devDependencies": { "@types/node": "^22.18.6", "typescript": "^5.9.2" },
   "engines": { "node": ">=20" }
 }
