@@ -14,9 +14,9 @@ function usage(): never {
 const args = process.argv.slice(2)
 const value = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined }
 const facadePath = value('--facade') ?? process.env.SCX_MCP_FACADE_MODULE
-const mode = value('--mode') ?? 'read-only'
+const mode = value('--mode') ?? 'full'
 if (!['read-only', 'read-write', 'full'].includes(mode)) usage()
-const policy: McpPermissionPolicy = { read: true, write: mode !== 'read-only', destructive: mode === 'full', export: mode === 'full' && args.includes('--allow-export') }
+const policy: McpPermissionPolicy = { read: true, write: mode !== 'read-only', destructive: mode === 'full', export: mode === 'full' && (!args.includes('--no-export') || args.includes('--allow-export')) }
 const registry = new TemplateRegistry()
 const templateDirectory = value('--templates') ?? process.env.SCX_MCP_TEMPLATES ?? join(homedir(), '.superconnectx', 'templates')
 await registry.loadDirectory(templateDirectory)

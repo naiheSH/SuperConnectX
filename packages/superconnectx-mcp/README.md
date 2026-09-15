@@ -42,6 +42,8 @@ scx-mcp --stdio
 scx-mcp --http --port 32180 --token CHANGE_ME --mode full --allow-export
 ```
 
+独立 CLI 默认是完整操作模式；如需限制权限，显式使用 `--mode read-only`、`--mode read-write` 或 `--no-export`。
+
 用户模板导入：把符合模板格式的 `.json` 文件放入 `~/.superconnectx/templates`，或启动时指定目录：
 
 ```bash

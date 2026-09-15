@@ -14,7 +14,7 @@ export class NativeMcpFacade implements McpFacade {
   }
   async listSessions(): Promise<SessionSummary[]> { return [...this.sessions.values()].map(({ info }) => info) }
   async readSession(sessionId: string, options: { maxLines?: number } = {}) {
-    const session = this.require(sessionId); const maxLines = Math.min(options.maxLines ?? 500, 2000)
+    const session = this.require(sessionId); const maxLines = Math.min(options.maxLines ?? 100000, 100000)
     return { sessionId, lines: session.lines.slice(-maxLines), truncated: session.lines.length > maxLines }
   }
   async readLogTail(sessionId: string, options: { maxLines?: number } = {}): Promise<LogTailResult> { const data = await this.readSession(sessionId, options); return { ...data, nextOffset: this.require(sessionId).lines.length } }
@@ -23,7 +23,7 @@ export class NativeMcpFacade implements McpFacade {
     const sessionId = `cli-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
     const serial = new SerialPort({ path: port, baudRate, autoOpen: false }); const info: SessionSummary = { sessionId, connectionType: 'serial', name: port, endpoint: port, owner: 'ai', state: 'connecting' }
     const session: NativeSession = { port: serial, lines: [], state: 'connecting', info }; this.sessions.set(sessionId, session)
-    serial.on('data', (chunk: Buffer) => { session.lines.push(...chunk.toString('utf8').split(/\r?\n/).filter(Boolean)); if (session.lines.length > 10000) session.lines.splice(0, session.lines.length - 10000) })
+    serial.on('data', (chunk: Buffer) => { session.lines.push(...chunk.toString('utf8').split(/\r?\n/).filter(Boolean)); if (session.lines.length > 100000) session.lines.splice(0, session.lines.length - 100000) })
     await new Promise<void>((resolve, reject) => serial.open((error) => error ? reject(error) : resolve()))
     session.state = 'connected'; info.state = 'connected'; return { sessionId, ownerId, port }
   }
