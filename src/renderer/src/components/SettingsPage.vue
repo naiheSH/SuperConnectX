@@ -522,7 +522,18 @@ const loadMcpConfig = async () => {
   try { mcpSettings.value = await window.mcpApi.getSettings(); mcpStatus.value = await window.mcpApi.getStatus(); mcpConfig.value = await window.mcpApi.getClientConfig() } catch { /* MCP may be unavailable in tests */ }
 }
 const saveMcpSettings = async () => {
-  try { await window.mcpApi.saveSettings(mcpSettings.value); await loadMcpConfig(); ElMessage.success('MCP 设置已保存') } catch (error) { ElMessage.error(error instanceof Error ? error.message : 'MCP 设置保存失败') }
+  try {
+    // Vue ref values are reactive proxies and cannot cross Electron's structured-clone IPC boundary.
+    const payload = {
+      enabled: Boolean(mcpSettings.value.enabled),
+      port: Number(mcpSettings.value.port),
+      accessMode: mcpSettings.value.accessMode,
+      allowExport: Boolean(mcpSettings.value.allowExport)
+    }
+    await window.mcpApi.saveSettings(payload)
+    await loadMcpConfig()
+    ElMessage.success('MCP 设置已保存')
+  } catch (error) { ElMessage.error(error instanceof Error ? error.message : 'MCP 设置保存失败') }
 }
 const importMcpTemplate = async () => {
   try {
