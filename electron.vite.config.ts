@@ -5,7 +5,10 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    // Bundle the local MCP package into main. It is ESM-only and lives under
+    // packages/, which electron-builder excludes from app files; externalizing
+    // it causes Electron startup failures in E2E/packaged builds.
+    plugins: [externalizeDepsPlugin({ exclude: ['@superconnectx/mcp'] })],
     build: {
       outDir: resolve('out/main'), // 明确主进程输出到 out/main
       rollupOptions: {
