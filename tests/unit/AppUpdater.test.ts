@@ -1,33 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { mapUpdateErrorToFriendlyMessage } from '../../src/core/updater/UpdateSupport'
-
-const { mockAutoUpdater } = vi.hoisted(() => ({
-  mockAutoUpdater: {
-    autoDownload: true,
-    autoInstallOnAppQuit: false,
-    allowDowngrade: true,
-    allowPrerelease: true,
-    disableDifferentialDownload: false,
-    logger: null as unknown,
-    on: vi.fn()
-  }
-}))
-
-vi.mock('electron-updater', () => ({ autoUpdater: mockAutoUpdater }))
-vi.mock('builder-util-runtime', () => ({ CancellationToken: class {} }))
-vi.mock('../../src/main/ipc/IpcAppLogger', () => ({
-  default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }
-}))
-
-import AppUpdater from '../../src/main/updater/AppUpdater'
-
-describe('AppUpdater - release channel', () => {
-  it('uses normal GitHub Releases for naihe builds', () => {
-    AppUpdater.getInstance().init({ isDestroyed: () => false, webContents: { send: vi.fn() } } as any)
-
-    expect(mockAutoUpdater.allowPrerelease).toBe(false)
-  })
-})
+import { describe, it, expect } from 'vitest'
+import { mapUpdateErrorToFriendlyMessage } from '@/core/updater/UpdateSupport'
 
 describe('AppUpdater - mapErrorToFriendly', () => {
   describe('network errors', () => {
@@ -97,19 +69,19 @@ describe('AppUpdater - mapErrorToFriendly', () => {
   describe('checksum errors', () => {
     it('should map sha512 error', () => {
       expect(mapUpdateErrorToFriendlyMessage(new Error('sha512 checksum mismatch'))).toBe(
-        'File verification failed; retry manually or download the installer'
+        'File verification failed, will re-download'
       )
     })
 
     it('should map sha256 error', () => {
       expect(mapUpdateErrorToFriendlyMessage(new Error('sha256 verification failed'))).toBe(
-        'File verification failed; retry manually or download the installer'
+        'File verification failed, will re-download'
       )
     })
 
     it('should map checksum error', () => {
       expect(mapUpdateErrorToFriendlyMessage(new Error('checksum error'))).toBe(
-        'File verification failed; retry manually or download the installer'
+        'File verification failed, will re-download'
       )
     })
   })

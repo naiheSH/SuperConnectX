@@ -1,0 +1,31 @@
+packages:
+  - packages/*
+  - apps/*
+
+# 允许执行构建脚本的依赖白名单（pnpm 安全策略：未列出的依赖构建脚本被拦截）
+# 注意：pnpm 11.23+ 中 allowBuilds（布尔值）已取代 onlyBuiltDependencies —— allowBuilds 字段
+# 一旦存在，旧的 onlyBuiltDependencies/neverBuiltDependencies 等字段全部失效。
+# pnpm 曾自动插入值为 "set this to true or false" 的模板块，导致白名单静默失效，
+# 产物全靠历史 node_modules 复用 + 根 postinstall 的 @electron/rebuild 兜底 —— 引以为戒。
+# cpu-features、dtrace-provider 是 optional 依赖且在 Windows 上必然编译失败，故意不列入（默认拒绝）。
+# （若缺失下方 ignoredBuiltDependencies 声明，pnpm 会在每次 install 后向 allowBuilds 插入
+#   "set this to true or false" 模板行 —— 这是它的提示行为，删除即可，语义不变。）
+allowBuilds:
+  '@electron/rebuild': true
+  '@serialport/bindings-cpp': true
+  electron: true
+  esbuild: true
+  ssh2: true
+
+# 故意静默忽略的 optional 原生依赖（Windows 上必然编译失败，且运行时无此依赖也能正常工作）
+ignoredBuiltDependencies:
+  - cpu-features
+  - dtrace-provider
+
+# 根本不安装这些 optional 依赖（ssh2 的可选加速模块，缺失不影响功能）。
+# ignoredBuiltDependencies 只拦截 pnpm 安装期脚本，包仍会进入 node_modules/.pnpm/，
+# 导致 CI 中 electron-builder install-app-deps（@electron/rebuild 扫描）依然尝试构建并失败
+# （cpu-features@0.0.10 缺 buildcheck.gypi，node-gyp 必然报错）。不安装 = rebuild 扫不到。
+ignoredOptionalDependencies:
+  - cpu-features
+  - dtrace-provider

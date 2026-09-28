@@ -2,7 +2,7 @@
   "name": "superconnectx",
   "version": "1.2.9-naihe1",
   "description": "SuperConnectX - 超级连接",
-  "main": "./out/main/index.js",
+  "main": "./apps/superconnectx/out/main/index.js",
   "author": {
     "name": "SuperStudio",
     "email": "naihe@superstudio.dev"
@@ -23,13 +23,13 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install",
-    "start": "electron-vite preview",
-    "dev": "electron-vite dev",
-    "build": "npm run typecheck && electron-vite build && electron-builder",
-    "postinstall": "electron-builder install-app-deps",
+    "start": "electron-vite preview --config apps/superconnectx/electron.vite.config.ts",
+    "dev": "electron-vite dev --config apps/superconnectx/electron.vite.config.ts",
+    "build": "npm run typecheck && electron-vite build --config apps/superconnectx/electron.vite.config.ts && electron-builder",
+    "postinstall": "node scripts/rebuild-native.mjs",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run typecheck && electron-vite build && electron-builder --win",
-    "build:mac": "electron-vite build && electron-builder --mac",
+    "build:win": "npm run typecheck && electron-vite build --config apps/superconnectx/electron.vite.config.ts && electron-builder --win",
+    "build:mac": "electron-vite build --config apps/superconnectx/electron.vite.config.ts && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
@@ -40,6 +40,7 @@
     "adm-zip": "^0.5.18",
     "archiver": "^7.0.1",
     "buffer": "^6.0.3",
+    "builder-util-runtime": "^9.7.0",
     "crc": "^4.3.2",
     "electron-store": "^3.3.0",
     "electron-updater": "^6.6.2",
@@ -58,6 +59,7 @@
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
+    "@electron/rebuild": "^3.6.1",
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@playwright/test": "^1.62.1",
     "@types/adm-zip": "^0.5.8",
@@ -81,5 +83,6 @@
     "vue": "^3.5.21",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.0.7"
-  }
+  },
+  "packageManager": "pnpm@12.5.1+sha512.e3f305bc784a2bc89f5ad3b6138889470fae8d2af5f36b61216ec91c2c3d64089775f9de38aac331044ea40f245cb0d5666392dfdf65824e1907ef6a2c62de5f"
 }
