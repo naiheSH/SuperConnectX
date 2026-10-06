@@ -8,7 +8,14 @@
 scx-mcp --init
 ```
 
-然后只往目录里丢文件，不用改 JSON：
+也可以直接生成文件：
+
+```bash
+scx-mcp --new template 我的设备 version,status
+scx-mcp --new tool 读版本
+```
+
+模板只要写命令名。工具文件生成后，只改函数里面的逻辑。
 
 - `templates/*.json`：设备模板
 - `resources/`：寄存器表、协议说明、标定数据

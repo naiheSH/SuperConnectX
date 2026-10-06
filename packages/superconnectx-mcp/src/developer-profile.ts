@@ -117,6 +117,28 @@ export async function initDeveloperProfile(root = join(homedir(), '.superconnect
   return profilePath
 }
 
+export async function scaffoldDeveloperFile(kind: string, name: string, root = join(homedir(), '.superconnectx')): Promise<string> {
+  const safeName = name.split(',')[0].trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9._\-\u4e00-\u9fff]/g, '').replace(/^-+|-+$/g, '')
+  if (!safeName) throw new Error('名称只能包含字母、数字、点、下划线和连字符')
+  await initDeveloperProfile(root)
+  if (kind === 'template') {
+    const file = join(root, 'templates', `${safeName}.json`)
+    const commands = name.split(',').slice(1).map((item) => item.trim()).filter(Boolean)
+    await writeFile(file, JSON.stringify({ name: name.split(',')[0].trim(), commands: commands.map((command) => command.split(/\s+/)[0]) }, null, 2) + '\n')
+    return file
+  }
+  if (kind !== 'tool' && kind !== 'parser') throw new Error('只能新建 template、tool 或 parser')
+  const file = join(root, kind === 'tool' ? 'tools' : 'parsers', `${safeName}.mjs`)
+  await writeFile(file, [
+    'export default async function ({ facade, input }) {',
+    '  const text = await facade.readSession?.(input.sessionId)',
+    '  return { text, input }',
+    '}',
+    ''
+  ].join('\n'))
+  return file
+}
+
 export async function expandDirectoryComponents(components: DeveloperComponent[]): Promise<DeveloperComponent[]> {
   const expanded: DeveloperComponent[] = []
   for (const component of components) {

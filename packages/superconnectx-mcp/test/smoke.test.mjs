@@ -95,6 +95,8 @@ test('template registry validates and skips invalid files', async () => {
   }
   registry.register(template)
   assert.equal(registry.get('demo.device')?.name, 'Demo')
+  registry.register({ commands: ['version', { command: 'status', expect: 'ok' }] }, 'short.device')
+  assert.equal(registry.get('short.device')?.commands[1]?.wait?.pattern, 'ok')
   assert.throws(() => registry.register({ ...template, id: '../evil' }))
 })
 

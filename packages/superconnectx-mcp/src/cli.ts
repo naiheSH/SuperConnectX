@@ -7,12 +7,12 @@ import type { McpFacade, McpPermissionPolicy } from './types.js'
 import { NativeMcpFacade } from './native-facade.js'
 import { TemplateRegistry } from './templates.js'
 import { createDefaultAuditSink } from './audit.js'
-import { expandDirectoryComponents, facadeComponent, initDeveloperProfile, loadDeveloperProfile } from './developer-profile.js'
+import { expandDirectoryComponents, facadeComponent, initDeveloperProfile, loadDeveloperProfile, scaffoldDeveloperFile } from './developer-profile.js'
 
 function usage(message?: string): never {
   if (message) console.error(message)
   console.error(
-    'Usage: scx-mcp [--init] [--facade ./facade.mjs] [--stdio | --http] [--port 32180] [--token TOKEN] [--mode read-only|read-write|full] [--allow-export|--no-export] [--templates DIR] [--doctor] [--print-config]'
+    'Usage: scx-mcp [--init [DIR]] [--new template|tool|parser 名称] [--facade ./facade.mjs] [--stdio | --http] [--port 32180] [--token TOKEN] [--mode read-only|read-write|full] [--allow-export|--no-export] [--templates DIR] [--doctor] [--print-config]'
   )
   process.exit(2)
 }
@@ -52,6 +52,16 @@ export async function runMcpCli(argv = process.argv.slice(2)): Promise<void> {
     const profilePath = await initDeveloperProfile(root)
     console.log(`已创建 ${profilePath}`)
     console.log('把文件放进同级 templates resources scripts parsers tools 目录，然后运行 scx-mcp --doctor')
+    return
+  }
+  if (argv.includes('--new')) {
+    const index = argv.indexOf('--new')
+    const kind = argv[index + 1]
+    const flags = new Set(['--dir'])
+    const name = argv.slice(index + 2).filter((item, offset, items) => !item.startsWith('--') && !flags.has(items[offset - 1] ?? '')).join(' ')
+    const root = argv[argv.indexOf('--dir') + 1]
+    if (!kind || !name) usage('--new 需要类型和名称，例如 --new template 我的设备, version, status')
+    console.log(await scaffoldDeveloperFile(kind, name, argv.includes('--dir') ? root : undefined))
     return
   }
 
