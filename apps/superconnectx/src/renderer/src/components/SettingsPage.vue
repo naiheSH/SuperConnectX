@@ -432,7 +432,7 @@
               </el-button>
             </div>
           </div>
-        </div>
+
         <!-- MCP -->
         <div v-else-if="activeCategory === 'mcp'" class="settings-group">
           <div class="group-section">
@@ -557,6 +557,7 @@
               />
             </div>
           </div>
+        </div>
         </div>
 
       </div>
@@ -700,6 +701,7 @@ const copyCliInstallCommand = async () => {
   if (!mcpSkillInfo.value.commands.cliInstall) mcpSkillInfo.value = await window.mcpApi.getSkillInstallInfo()
   await navigator.clipboard.writeText(mcpSkillInfo.value.commands.cliInstall)
   ElMessage.success(t('mcpSettings.cliCopied'))
+}
 
 const loadDefaultSettings = async () => {
   try {
@@ -991,6 +993,7 @@ onMounted(async () => {
   await loadDefaultSettings()
   await loadSettings()
   await loadActiveCategory()
+  await loadMcpConfig()
 })
 
 onUnmounted(() => {
