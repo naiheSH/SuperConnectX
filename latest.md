@@ -1,6 +1,6 @@
 # v1.2.10-naihe1
 
-本版本在上游 `v1.2.10` monorepo 上重建 SuperConnectX AI 身份，可与原版 SuperConnectX 并行安装和运行。MCP 实现按新目录结构重新接入。
+本版本在上游 `v1.2.10` monorepo 上接入 MCP，沿用上游应用包名和发布流程。
 
 ### 新增功能
 1. **Monorepo 工程化架构升级** - 项目迁移至 pnpm workspace monorepo 架构：抽取 `shared/foundation` 公共基础包，主应用归位 `apps/superconnectx`（233 文件），模板项目改造为 workspace 包消费者（删除源码副本），CI 全面迁移 pnpm 并启用 frozen-lockfile 实现可复现构建

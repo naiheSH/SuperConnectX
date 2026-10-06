@@ -1,12 +1,9 @@
 {
-  "name": "superconnectx-ai",
+  "name": "superconnectx",
   "version": "1.2.10-naihe1",
-  "description": "SuperConnectX AI - 可扩展的 AI 设备调试终端",
+  "description": "SuperConnectX - 超级连接",
   "main": "./apps/superconnectx/out/main/index.js",
-  "author": {
-    "name": "SuperStudio",
-    "email": "naihe@superstudio.dev"
-  },
+  "author": "SuperStudio",
   "homepage": "https://github.com/naiheSH/SuperConnectX",
   "scripts": {
     "format": "prettier --write .",
@@ -14,9 +11,9 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
-    "test": "vitest run",
+    "test": "npm run test:mcp && vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "npm run test:mcp && vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:integration:coverage": "vitest run --config vitest.integration.config.ts --coverage",
     "test:all": "npm test && npm run test:integration",
@@ -36,9 +33,9 @@
     "pretest:coverage": "npm run build:mcp",
     "pretest:integration": "npm run build:mcp",
     "pretest:integration:coverage": "npm run build:mcp",
-    "build:mcp": "pnpm --dir packages/superconnectx-mcp run build",
-    "build:mcp-cli": "pnpm run build:mcp && pnpm --dir packages/superconnectx-mcp-cli run build",
-    "typecheck:mcp": "pnpm --dir packages/superconnectx-mcp run typecheck",
+    "build:mcp": "pnpm --dir packages/superconnectx-mcp run build && pnpm --dir packages/superconnectx-mcp-cli run build",
+    "test:mcp": "pnpm run build:mcp && pnpm --dir packages/superconnectx-mcp run test && pnpm exec vitest run tests/unit/McpServer.test.ts tests/unit/McpHttpServer.test.ts tests/unit/McpStdioServer.test.ts tests/unit/McpTemplateRegistry.test.ts tests/unit/McpWriteLeaseManager.test.ts tests/unit/SuperConnectXMcpFacade.test.ts",
+    "typecheck:mcp": "pnpm --dir packages/superconnectx-mcp run typecheck && pnpm --dir packages/superconnectx-mcp-cli run typecheck",
     "sync:mcp-skill": "rm -rf skills/superconnectx-mcp resources/mcp/skill && mkdir -p skills/superconnectx-mcp resources/mcp/skill && rsync -a --exclude package.json packages/superconnectx-mcp-skill/ skills/superconnectx-mcp/ && rsync -a --exclude package.json packages/superconnectx-mcp-skill/ resources/mcp/skill/"
   },
   "dependencies": {

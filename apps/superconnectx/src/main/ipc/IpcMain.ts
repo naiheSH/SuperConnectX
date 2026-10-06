@@ -67,7 +67,7 @@ export default class IpcMain {
         height: 800,
         minWidth: 800, // 最小宽度（防止过窄）
         minHeight: 600, // 最小高度
-        title: 'SuperConnectX AI',
+        title: 'SuperConnectX',
         autoHideMenuBar: false, // 显示菜单栏（方便操作）
         backgroundColor: '#1e1e1e', // 防止最小化时白色闪烁（Windows 11）
         ...(process.platform === 'win32'
@@ -141,7 +141,7 @@ export default class IpcMain {
 
     // 应用生命周期管理
     app.whenReady().then(() => {
-      electronApp.setAppUserModelId('superconnectx.ai') // 独立应用 ID，允许与 SuperConnectX 并存
+      electronApp.setAppUserModelId('superconnectx.superstudio')
       app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window)
       })

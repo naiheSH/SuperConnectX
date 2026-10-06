@@ -7,7 +7,7 @@ AI Client
   ├── Skill（本目录）      工作流 / 安全约束 / 证据格式
   └── MCP Runtime
         ├── scx-mcp CLI    不需要桌面端（推荐）
-        └── 桌面 MCP HTTP  需要打开 SuperConnectX AI
+        └── 桌面 MCP HTTP  需要打开 SuperConnectX
 ```
 
 ## 方式 A：Git 克隆（方便改）
@@ -37,7 +37,7 @@ ln -sfn /path/to/SuperConnectX/packages/superconnectx-mcp-skill ~/.agents/skills
 
 ## 方式 B：桌面端一键安装
 
-打开 **SuperConnectX AI → 设置 → MCP → 安装 Skill**。
+打开 **SuperConnectX → 设置 → MCP → 安装 Skill**。
 
 客户端会把内置 skill 复制到：
 

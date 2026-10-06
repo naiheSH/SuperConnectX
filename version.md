@@ -2,8 +2,8 @@
 
 ## v1.2.10-naihe1 (2026-10-06)
 
-- 基于上游 `v1.2.10` 重建个人版分支，保留 monorepo 目录和 pnpm workspace。
-- 应用包名改为 `superconnectx-ai`，显示名改为 SuperConnectX AI，可与原版 SuperConnectX 共存。
+- 基于上游 `v1.2.10` 重建个人版分支，保留 monorepo 目录、pnpm workspace 和上游应用包名。
+- 新增 MCP 本地服务、设置页、独立 CLI 与 Skill，发布走主 CI/Release 流程。
 
 
 ### 新增功能

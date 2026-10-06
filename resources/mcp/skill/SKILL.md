@@ -15,7 +15,7 @@ description: 使用 SuperConnectX MCP 检查串口、连接会话、设备模板
 ## 运行时选择
 
 - `scx-mcp --stdio`：独立 CLI；默认完整本地权限，可用 `--mode read-only` 收紧
-- 桌面端 MCP：需要 SuperConnectX AI 运行，在设置中启用并选择权限
+- 桌面端 MCP：需要 SuperConnectX 运行，在设置中启用并选择权限
 - HTTP MCP：连接本机 Endpoint，必须提供 Bearer Token
 
 ## 工作流程（Workflow）
