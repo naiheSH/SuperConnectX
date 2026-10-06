@@ -23,7 +23,4 @@ pnpm run sync:mcp-skill
 
 ## 交付
 
-- 桌面端：设置 → MCP → 启用服务。安装包带上 `resources/mcp`。
-- CLI：不打包、不发 npm。在仓库根目录执行 `bash scripts/install-mcp-cli.sh`，再运行 `scx-mcp --doctor` 和 `scx-mcp --print-config`。
-- Skill：按 `packages/superconnectx-mcp-skill/INSTALL.md` 安装，或在桌面端设置页点击安装。
-
+完整步骤见 `doc/MCP-DELIVERY.md`。仓库内执行 `bash scripts/install-mcp.sh`，再用 `bash scripts/verify-mcp.sh` 验收。

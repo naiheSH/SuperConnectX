@@ -2,12 +2,12 @@
 
 SuperConnectX MCP **核心库**：工具契约、权限策略、STDIO/HTTP Transport、NativeFacade、模板与写租约。
 
-日常给 AI 用的命令行请安装独立包：
+CLI 不发布到 npm。在仓库根目录执行：
 
 ```bash
-npm install -g @superconnectx/mcp-cli
-scx-mcp --doctor
+bash scripts/install-mcp.sh
 ```
+
 
 本包不依赖 Electron。桌面端、CLI、测试都通过 `McpFacade` 接入，Transport 内不复制连接业务。
 

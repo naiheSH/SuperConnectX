@@ -46,14 +46,14 @@ ln -sfn /path/to/SuperConnectX/packages/superconnectx-mcp-skill ~/.agents/skills
 
 之后可在上述目录直接改文档；客户端再次安装会覆盖同名 skill。
 
-## 方式 C：Release 产物
+## 方式 C：仓库一键安装
 
-从 GitHub Release 下载 `superconnectx-mcp-skill-*.tgz`：
+不从 Release 下载 tgz。克隆仓库后执行：
 
 ```bash
-mkdir -p /tmp/scx-skill && tar -xzf superconnectx-mcp-skill-0.1.0.tgz -C /tmp/scx-skill
-cp -R /tmp/scx-skill/package ~/.agents/skills/superconnectx-mcp
+bash scripts/install-mcp.sh
 ```
+
 
 ## 配套安装 CLI
 
