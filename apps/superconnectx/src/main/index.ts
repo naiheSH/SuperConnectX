@@ -19,7 +19,7 @@ import { McpTemplateRegistry } from './mcp/McpTemplateRegistry'
 import { getSkillInstallCommands, getSkillInstallTargets, installBundledMcpSkill } from './mcp/McpSkillInstaller'
 import SettingsStorage from './storage/SettingsStorage'
 import { DEFAULT_MCP_PERMISSION_POLICY, type McpPermissionPolicy } from '../shared/mcp/McpTypes'
-import { loadDeveloperProfile } from '@superconnectx/mcp/developer-profile'
+import { expandDirectoryComponents, loadDeveloperProfile } from '@superconnectx/mcp/developer-profile'
 
 // 禁用 Chromium 自动网络请求，避免公司内网代理环境触发安全告警
 // Chromium 启动时会连接 Google 服务（组件更新、网络检测等），在代理环境下可能被拦截
@@ -36,6 +36,7 @@ const instanceIdx = getInstanceIndex()
 const protocolLogger = new ProtocolLogger()
 const windows = { mainWindow: undefined as BrowserWindow | undefined }
 let mcpHttpServer: McpHttpServer | null = null
+let mcpComponents: Awaited<ReturnType<typeof expandDirectoryComponents>> | undefined
 const mcpTemplateRegistry = new McpTemplateRegistry()
 const settingsStorage = new SettingsStorage()
 const mcpFacade = new SuperConnectXMcpFacade(mcpTemplateRegistry)
@@ -57,7 +58,7 @@ const getMcpPolicy = (): McpPermissionPolicy => {
 const startMcpRuntime = async (): Promise<boolean> => {
   const settings = settingsStorage.getSettings()
   if (!settings.mcpEnabled) return false
-  if (!mcpHttpServer) mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy(), mcpAudit)
+  if (!mcpHttpServer) mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy(), mcpAudit, mcpComponents)
   if (mcpHttpServer.status.enabled) return true
   await mcpHttpServer.start(Number(settings.mcpPort ?? 32180))
   logger.info(`[MCP] enabled at ${mcpHttpServer.endpoint}`)
@@ -148,8 +149,9 @@ app.whenReady().then(() => {
 
 app.whenReady().then(async () => {
   const profile = await loadDeveloperProfile(mcpTemplateRegistry)
+  mcpComponents = await expandDirectoryComponents(profile?.components ?? [])
   if (profile) {
-    logger.info(`[MCP] developer profile=${profile.profile.id} source=${profile.source} templates=${profile.loadedTemplates.length} skipped=${profile.skipped.length}`)
+    logger.info(`[MCP] developer profile=${profile.profile.id} source=${profile.source} templates=${profile.loadedTemplates.length} components=${mcpComponents.length} skipped=${profile.skipped.length}`)
   }
   const templateDirectories = [
     join(process.resourcesPath, 'mcp', 'templates'),
@@ -173,7 +175,7 @@ const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--m
 const mcpPortValue = mcpPortArgument ?? process.env.SCX_MCP_PORT
 if (mcpPortValue) {
   const mcpPort = Number.parseInt(mcpPortValue, 10)
-  mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy(), mcpAudit)
+  mcpHttpServer = new McpHttpServer(mcpFacade, process.env.SCX_MCP_TOKEN, getMcpPolicy(), mcpAudit, mcpComponents)
   app.whenReady().then(async () => {
     try {
       const info = await mcpHttpServer!.start(mcpPort)

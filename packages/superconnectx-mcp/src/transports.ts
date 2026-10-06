@@ -36,17 +36,20 @@ export class McpLoopbackServer {
   private port: number | null = null
   private policy: McpPermissionPolicy
   private audit?: McpAuditSink
+  private components?: CreateMcpServerOptions['components']
 
   constructor(
     facade: McpFacade,
     token = crypto.randomBytes(32).toString('hex'),
     policy: McpPermissionPolicy = DEFAULT_MCP_PERMISSION_POLICY,
-    audit?: McpAuditSink
+    audit?: McpAuditSink,
+    components?: CreateMcpServerOptions['components']
   ) {
     this.facade = facade
     this.token = Buffer.from(token, 'utf8')
     this.policy = { ...DEFAULT_MCP_PERMISSION_POLICY, ...policy }
     this.audit = audit
+    this.components = components
   }
 
   get permissionPolicy(): McpPermissionPolicy {
@@ -163,7 +166,7 @@ export class McpLoopbackServer {
           return
         }
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID() })
-        const server = createMcpServer(this.facade, this.policy, { audit: this.audit })
+        const server = createMcpServer(this.facade, this.policy, { audit: this.audit, components: this.components })
         const close = async () => {
           if (transport.sessionId) {
             const current = this.sessions.get(transport.sessionId)

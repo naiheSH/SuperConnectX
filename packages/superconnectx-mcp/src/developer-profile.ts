@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises'
+import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, join, resolve } from 'node:path'
 import { z } from 'zod'
@@ -66,10 +66,13 @@ export async function loadDeveloperProfile(
 
   for (const component of profile.components) {
     const componentPath = resolveFrom(source, component.path)
-    if (component.type === 'template-dir') {
-      const loaded = await registry.loadDirectory(componentPath)
+    if (component.type === 'template-dir' || component.type === 'parser' || component.type === 'tool') {
+      const loaded = component.type === 'template-dir'
+        ? await registry.loadDirectory(componentPath).catch(() => ({ loaded: [], skipped: [] }))
+        : { loaded: [], skipped: [] }
       result.loadedTemplates.push(...loaded.loaded.map((item) => ({ id: item.id, version: item.version, source: item.file })))
       result.skipped.push(...loaded.skipped.map((item) => ({ source: item.file, reason: item.reason })))
+      result.components.push({ id: component.id, type: component.type, path: componentPath, risk: component.risk })
       continue
     }
     try {
@@ -86,6 +89,61 @@ export function facadeComponent(result: DeveloperProfileLoadResult | null, expli
   if (explicitFacade) return explicitFacade
   const component = result?.profile.components.find((item) => item.type === 'facade')
   return component && result ? resolveFrom(result.source, component.path) : undefined
+}
+
+const FOLDER_COMPONENTS = [
+  ['templates', 'template-dir'],
+  ['resources', 'resource-dir'],
+  ['scripts', 'script-dir'],
+  ['parsers', 'parser'],
+  ['tools', 'tool']
+] as const
+
+export async function initDeveloperProfile(root = join(homedir(), '.superconnectx')): Promise<string> {
+  const dirs = FOLDER_COMPONENTS.map(([name]) => join(root, name))
+  await Promise.all(dirs.map((dir) => mkdir(dir, { recursive: true })))
+  const profilePath = join(root, 'profile.json')
+  const profile = {
+    id: 'my.device',
+    name: '我的设备包',
+    version: 1,
+    templates: [],
+    components: FOLDER_COMPONENTS.map(([name, type]) => ({ id: name, type, path: name }))
+  }
+  await writeFile(profilePath, JSON.stringify(profile, null, 2) + '\n')
+  await writeFile(join(root, 'templates', 'README.md'), '把设备模板 JSON 放在这里。文件名就是模板，不用改 profile.json。\n')
+  await writeFile(join(root, 'parsers', 'README.md'), '把解析器 .mjs 放在这里。文件名就是工具名，导出 default async function。\n')
+  await writeFile(join(root, 'tools', 'README.md'), '把自定义工具 .mjs 放在这里。文件名就是工具名，导出 default async function。\n')
+  return profilePath
+}
+
+export async function expandDirectoryComponents(components: DeveloperComponent[]): Promise<DeveloperComponent[]> {
+  const expanded: DeveloperComponent[] = []
+  for (const component of components) {
+    if (component.type !== 'parser' && component.type !== 'tool') {
+      expanded.push(component)
+      continue
+    }
+    let entries: string[]
+    try {
+      entries = (await readdir(component.path, { withFileTypes: true }))
+        .filter((entry) => entry.isFile() && /\.mjs$/i.test(entry.name) && !entry.name.startsWith('.'))
+        .map((entry) => entry.name)
+        .sort()
+    } catch {
+      expanded.push(component)
+      continue
+    }
+    if (entries.length === 0) {
+      expanded.push(component)
+      continue
+    }
+    for (const name of entries) {
+      const id = `${component.id}.${name.replace(/\.mjs$/i, '').replace(/[^a-z0-9._-]/gi, '-').toLowerCase()}`
+      expanded.push({ ...component, id, path: join(component.path, name) })
+    }
+  }
+  return expanded
 }
 
 async function firstExisting(paths: string[]): Promise<string | undefined> {

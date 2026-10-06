@@ -7,12 +7,12 @@ import type { McpFacade, McpPermissionPolicy } from './types.js'
 import { NativeMcpFacade } from './native-facade.js'
 import { TemplateRegistry } from './templates.js'
 import { createDefaultAuditSink } from './audit.js'
-import { facadeComponent, loadDeveloperProfile } from './developer-profile.js'
+import { expandDirectoryComponents, facadeComponent, initDeveloperProfile, loadDeveloperProfile } from './developer-profile.js'
 
 function usage(message?: string): never {
   if (message) console.error(message)
   console.error(
-    'Usage: scx-mcp [--facade ./facade.mjs] [--stdio | --http] [--port 32180] [--token TOKEN] [--mode read-only|read-write|full] [--allow-export|--no-export] [--templates DIR] [--doctor] [--print-config]'
+    'Usage: scx-mcp [--init] [--facade ./facade.mjs] [--stdio | --http] [--port 32180] [--token TOKEN] [--mode read-only|read-write|full] [--allow-export|--no-export] [--templates DIR] [--doctor] [--print-config]'
   )
   process.exit(2)
 }
@@ -46,10 +46,19 @@ export async function runMcpCli(argv = process.argv.slice(2)): Promise<void> {
     console.log('0.1.0')
     return
   }
+  if (argv.includes('--init')) {
+    const index = argv.indexOf('--init')
+    const root = argv[index + 1] && !argv[index + 1].startsWith('--') ? argv[index + 1] : undefined
+    const profilePath = await initDeveloperProfile(root)
+    console.log(`已创建 ${profilePath}`)
+    console.log('把文件放进同级 templates resources scripts parsers tools 目录，然后运行 scx-mcp --doctor')
+    return
+  }
 
   const { mode, policy } = parsePolicy(argv)
   const registry = new TemplateRegistry()
   const profile = await loadDeveloperProfile(registry, value('--profile'))
+  const components = await expandDirectoryComponents(profile?.components ?? [])
   const defaultTemplates = join(homedir(), '.superconnectx', 'templates')
   const templateDirectory = value('--templates') ?? process.env.SCX_MCP_TEMPLATES ?? defaultTemplates
   const templateResult = await registry.loadDirectory(templateDirectory)
@@ -64,6 +73,7 @@ export async function runMcpCli(argv = process.argv.slice(2)): Promise<void> {
           mode,
           profile: profile?.source ?? null,
           profileId: profile?.profile.id ?? null,
+          components: components.map((item) => ({ id: item.id, type: item.type, path: item.path })),
           templateDirectory,
           templates: registry.list().length,
           skippedTemplates: [...templateResult.skipped, ...(profile?.skipped ?? [])],
@@ -118,7 +128,8 @@ export async function runMcpCli(argv = process.argv.slice(2)): Promise<void> {
       resolvedFacade,
       value('--token') ?? process.env.SCX_MCP_TOKEN,
       policy,
-      audit
+      audit,
+      components
     )
     await server.start(Number(value('--port') ?? process.env.SCX_MCP_PORT ?? 32180))
     console.error(`SuperConnectX MCP listening at ${server.endpoint}`)
@@ -130,7 +141,7 @@ export async function runMcpCli(argv = process.argv.slice(2)): Promise<void> {
     return
   }
 
-  await startMcpStdio(resolvedFacade, policy, audit, profile?.components)
+  await startMcpStdio(resolvedFacade, policy, audit, components)
 }
 
 const isDirectExecution =
