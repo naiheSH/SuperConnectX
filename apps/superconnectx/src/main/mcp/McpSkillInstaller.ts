@@ -43,7 +43,7 @@ export function getSkillInstallCommands(): { gitClone: string; cliInstall: strin
       'mkdir -p ~/.agents/skills && rm -rf ~/.agents/skills/superconnectx-mcp',
       'cp -R packages/superconnectx-mcp-skill ~/.agents/skills/superconnectx-mcp'
     ].join('\n'),
-    cliInstall: ['npm install -g @superconnectx/mcp-cli', 'scx-mcp --doctor', 'scx-mcp --print-config'].join('\n'),
+    cliInstall: ['bash scripts/install-mcp-cli.sh', 'export PATH="$HOME/.local/bin:$PATH"', 'scx-mcp --doctor', 'scx-mcp --print-config'].join('\n'),
     symlink:
       'ln -sfn /path/to/SuperConnectX/packages/superconnectx-mcp-skill ~/.agents/skills/superconnectx-mcp'
   }

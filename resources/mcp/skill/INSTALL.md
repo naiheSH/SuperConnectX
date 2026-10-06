@@ -55,17 +55,17 @@ mkdir -p /tmp/scx-skill && tar -xzf superconnectx-mcp-skill-0.1.0.tgz -C /tmp/sc
 cp -R /tmp/scx-skill/package ~/.agents/skills/superconnectx-mcp
 ```
 
-## 配套安装 CLI（必做）
+## 配套安装 CLI
 
-没有 CLI/MCP runtime，Skill 无法真正操作设备：
+CLI 不发布到 npm。克隆仓库后执行：
 
 ```bash
-npm install -g @superconnectx/mcp-cli
+bash scripts/install-mcp-cli.sh
+export PATH="$HOME/.local/bin:$PATH"
 scx-mcp --doctor
 scx-mcp --print-config
 ```
 
-把 `--print-config` 输出合并进 Claude Desktop / Cursor / Codex 的 MCP 配置。
 
 ## 验证
 

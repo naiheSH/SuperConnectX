@@ -1,23 +1,23 @@
 # @superconnectx/mcp-cli
 
-独立运行的 SuperConnectX MCP CLI。**不需要启动桌面客户端**，安装后可直接把 `scx-mcp` 配成 AI 客户端的 MCP STDIO 服务。
+独立运行的 SuperConnectX MCP CLI。它留在仓库目录里，不发布到 npm，也不打进桌面安装包。
 
 ## 安装
 
-```bash
-npm install -g @superconnectx/mcp-cli
-# 或使用本地 release 产物
-npm install -g ./superconnectx-mcp-cli-0.1.0.tgz
-```
-
-先自检：
+在仓库根目录执行：
 
 ```bash
+bash scripts/install-mcp-cli.sh
+export PATH="$HOME/.local/bin:$PATH"
 scx-mcp --doctor
 scx-mcp --print-config
 ```
 
+脚本会构建 `packages/superconnectx-mcp` 和 `packages/superconnectx-mcp-cli`，并在 `~/.local/bin/scx-mcp` 放一个启动器。仓库移动后重新执行一次脚本。
+
 ## AI 客户端配置
+
+把 `--print-config` 的输出合并到 Claude Desktop、Cursor 或 Codex 的 MCP 配置。默认形态是：
 
 ```json
 {
@@ -30,7 +30,7 @@ scx-mcp --print-config
 }
 ```
 
-默认开放完整本地操作权限；如需收紧：
+默认是完整本地权限。收紧权限时使用：
 
 ```bash
 scx-mcp --stdio --mode read-only
@@ -38,25 +38,17 @@ scx-mcp --stdio --mode read-write
 scx-mcp --stdio --mode full --no-export
 ```
 
-HTTP 模式（仅本机 loopback）：
+只在本机使用 HTTP：
 
 ```bash
 scx-mcp --http --port 32180 --token CHANGE_ME
 ```
 
-## 与 Skill / 桌面端的关系
+## 后续流程
 
-| 组件 | 是否需要桌面端 | 作用 |
-| --- | --- | --- |
-| `scx-mcp`（本包） | 否 | 真正连串口、跑 MCP 工具 |
-| `superconnectx-mcp` Skill | 否 | 只教 AI 怎么安全调用工具 |
-| 桌面端 MCP HTTP | 是 | 复用 GUI 已有会话/日志 |
+1. 运行 `scx-mcp --doctor`，确认能看到串口。
+2. 运行 `scx-mcp --print-config`，写入 AI 客户端配置。
+3. 安装 Skill：按 `packages/superconnectx-mcp-skill/INSTALL.md` 复制到 `~/.agents/skills/superconnectx-mcp`。
+4. 在 AI 客户端里先调用 `serial_list_ports` 和 `session_list`。
 
-Skill 安装见仓库 `packages/superconnectx-mcp-skill/INSTALL.md`，或桌面端「设置 → MCP → 安装 Skill」。
-
-## 自定义后端
-
-```bash
-scx-mcp --facade ./my-facade.mjs --stdio
-scx-mcp --templates ~/.superconnectx/templates --stdio
-```
+CLI 只能管理自己建立的会话。要复用桌面端已经打开的会话，改用桌面端设置里的 MCP HTTP。

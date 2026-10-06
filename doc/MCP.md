@@ -21,10 +21,9 @@ pnpm run sync:mcp-skill
 
 `pnpm test` 会先跑 MCP 包测试，再跑桌面单测。CI 和 Release 使用同一个 `test:mcp` 脚本。
 
-## 使用
+## 交付
 
-- 桌面端：设置 → MCP → 启用服务。
-- CLI：在仓库内执行 `pnpm --dir packages/superconnectx-mcp-cli exec scx-mcp --doctor`。
-- Skill 文档改动后执行 `pnpm run sync:mcp-skill`，把源文档同步到 `skills/` 和 `resources/mcp/skill/`。
+- 桌面端：设置 → MCP → 启用服务。安装包带上 `resources/mcp`。
+- CLI：不打包、不发 npm。在仓库根目录执行 `bash scripts/install-mcp-cli.sh`，再运行 `scx-mcp --doctor` 和 `scx-mcp --print-config`。
+- Skill：按 `packages/superconnectx-mcp-skill/INSTALL.md` 安装，或在桌面端设置页点击安装。
 
-桌面安装包通过 `electron-builder.yml` 的 `extraResources` 带上 `resources/mcp`。CLI 和 Skill 作为 workspace 包随仓库维护，不另建 npm 发布流程。
