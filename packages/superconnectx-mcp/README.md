@@ -59,3 +59,7 @@ CLI 默认写入 `~/.superconnectx/mcp-audit.jsonl`；也可传入自定义 `aud
 - `src/transports.ts`：STDIO/HTTP 生命周期与安全
 - `src/native-facade.ts`：独立 CLI 默认串口后端
 - 设备连接/GUI 会话由宿主实现 `McpFacade`
+
+## 开发者扩展
+
+`scx-mcp --init` 创建目录，`scx-mcp --new template|tool|parser 名称` 生成短模板或工具文件。短模板在加载时自动补齐缺省字段。详见 `doc/MCP-DEVELOPER-PROFILE.md`。

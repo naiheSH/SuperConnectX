@@ -52,3 +52,13 @@ scx-mcp --http --port 32180 --token CHANGE_ME
 4. 在 AI 客户端里先调用 `serial_list_ports` 和 `session_list`。
 
 CLI 只能管理自己建立的会话。要复用桌面端已经打开的会话，改用桌面端设置里的 MCP HTTP。
+
+## 扩展设备能力
+
+```bash
+scx-mcp --init
+scx-mcp --new template 我的设备, version, status
+scx-mcp --new tool 读版本
+```
+
+生成的文件在 `~/.superconnectx/`。模板只需要命令名，工具只需要改生成函数里的逻辑。完整说明见 `doc/MCP-DEVELOPER-PROFILE.md`。

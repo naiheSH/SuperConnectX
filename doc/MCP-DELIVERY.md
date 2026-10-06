@@ -61,6 +61,18 @@ bash scripts/verify-mcp.sh
 - `~/.agents/skills/superconnectx-mcp/SKILL.md` 存在。
 - `pnpm run test:mcp` 通过。
 
+## 开发者扩展
+
+安装后用目录扩展设备能力，不用改 MCP 客户端配置：
+
+```bash
+scx-mcp --init
+scx-mcp --new template 我的设备, version, status
+scx-mcp --new tool 读版本
+scx-mcp --doctor
+```
+
+模板、解析器、工具和 Facade 的写法见 `doc/MCP-DEVELOPER-PROFILE.md`。
 ## 边界
 
 - CLI 看不到桌面端已经打开的会话。
