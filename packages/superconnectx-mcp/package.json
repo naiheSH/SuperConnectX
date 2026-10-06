@@ -15,7 +15,8 @@
     "./log-analysis": { "types": "./dist/log-analysis.d.ts", "import": "./dist/log-analysis.js" },
     "./result": { "types": "./dist/result.d.ts", "import": "./dist/result.js" },
     "./audit": { "types": "./dist/audit.d.ts", "import": "./dist/audit.js" },
-    "./types": { "types": "./dist/types.d.ts", "import": "./dist/types.js" }
+    "./types": { "types": "./dist/types.d.ts", "import": "./dist/types.js" },
+    "./developer-profile": { "types": "./dist/developer-profile.d.ts", "import": "./dist/developer-profile.js" }
   },
   "files": ["dist", "README.md"],
   "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc -p tsconfig.json --noEmit", "test": "node --test", "pack:check": "npm pack --dry-run" },

@@ -7,6 +7,7 @@ import type { McpFacade, McpPermissionPolicy } from './types.js'
 import { NativeMcpFacade } from './native-facade.js'
 import { TemplateRegistry } from './templates.js'
 import { createDefaultAuditSink } from './audit.js'
+import { facadeComponent, loadDeveloperProfile } from './developer-profile.js'
 
 function usage(message?: string): never {
   if (message) console.error(message)
@@ -48,10 +49,11 @@ export async function runMcpCli(argv = process.argv.slice(2)): Promise<void> {
 
   const { mode, policy } = parsePolicy(argv)
   const registry = new TemplateRegistry()
+  const profile = await loadDeveloperProfile(registry, value('--profile'))
   const defaultTemplates = join(homedir(), '.superconnectx', 'templates')
   const templateDirectory = value('--templates') ?? process.env.SCX_MCP_TEMPLATES ?? defaultTemplates
   const templateResult = await registry.loadDirectory(templateDirectory)
-  const facadePath = value('--facade') ?? process.env.SCX_MCP_FACADE_MODULE
+  const facadePath = facadeComponent(profile, value('--facade') ?? process.env.SCX_MCP_FACADE_MODULE)
 
   if (argv.includes('--doctor')) {
     const probe = new NativeMcpFacade(registry)
@@ -60,9 +62,11 @@ export async function runMcpCli(argv = process.argv.slice(2)): Promise<void> {
         {
           ok: true,
           mode,
+          profile: profile?.source ?? null,
+          profileId: profile?.profile.id ?? null,
           templateDirectory,
-          templates: templateResult.loaded.length,
-          skippedTemplates: templateResult.skipped,
+          templates: registry.list().length,
+          skippedTemplates: [...templateResult.skipped, ...(profile?.skipped ?? [])],
           serialPorts: await probe.listSerialPorts(),
           facade: facadePath ?? 'native'
         },
@@ -126,7 +130,7 @@ export async function runMcpCli(argv = process.argv.slice(2)): Promise<void> {
     return
   }
 
-  await startMcpStdio(resolvedFacade, policy, audit)
+  await startMcpStdio(resolvedFacade, policy, audit, profile?.components)
 }
 
 const isDirectExecution =

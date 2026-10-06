@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { pathToFileURL } from 'node:url'
 import { z } from 'zod'
 import type { McpFacade, McpPermissionPolicy } from './types.js'
 import { DEFAULT_MCP_PERMISSION_POLICY } from './types.js'
@@ -13,6 +14,7 @@ import {
   mcpErrorResult,
   mcpToolResult
 } from './result.js'
+import type { DeveloperComponent } from './developer-profile.js'
 
 const lease = (facade: McpFacade, sessionId: string, ownerId: string) => {
   if (!facade.assertWriteLease) throw new Error('Write lease required')
@@ -33,6 +35,7 @@ const EXPORT = new Set(['uploadSessionFile'])
 
 export interface CreateMcpServerOptions {
   audit?: McpAuditSink
+  components?: DeveloperComponent[]
 }
 
 function applyPolicy(facade: McpFacade, policy: McpPermissionPolicy): McpFacade {
@@ -423,5 +426,23 @@ export function createMcpServer(
       return facade.stopSession?.(sessionId)
     })
   )
+  for (const component of options.components ?? []) {
+    if (component.type !== 'tool' && component.type !== 'parser') continue
+    server.registerTool(
+      `component_${component.id.replace(/[^a-z0-9_]/g, '_')}`,
+      {
+        title: component.id,
+        description: `Developer ${component.type} component.`,
+        inputSchema: { input: z.record(z.string(), z.unknown()).optional() },
+        annotations: { readOnlyHint: component.risk === 'read' }
+      },
+      wrapTool(`component.${component.id}`, audit, async ({ input }) => {
+        const imported = await import(pathToFileURL(component.path).href)
+        const run = imported.default ?? imported.run
+        if (typeof run !== 'function') throw new Error(`Component has no default function: ${component.id}`)
+        return await run({ facade, input: input ?? {}, component })
+      })
+    )
+  }
   return server
 }

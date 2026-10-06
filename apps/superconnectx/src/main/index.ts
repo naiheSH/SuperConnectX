@@ -19,6 +19,7 @@ import { McpTemplateRegistry } from './mcp/McpTemplateRegistry'
 import { getSkillInstallCommands, getSkillInstallTargets, installBundledMcpSkill } from './mcp/McpSkillInstaller'
 import SettingsStorage from './storage/SettingsStorage'
 import { DEFAULT_MCP_PERMISSION_POLICY, type McpPermissionPolicy } from '../shared/mcp/McpTypes'
+import { loadDeveloperProfile } from '@superconnectx/mcp/developer-profile'
 
 // 禁用 Chromium 自动网络请求，避免公司内网代理环境触发安全告警
 // Chromium 启动时会连接 Google 服务（组件更新、网络检测等），在代理环境下可能被拦截
@@ -146,6 +147,10 @@ app.whenReady().then(() => {
 })
 
 app.whenReady().then(async () => {
+  const profile = await loadDeveloperProfile(mcpTemplateRegistry)
+  if (profile) {
+    logger.info(`[MCP] developer profile=${profile.profile.id} source=${profile.source} templates=${profile.loadedTemplates.length} skipped=${profile.skipped.length}`)
+  }
   const templateDirectories = [
     join(process.resourcesPath, 'mcp', 'templates'),
     join(app.getAppPath(), 'resources', 'mcp', 'templates'),

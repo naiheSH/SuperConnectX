@@ -4,7 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import type { McpFacade, McpPermissionPolicy } from './types.js'
 import { DEFAULT_MCP_PERMISSION_POLICY } from './types.js'
-import { createMcpServer } from './server.js'
+import { createMcpServer, type CreateMcpServerOptions } from './server.js'
 import type { McpAuditSink } from './audit.js'
 
 const MAX_BODY_BYTES = 1_048_576
@@ -20,9 +20,10 @@ interface McpSession {
 export async function startMcpStdio(
   facade: McpFacade,
   policy: McpPermissionPolicy = DEFAULT_MCP_PERMISSION_POLICY,
-  audit?: McpAuditSink
+  audit?: McpAuditSink,
+  components?: CreateMcpServerOptions['components']
 ): Promise<() => Promise<void>> {
-  const server = createMcpServer(facade, policy, { audit })
+  const server = createMcpServer(facade, policy, { audit, components })
   await server.connect(new StdioServerTransport())
   return () => server.close()
 }
