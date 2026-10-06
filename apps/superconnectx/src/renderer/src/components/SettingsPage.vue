@@ -433,6 +433,8 @@
             </div>
           </div>
 
+        </div>
+
         <!-- MCP -->
         <div v-else-if="activeCategory === 'mcp'" class="settings-group">
           <div class="group-section">
@@ -558,8 +560,6 @@
             </div>
           </div>
         </div>
-        </div>
-
       </div>
     </SettingsLayout>
 
