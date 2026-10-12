@@ -21,6 +21,7 @@
         @check-update="updateDialogRef?.open()"
         :log-editable="terminalLogEditable"
         @open-plugins="handlePlugins"
+        @open-ascii="openAsciiTab"
         @toggle-word-wrap="handleToggleWordWrap"
         @toggle-line-numbers="handleToggleLineNumbers"
         @toggle-log-editable="handleToggleLogEditable"
@@ -271,6 +272,11 @@
                 v-show="isTabActiveInItsPanel(tab.id.toString())"
                 class="terminal-component"
               />
+              <AsciiTable
+                v-if="tab.connectionType === 'ascii'"
+                v-show="isTabActiveInItsPanel(tab.id.toString())"
+                class="terminal-component"
+              />
             </Teleport>
           </template>
         </div>
@@ -280,9 +286,11 @@
     <!-- 状态栏 -->
     <template #statusbar>
       <StatusBar>
-        <template #left
-          ><div class="resource-monitor"><ResourceMonitor /></div
-        ></template>
+        <template #left>
+          <div class="resource-monitor">
+            <ResourceMonitor mem-label="内存" :fetcher="fetchAppResource" />
+          </div>
+        </template>
         <template #right
           ><div v-if="lastSentCommand" class="command-status">
             {{ t('notification.commandSent', { command: lastSentCommand }) }}
@@ -313,7 +321,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import CustomTitleBar from './components/CustomTitleBar.vue'
 import NotifyContainer from './components/NotifyContainer.vue'
-import ResourceMonitor from './components/ResourceMonitor.vue'
+import ResourceMonitor from '@superx/foundation/shell/ResourceMonitor.vue'
 import AboutDialog from './components/AboutDialog.vue'
 import UpdateDialog from './components/UpdateDialog.vue'
 import ConnectionDialog from './features/connections/ConnectionDialog.vue'
@@ -327,6 +335,7 @@ import CommandEditor from './features/commands/CommandEditor.vue'
 import ShortcutsPage from './components/ShortcutsPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
 import VirtualPortPage from './features/virtual-port/VirtualPortPage.vue'
+import AsciiTable from './components/AsciiTable.vue'
 import AppShell from '@superx/foundation/shell/AppShell.vue'
 import StatusBar from '@superx/foundation/shell/StatusBar.vue'
 import SidebarResizeHandle from '@superx/foundation/shell/SidebarResizeHandle.vue'
@@ -335,7 +344,7 @@ import logoImage from './assets/icon.png'
 
 // Composables
 import { useConnectionSidebar } from './features/connections/useConnectionSidebar'
-import { useTabManager } from './features/tabs/useTabManager'
+import { useTabManager, type TabItem } from './features/tabs/useTabManager'
 import { useSplitWorkspace } from '@superx/foundation/workbench/useSplitWorkspace'
 import { useSerialRemarks } from './features/connections/useSerialRemarks'
 import { useShortcuts } from './features/shortcuts/useShortcuts'
@@ -369,6 +378,7 @@ const telnetTerminalRefs = reactive<Record<string, any>>({})
 const {
   connectionChangeCounter,
   isConnected: isConnectedForSession,
+  isConnecting: isConnectingForSession,
   stopPolling: stopConnectionStatePolling
 } = useConnectionStateMonitor({ comTerminalRefs, telnetTerminalRefs })
 
@@ -430,6 +440,7 @@ const {
   openShortcutsTab,
   openSettingsTab,
   openVirtualPortTab,
+  openAsciiTab,
   bindTabMenuDismiss
 } = useTabManager(comTerminalRefs, telnetTerminalRefs)
 
@@ -494,12 +505,15 @@ const {
 })
 
 // ---- Session Restore（会话恢复） ----
+// 会话快照时：已连接或正在连接中的选项卡，恢复后都应自动重连
+const wasConnectedForSession = (tab: TabItem): boolean =>
+  isConnectedForSession(tab) || isConnectingForSession(tab)
 const sessionRestore = useSessionRestore({
   connectionTabs,
   activeTabId,
   pinnedTabs,
   splitState,
-  isConnected: isConnectedForSession,
+  isConnected: wasConnectedForSession,
   connectionStateDependency: connectionChangeCounter
 })
 
@@ -733,6 +747,9 @@ const loadNotificationDuration = async () => {
 }
 
 // ---- Lifecycle ----
+// 资源监视数据源：桥接基础层 ResourceMonitor 到 toolApi（主进程 CPU/内存采样）
+const fetchAppResource = () => window.toolApi.getAppResource()
+
 onMounted(async () => {
   // 主题初始化已下沉至基础层 ThemeSwitcher（内部 useTheme 在创建时应用持久化主题）
 
@@ -813,11 +830,10 @@ onUnmounted(() => {
 
 .resource-monitor {
   height: 100%;
-  margin-left: 5px;
   background-color: transparent;
   color: var(--statusbar-text);
   font-size: 11px;
-  padding: 0px 10px;
+  padding: 0px 10px 0px 5px;
   display: flex;
   align-items: center;
   width: fit-content;

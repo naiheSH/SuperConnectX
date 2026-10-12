@@ -19,6 +19,17 @@ interface SerialPortInfo {
   type?: 'virtual' | 'usb' | 'bluetooth' | 'none'
 }
 
+/** 编译期内联的贡献者数据（来自根 package.json 的 contributors 字段） */
+declare const __APP_CONTRIBUTORS__: Array<{ name: string; url: string; role?: string }>
+/** 编译期内联的交流群链接（来自根 package.json 的 app_config.JoinGroupUrl） */
+declare const __APP_JOIN_GROUP_URL__: string
+/** 编译期内联的仓库地址（来自根 package.json 的 app_config.RepositoryUrl） */
+declare const __APP_REPOSITORY_URL__: string
+/** 编译期内联的 Issues 链接（来自根 package.json 的 app_config.IssuesUrl） */
+declare const __APP_ISSUES_URL__: string
+/** 编译期内联的 Wiki 链接（来自根 package.json 的 app_config.WikiUrl） */
+declare const __APP_WIKI_URL__: string
+
 interface ToolApi {
   openDevtools: () => Promise<void>
   getAppResource: () => Promise<{ cpu: string; memory: string; memRate: string }>
@@ -96,8 +107,26 @@ interface WindowApi {
   onMaximizedChanged: (callback: (maximized: boolean) => void) => () => void
 }
 
+
+interface McpApi {
+  getStatus: () => Promise<{ enabled: boolean; port: number | null; endpoint: string | null }>
+  getClientConfig: () => Promise<{ endpoint: string | null; token: string | null }>
+  rotateToken: () => Promise<string | null>
+  importTemplate: (filePath: string) => Promise<{ id: string; version: number; name: string }>
+  getSettings: () => Promise<{ enabled: boolean; port: number; accessMode: 'read-only' | 'read-write' | 'full'; allowExport: boolean }>
+  saveSettings: (settings: { enabled: boolean; port: number; accessMode: 'read-only' | 'read-write' | 'full'; allowExport: boolean }) => Promise<boolean>
+  start: () => Promise<boolean>
+  stop: () => Promise<boolean>
+  installSkill: () => Promise<{ source: string; installed: Array<{ id: string; path: string }> }>
+  getSkillInstallInfo: () => Promise<{
+    targets: Array<{ id: string; path: string }>
+    commands: { gitClone: string; cliInstall: string; symlink: string }
+  }>
+}
+
 declare global {
   interface Window {
+    mcpApi: McpApi
     toolApi: ToolApi
     storageApi: StorageApi
     connectApi: ConnectApi

@@ -106,6 +106,8 @@
           <div class="menu-item" @click="handleVirtualPort">{{ t('virtualPort.title') }}</div>
           <div class="menu-item" @click="handleCheckUpdate">{{ t('sidebar.checkUpdate') }}</div>
           <div class="menu-item" @click="handlePlugins">{{ t('sidebar.plugins') }}</div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleAsciiTable">{{ t('titlebar.asciiTable') }}</div>
         </div>
       </div>
 
@@ -123,7 +125,6 @@
           <div class="menu-item" @click="handleDoc">{{ t('titlebar.doc') }}</div>
           <div class="menu-item" @click="handleAbout">{{ t('titlebar.about') }}</div>
           <div class="menu-item" @click="handleFeedBack">{{ t('titlebar.feedback') }}</div>
-          <div class="menu-item" @click="handleDevelop">{{ t('titlebar.develop') }}</div>
         </div>
       </div>
     </div>
@@ -133,36 +134,18 @@
     <template #right>
       <div class="titlebar-actions">
         <div class="layout-controls">
-          <button
-            class="layout-toggle"
-            :class="{ 'is-visible': showConnectionList }"
-            type="button"
+          <LayoutToggle
+            variant="sidebar"
+            :visible="showConnectionList"
             :title="t('titlebar.togglePrimarySidebar')"
-            :aria-label="t('titlebar.togglePrimarySidebar')"
-            :aria-pressed="showConnectionList"
-            @click="emit('toggle-primary-sidebar')"
-          >
-            <svg viewBox="0 0 18 18" aria-hidden="true">
-              <rect class="layout-outline" x="2" y="2.5" width="14" height="13" rx="2" />
-              <path class="layout-divider" d="M6.5 3v12" />
-              <rect class="layout-fill" x="3" y="3.5" width="2.5" height="11" rx="0.75" />
-            </svg>
-          </button>
-          <button
-            class="layout-toggle"
-            :class="{ 'is-visible': showBottomPanel }"
-            type="button"
+            @toggle="emit('toggle-primary-sidebar')"
+          />
+          <LayoutToggle
+            variant="bottom"
+            :visible="showBottomPanel"
             :title="t('titlebar.toggleBottomPanel')"
-            :aria-label="t('titlebar.toggleBottomPanel')"
-            :aria-pressed="showBottomPanel"
-            @click="emit('toggle-bottom-panel')"
-          >
-            <svg viewBox="0 0 18 18" aria-hidden="true">
-              <rect class="layout-outline" x="2" y="2.5" width="14" height="13" rx="2" />
-              <path class="layout-divider" d="M2.5 10.5h13" />
-              <rect class="layout-fill" x="3" y="11.5" width="12" height="3" rx="0.75" />
-            </svg>
-          </button>
+            @toggle="emit('toggle-bottom-panel')"
+          />
         </div>
 
         <!-- 皮肤切换：基础层 ThemeSwitcher 组件（标签文案经 props 注入） -->
@@ -185,6 +168,7 @@ import { useI18n } from 'vue-i18n'
 import { getSystemFonts, formatFontName, getDefaultTerminalFont } from '../utils/FontDetector'
 import ExportDialog from './ExportDialog.vue'
 import WindowTitleBar from '@superx/foundation/shell/WindowTitleBar.vue'
+import LayoutToggle from '@superx/foundation/shell/LayoutToggle.vue'
 import ThemeSwitcher from '@superx/foundation/theme/ThemeSwitcher.vue'
 
 const { t } = useI18n()
@@ -215,6 +199,7 @@ const emit = defineEmits([
   'open-virtualPort',
   'check-update',
   'open-plugins',
+  'open-ascii',
   'toggle-word-wrap',
   'toggle-line-numbers',
   'toggle-log-editable',
@@ -402,16 +387,13 @@ const handleAbout = () => {
   emit('open-about')
 }
 
-const handleDevelop = () => {
-  showHelpMenu.value = false
-}
-
 const handleFeedBack = () => {
-  window.toolApi.openExternalUrl('https://github.com/naiheSH/SuperConnectX/issues')
+  window.toolApi.openExternalUrl(__APP_ISSUES_URL__)
   showHelpMenu.value = false
 }
 
 const handleDoc = () => {
+  window.toolApi.openExternalUrl(__APP_WIKI_URL__)
   showHelpMenu.value = false
 }
 
@@ -438,6 +420,11 @@ const handleCheckUpdate = () => {
 const handlePlugins = () => {
   showToolsMenu.value = false
   emit('open-plugins')
+}
+
+const handleAsciiTable = () => {
+  showToolsMenu.value = false
+  emit('open-ascii')
 }
 
 const handleMenuMouseEnter = async (menuType) => {
@@ -666,64 +653,6 @@ const handleClickOutside = (event: MouseEvent) => {
   gap: 2px;
   padding: 0 4px;
   -webkit-app-region: no-drag;
-}
-
-.layout-toggle {
-  width: 28px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--text-titlebar);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  opacity: 0.58;
-  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
-}
-
-.layout-toggle:hover {
-  background-color: var(--overlay-hover);
-  color: var(--text-white);
-  opacity: 1;
-}
-
-.layout-toggle:active {
-  background-color: var(--overlay-active);
-}
-
-.layout-toggle:focus-visible {
-  outline: 1px solid var(--focus-border-color);
-  outline-offset: -2px;
-}
-
-.layout-toggle.is-visible {
-  color: var(--text-white);
-  opacity: 1;
-}
-
-.layout-toggle svg {
-  width: 18px;
-  height: 18px;
-}
-
-.layout-outline,
-.layout-divider {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.35;
-}
-
-.layout-fill {
-  fill: currentColor;
-  opacity: 0.18;
-  transition: opacity 0.15s ease;
-}
-
-.layout-toggle.is-visible .layout-fill {
-  opacity: 0.78;
 }
 
 .titlebar-menu {

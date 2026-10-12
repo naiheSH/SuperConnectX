@@ -40,7 +40,8 @@
     "syntax": "Syntax Highlight",
     "search": "Search",
     "history": "Command History",
-    "backup": "Backup & Restore"
+    "backup": "Backup & Restore",
+    "mcp": "MCP"
   },
   "basicSettings": {
     "title": "General Settings",
@@ -249,8 +250,9 @@
     "doc": "Documentation",
     "about": "About",
     "feedback": "Feedback",
-    "develop": "Contribute",
+
     "checkUpdate": "Check for Updates",
+    "asciiTable": "ASCII Table",
     "wordWrap": "Word Wrap",
     "lineNumbers": "Line Numbers",
     "logEditable": "Editable Log",
@@ -295,8 +297,6 @@
     "splitToNewPanel": "Split to New Panel",
     "dragToSplit": "Drop here to split"
   },
-
-
   "dialog": {
     "newConnection": "New Connection",
     "editConnection": "Edit Connection",
@@ -330,6 +330,9 @@
     "pleaseEnterAddress": "Please enter server address",
     "pleaseEnterUsername": "Please enter username",
     "pleaseEnterPassword": "Please enter password"
+  },
+  "telnetTerminal": {
+    "waiting": "Waiting for connection {host}:{port}..."
   },
   "comTerminal": {
     "waiting": "Waiting for connection {port}...",
@@ -567,10 +570,9 @@
   "about": {
     "title": "About SuperConnectX",
     "version": "Version {version}",
-    "description": "SuperConnectX - Multi-protocol Terminal Tool",
-    "author": "Author: SuperStudio",
-    "copyright": "Copyright © 2025 SuperStudio",
-    "doc": "Documentation"
+    "description": "SuperConnectX - AI-enabled multi-protocol terminal tool",
+    "group": "Community",
+    "contributors": "Contributors"
   },
   "ftp": {
     "mode": "Mode",
@@ -600,9 +602,54 @@
     "recheck": "Recheck",
     "openWebsite": "Download",
     "error": "Update Error",
-    "unknownError": "Unknown error",
-    "proxyWarning": "Needs to connect to GitHub. May be blocked by security software in proxy environments. Continue?",
-    "continueCheck": "Continue"
+    "unknownError": "Unknown error"
+  },
+  "ascii": {
+    "title": "ASCII Table",
+    "search": "Search",
+    "all": "All",
+    "decimal": "Decimal",
+    "ascii": "ASCII",
+    "hex": "Hex",
+    "bin": "Binary",
+    "desc": "Description",
+    "noResult": "No matching result",
+    "descMap": {
+      "0": "Null character",
+      "1": "Start of Heading",
+      "2": "Start of Text",
+      "3": "End of Text",
+      "4": "End of Transmission",
+      "5": "Enquiry",
+      "6": "Acknowledgment",
+      "7": "Bell",
+      "8": "Backspace",
+      "9": "Horizontal Tab",
+      "10": "Line Feed",
+      "11": "Vertical Tab",
+      "12": "Form Feed",
+      "13": "Carriage Return",
+      "14": "Shift Out",
+      "15": "Shift In",
+      "16": "Data Link Escape",
+      "17": "Device Control 1 (XON)",
+      "18": "Device Control 2",
+      "19": "Device Control 3 (XOFF)",
+      "20": "Device Control 4",
+      "21": "Negative Acknowledgment",
+      "22": "Synchronous Idle",
+      "23": "End of Transmission Block",
+      "24": "Cancel",
+      "25": "End of Medium",
+      "26": "Substitute",
+      "27": "Escape",
+      "28": "File Separator",
+      "29": "Group Separator",
+      "30": "Record Separator",
+      "31": "Unit Separator",
+      "32": "Space",
+      "127": "Delete"
+    }
   },
   "exportDialog": {
     "title": "Export Data",
@@ -674,7 +721,6 @@
     "updateSuccess": "Virtual port configuration updated successfully",
     "updateFailed": "Failed to update virtual port configuration",
     "noChanges": "No configuration changes detected",
-    "deletePairConfirm": "Confirm to delete virtual port pair {portA} <-> {portB}?",
     "clickToInstall": "Click to Install",
     "installLaunched": "Installer launched, please follow the wizard to complete installation",
     "installFailed": "Failed to launch installer",
@@ -690,5 +736,58 @@
     "actions": "Actions",
     "noPairs": "No virtual serial port pairs",
     "notSupported": "Virtual serial port emulation is only supported on Windows"
+  },
+  "mcpSettings": {
+    "serviceTitle": "MCP Service",
+    "enable": "Enable MCP",
+    "enableDesc": "Listen on 127.0.0.1 only; disabled by default. When enabled, AI can read current GUI sessions and logs.",
+    "port": "Listen Port",
+    "portDesc": "Range 1024-65535, default 32180.",
+    "accessMode": "Access Mode",
+    "accessModeDesc": "Controls whether AI can open connections, send commands, or stop sessions.",
+    "modeReadOnly": "Read-only",
+    "modeReadWrite": "Read-write",
+    "modeFull": "Full",
+    "allowExport": "Upload / Export",
+    "allowExportDesc": "Only available in Full mode.",
+    "status": "Service Status",
+    "statusRunning": "Running",
+    "statusDisabled": "Disabled",
+    "accessTitle": "Client Access",
+    "endpoint": "Endpoint",
+    "endpointDesc": "Local MCP URL for AI clients.",
+    "endpointDisabled": "Disabled",
+    "token": "Bearer Token",
+    "tokenDesc": "Shown locally only; never written to logs.",
+    "copy": "Copy",
+    "rotateToken": "Rotate Token",
+    "rotateTokenDesc": "Existing MCP HTTP sessions will be invalidated.",
+    "rotateTokenButton": "Rotate Token",
+    "refresh": "Refresh Status",
+    "refreshDesc": "Reload service status and access info.",
+    "refreshButton": "Refresh",
+    "importTemplate": "Import Device Template",
+    "importTemplateDesc": "Import a JSON template into the user directory for MCP.",
+    "importTemplateButton": "Choose JSON Template",
+    "skillTitle": "Skill Wrapper",
+    "installSkill": "Install Locally",
+    "installSkillDesc": "Skill is only an MCP workflow wrapper for AI clients; it does not replace the MCP service.",
+    "installSkillButton": "Install",
+    "copyGitCommand": "Copy Git Command",
+    "copyCliCommand": "Copy CLI Command",
+    "installTargets": "Install Paths",
+    "installTargetsDesc": "You can edit the Skill docs after install.",
+    "saved": "MCP settings saved",
+    "saveFailed": "Failed to save MCP settings",
+    "templateImported": "Template {name} v{version} imported",
+    "templateImportFailed": "Failed to import template",
+    "configCopied": "MCP config copied",
+    "rotateConfirm": "Rotating the token will invalidate existing MCP sessions. Continue?",
+    "rotateTitle": "Rotate Token",
+    "rotateSuccess": "Token rotated",
+    "skillInstalled": "Skill installed to {paths}",
+    "skillInstallFailed": "Failed to install Skill",
+    "gitCopied": "Git install command copied",
+    "cliCopied": "CLI install command copied"
   }
 }

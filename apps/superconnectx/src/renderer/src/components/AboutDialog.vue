@@ -14,12 +14,26 @@
       <p class="about-version">{{ t('about.version', { version }) }}</p>
       <p class="about-desc">{{ t('about.description') }}</p>
       <div class="about-divider"></div>
-      <p class="about-author">{{ t('about.author') }}</p>
-      <p class="about-copyright">{{ t('about.copyright') }}</p>
+      <div class="about-contributors">
+        <p class="about-contributors-title">{{ t('about.contributors') }}</p>
+        <div class="contributor-list">
+          <a
+            v-for="contributor in contributors"
+            :key="contributor.url"
+            class="contributor-item"
+            href="#"
+            :title="contributor.url"
+            @click.prevent="openContributor(contributor.url)"
+          >
+            <img class="contributor-avatar" :src="contributor.avatar" :alt="contributor.name" />
+            <span class="contributor-name">{{ contributor.name }}</span>
+          </a>
+        </div>
+      </div>
       <div class="about-divider"></div>
       <p class="about-links">
         <a href="#" @click.prevent="openGithub">GitHub</a> |
-        <a href="#" @click.prevent="openDoc">{{ t('about.doc') }}</a>
+        <a v-if="joinGroupUrl" href="#" @click.prevent="openGroup">{{ t('about.group') }}</a>
       </p>
     </div>
   </el-dialog>
@@ -46,12 +60,29 @@ const loadVersion = async () => {
 loadVersion()
 
 const openGithub = () => {
-  window.toolApi.openExternalUrl('https://github.com/naiheSH/SuperConnectX')
+  window.toolApi.openExternalUrl(__APP_REPOSITORY_URL__)
 }
 
-const openDoc = () => {
-  window.toolApi.openExternalUrl('https://github.com/naiheSH/SuperConnectX#readme')
+const joinGroupUrl = __APP_JOIN_GROUP_URL__
+const openGroup = () => {
+  if (joinGroupUrl) window.toolApi.openExternalUrl(joinGroupUrl)
 }
+
+const openContributor = (github: string) => {
+  window.toolApi.openExternalUrl(github)
+}
+
+// 构建时收集 about 目录下的本地头像，按贡献者 name 拼接查找（支持 .png/.jpg）
+const avatarModules = import.meta.glob('../assets/about/*.{png,jpg}', { eager: true, import: 'default' }) as Record<string, string>
+const resolveLocalAvatar = (name: string): string => {
+  const found = Object.entries(avatarModules).find(([path]) => {
+    const base = path.split('/').pop()?.split('.')[0]
+    return base === name
+  })
+  return found ? found[1] : ''
+}
+
+const contributors = __APP_CONTRIBUTORS__.map((c) => ({ ...c, avatar: resolveLocalAvatar(c.name) }))
 </script>
 
 <style scoped>
@@ -121,5 +152,56 @@ const openDoc = () => {
 
 .about-links a:hover {
   text-decoration: underline;
+}
+
+.about-contributors-title {
+  color: var(--about-desc-color);
+  font-size: 13px;
+  margin: 0 0 12px 0;
+}
+
+.contributor-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+.contributor-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 72px;
+  text-decoration: none;
+  color: var(--about-desc-color);
+  transition: transform 0.2s ease;
+}
+
+.contributor-item:hover {
+  transform: translateY(-4px);
+}
+
+.contributor-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contributor-item:hover .contributor-avatar {
+  border-color: var(--about-link-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.contributor-name {
+  margin-top: 8px;
+  font-size: 12px;
+  transition: color 0.2s ease;
+}
+
+.contributor-item:hover .contributor-name {
+  color: var(--about-link-color);
 }
 </style>
