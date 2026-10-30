@@ -50,6 +50,13 @@
                 <span class="slider-value">{{ settings.maxDisplayText }} MB</span>
               </div>
             </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{ t('basicSettings.autoCheckUpdate') }}</span>
+                <span class="label-desc">{{ t('basicSettings.autoCheckUpdateDesc') }}</span>
+              </div>
+              <el-switch class="terminal-switch" v-model="settings.autoCheckUpdate" />
+            </div>
           </div>
 
           <!-- 显示 -->
@@ -121,6 +128,20 @@
                 style="width: 200px"
                 :placeholder="defaultSettings.recvDisplayText || ''"
                 :spellcheck="false"
+              />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span class="label-text">{{
+                  t('basicSettings.confirmCloseWithActiveConnections')
+                }}</span>
+                <span class="label-desc">{{
+                  t('basicSettings.confirmCloseWithActiveConnectionsDesc')
+                }}</span>
+              </div>
+              <el-switch
+                class="terminal-switch"
+                v-model="settings.confirmCloseWithActiveConnections"
               />
             </div>
           </div>
@@ -304,6 +325,7 @@
               </div>
               <el-button
                 size="small"
+                class="btn-danger"
                 @click="handleCleanupLogs"
                 :loading="isCleaningUp || isSavingSettings"
                 :disabled="isCleaningUp || isSavingSettings"
@@ -399,7 +421,10 @@
             <div class="group-title">{{ t('basicSettings.restore') }}</div>
             <div class="setting-item restore-header-item">
               <div class="setting-label">
-                <span class="label-text">{{ t('basicSettings.restoreList') }}</span>
+                <span class="label-text">
+                  {{ t('basicSettings.restoreList') }}
+                  <span class="backup-list-count">({{ backupList.length }})</span>
+                </span>
                 <span class="label-desc">{{ t('basicSettings.restoreListDesc') }}</span>
               </div>
               <el-button type="text" icon="Refresh" @click="refreshBackupList" size="small" class="icon-text-button">
@@ -1232,6 +1257,33 @@ const handleSettingsUpdated = (event: Event) => {
   border-bottom: none;
 }
 
+/* 危险操作按钮（立即清理日志）：与主/取消按钮同一套变量，只换红色。
+   全局 .btn-primary 是 width:100%，此处显式改回自适应宽度，与设置页其他操作按钮一致 */
+.btn-danger {
+  width: auto !important;
+  background-color: var(--btn-danger-bg) !important;
+  border-color: var(--btn-danger-bg) !important;
+  color: var(--btn-danger-text) !important;
+}
+
+.btn-danger:hover:not(:disabled):not(:loading) {
+  background-color: var(--btn-danger-hover) !important;
+  border-color: var(--btn-danger-hover) !important;
+}
+
+.btn-danger:active:not(:disabled):not(:loading) {
+  background-color: var(--btn-danger-active) !important;
+  border-color: var(--btn-danger-active) !important;
+}
+
+.btn-danger:disabled {
+  background-color: var(--btn-primary-disabled-bg) !important;
+  border-color: var(--btn-primary-disabled-border) !important;
+  color: var(--btn-primary-disabled-text) !important;
+  cursor: not-allowed;
+  opacity: 1 !important;
+}
+
 .setting-label {
   display: flex;
   flex-direction: column;
@@ -1397,6 +1449,14 @@ const handleSettingsUpdated = (event: Event) => {
 /* 备份恢复样式 */
 .restore-header-item {
   padding-bottom: 4px;
+}
+
+/* 可恢复备份列表标题右侧的数量徽标，如 "(12)" */
+.backup-list-count {
+  margin-left: 4px;
+  color: var(--settings-backup-size);
+  font-size: 13px;
+  font-weight: normal;
 }
 
 .no-backups {

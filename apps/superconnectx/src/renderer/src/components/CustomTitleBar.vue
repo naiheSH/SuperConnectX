@@ -69,19 +69,19 @@
           >
             <span class="checkbox-mark"></span>
             <span>{{ t('titlebar.font') }}</span>
-            <div class="dropdown-submenu" v-if="showFontSubmenu"
+            <div ref="fontSubmenuEl" class="dropdown-submenu" v-if="showFontSubmenu"
               @mouseenter="showFontSubmenu = true"
               @mouseleave="showFontSubmenu = false"
             >
               <div
                 class="menu-item"
-                :class="{ 'font-item-active': font && currentFontFamily && font === currentFontFamily }"
-                v-for="font in systemFonts"
+                :class="{ 'font-item-active': font && font === activeFont }"
+                v-for="font in fontMenuItems"
                 :key="font"
                 @click="changeFont(font)"
                 :style="{ fontFamily: font }"
               >
-                <span v-if="font && currentFontFamily && font === currentFontFamily" class="font-check">✓</span>
+                <span v-if="font && font === activeFont" class="font-check">✓</span>
                 {{ formatFontName(font) }}
               </div>
             </div>
@@ -162,10 +162,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { ElMessageBox } from 'element-plus'
+import { ref, onMounted, onUnmounted, watch, nextTick, h, computed } from 'vue'
+import { ElMessageBox, ElCheckbox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { getSystemFonts, formatFontName, getDefaultTerminalFont } from '../utils/FontDetector'
+import {
+  getSystemFonts,
+  formatFontName,
+  getDefaultTerminalFont,
+  normalizeFontFamily
+} from '../utils/FontDetector'
 import ExportDialog from './ExportDialog.vue'
 import WindowTitleBar from '@superx/foundation/shell/WindowTitleBar.vue'
 import LayoutToggle from '@superx/foundation/shell/LayoutToggle.vue'
@@ -184,6 +189,21 @@ const showFontSubmenu = ref(false)
 const fontsLoaded = ref(false)
 const systemFonts = ref<string[]>([])
 const currentFontFamily = ref(getDefaultTerminalFont()) // 当前活动的字体
+const fontSubmenuEl = ref<HTMLElement | null>(null) // 字体子菜单容器，用于滚动定位
+
+/**
+ * 当前生效的字体（单个字体名）。
+ * 终端里的 fontFamily 可能是字体栈（如 "'Fira Code', 'Cascadia Mono', 'Consolas', monospace"），
+ * 而字体菜单列出的是单个字体名，若直接全等比较永远匹配不上，当前字体就不会高亮、也无法滚动定位。
+ */
+const activeFont = computed(() => normalizeFontFamily(currentFontFamily.value))
+
+/** 字体菜单列表：保证当前生效的字体一定在列表中可见（系统未枚举到时也要能选中） */
+const fontMenuItems = computed(() => {
+  const active = activeFont.value
+  if (!active || systemFonts.value.includes(active)) return systemFonts.value
+  return [active, ...systemFonts.value]
+})
 
 const emit = defineEmits([
   'toggle-primary-sidebar',
@@ -230,13 +250,102 @@ const props = defineProps({
   logEditable: {
     type: Boolean,
     default: false
+  },
+  activeConnectionCount: {
+    type: Number,
+    default: 0
   }
 })
 
 let removeMaximizedListener: (() => void) | undefined
 const minimizeWindow = () => window.windowApi.minimizeWindow()
 const maximizeWindow = () => window.windowApi.maximizeWindow()
-const closeWindow = () => window.windowApi.closeWindow()
+
+// "不再提醒"勾选状态（关闭应用前确认框）
+const dontRemindClose = ref(false)
+
+/**
+ * 关闭应用前的活动连接确认：
+ * - 无活动连接、已勾选"不再提醒"、或关闭行为是最小化到托盘（不会退出应用）时直接放行；
+ * - 否则弹出确认框（含"不再提醒"勾选），勾选后持久化该偏好。
+ * 返回 true 表示允许继续关闭。
+ */
+const confirmCloseWithActiveConnections = async (): Promise<boolean> => {
+  if (props.activeConnectionCount <= 0) return true
+
+  let currentSettings: Record<string, unknown> = {}
+  try {
+    currentSettings = (await window.storageApi.getSettings()) || {}
+  } catch {
+    // 读取设置失败时按默认行为（弹出提示）处理
+  }
+
+  if (
+    currentSettings.confirmCloseWithActiveConnections === false ||
+    currentSettings.minimizeToTray === true
+  ) {
+    return true
+  }
+
+  dontRemindClose.value = false
+  try {
+    await ElMessageBox.confirm(
+      h('div', [
+        h(
+          'div',
+          t('titlebar.closeWithActiveConnectionsMessage', {
+            count: props.activeConnectionCount
+          })
+        ),
+        // 非受控使用：选中态由组件自身维护，变更时同步到 ref
+        h(
+          ElCheckbox,
+          {
+            class: 'close-connections-dialog-checkbox',
+            'onUpdate:modelValue': (val: boolean | string | number) => {
+              dontRemindClose.value = val === true
+            }
+          },
+          () => t('titlebar.closeWithActiveConnectionsDontRemind')
+        )
+      ]),
+      t('titlebar.closeWithActiveConnectionsTitle'),
+      {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+        center: true,
+        customClass: 'close-connections-dialog'
+      }
+    )
+  } catch {
+    // 用户取消关闭
+    return false
+  }
+
+  // 勾选"不再提醒"：持久化偏好，之后关闭不再提示
+  if (dontRemindClose.value) {
+    try {
+      // IPC 无法序列化 Proxy，必须深拷贝为普通对象
+      const mergedSettings = JSON.parse(
+        JSON.stringify({
+          ...currentSettings,
+          confirmCloseWithActiveConnections: false
+        })
+      )
+      await window.storageApi.saveSettings(mergedSettings)
+      window.dispatchEvent(new CustomEvent('settings-updated', { detail: mergedSettings }))
+    } catch (error) {
+      console.error(t('common.saveFailed'), error)
+    }
+  }
+  return true
+}
+
+const closeWindow = async (): Promise<void> => {
+  if (!(await confirmCloseWithActiveConnections())) return
+  window.windowApi.closeWindow()
+}
 
 const hideFileMenu = () => {
   setTimeout(() => {
@@ -457,17 +566,32 @@ const handleMenuMouseLeave = (menuType) => {
   }, 200)
 }
 
-const handleFontSubmenuMouseEnter = (e: MouseEvent) => {
-  showFontSubmenu.value = true
-  // 滚动到当前选中的字体
+/** 滚动使当前选中的字体居中可见 */
+const scrollToActiveFont = (): void => {
   nextTick(() => {
-    const submenu = (e.currentTarget as HTMLElement)?.querySelector('.dropdown-submenu') as HTMLElement | null
+    const submenu = fontSubmenuEl.value
     if (!submenu) return
     const activeItem = submenu.querySelector('.font-item-active') as HTMLElement | null
-    if (activeItem) {
-      submenu.scrollTop = activeItem.offsetTop - submenu.clientHeight / 2 + activeItem.clientHeight / 2
-    }
+    if (!activeItem) return
+    submenu.scrollTop =
+      activeItem.offsetTop - submenu.clientHeight / 2 + activeItem.clientHeight / 2
   })
+}
+
+// 字体列表是懒加载的，加载完成时若子菜单已打开，需要重新定位选中项
+watch(systemFonts, () => {
+  if (showFontSubmenu.value) scrollToActiveFont()
+})
+
+const handleFontSubmenuMouseEnter = async (): Promise<void> => {
+  showFontSubmenu.value = true
+  // 直接 hover 到"字体"子菜单时，系统字体列表可能还没加载完，
+  // 此时列表为空、没有选中项，既不会高亮也无法滚动定位，先等加载完成
+  if (!fontsLoaded.value) {
+    systemFonts.value = await getSystemFonts()
+    fontsLoaded.value = true
+  }
+  scrollToActiveFont()
 }
 
 const handleFontSubmenuMouseLeave = () => {

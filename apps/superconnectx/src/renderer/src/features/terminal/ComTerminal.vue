@@ -18,6 +18,7 @@
       @on-command-sent="handleCommandSent"
       @on-open-command-editor="emit('openCommandEditor', connection.connectionType)"
       @on-edit-syntax-rules="emit('openSyntaxHighlight')"
+      @line-ending-change="onLineEndingChange"
     >
       <!-- 波特率等设置放到下面 -->
       <template #extra>
@@ -117,6 +118,12 @@
             <el-form-item :label="t('comTerminal.writeTimeout')">
               <div class="input-with-unit">
                 <el-input-number v-model="writeTimeout" :min="0" :step="100" size="small" class="full-width" :controls="false" placeholder="ms" />
+                <span class="unit-label">ms</span>
+              </div>
+            </el-form-item>
+            <el-form-item :label="t('comTerminal.packetTimeout')">
+              <div class="input-with-unit">
+                <el-input-number v-model="packetTimeout" :min="0" :max="60000" :step="10" size="small" class="full-width" :controls="false" placeholder="ms" />
                 <span class="unit-label">ms</span>
               </div>
             </el-form-item>
@@ -227,11 +234,13 @@ const onBaudRateDialogOpened = () => {
 const encoding = ref('utf8')
 const readTimeout = ref(0)
 const writeTimeout = ref(0)
+const packetTimeout = ref(50)
 const flowControl = ref<'none' | 'hardware' | 'software'>('none')
 const dtr = ref(false)
 const rts = ref(false)
 const hexDisplayMode = ref(false)
 const autoNewline = ref(true)
+const lineEnding = ref<'CRLF' | 'CR' | 'LF'>('CRLF')
 const hexMode = ref(false)
 const crcEnabled = ref(true)
 const crcMethod = ref<string>('CRC-16/MODBUS')
@@ -299,6 +308,15 @@ watch([dataBits, stopBits, parity, encoding, readTimeout, writeTimeout, flowCont
   }
 })
 
+// 分包超时只影响无换行数据的显示节奏，与端口硬件参数无关，
+// 单独保存并热更新，避免像其他参数那样重开端口（重开会复位设备）
+watch(packetTimeout, () => {
+  saveComSettings()
+  if (isConnected.value) {
+    updatePacketTimeout()
+  }
+})
+
 // 监听字体大小变化，仅保存设置（不重连串口）
 watch(terminal.fontSize, () => {
   saveComSettings()
@@ -318,6 +336,17 @@ watch(autoNewline, (newVal) => {
   saveComSettings()
   unifiedTerminalRef.value?.setAutoNewline?.(newVal)
 })
+
+// 监听自定义换行符样式变化
+watch(lineEnding, (newVal) => {
+  saveComSettings()
+  unifiedTerminalRef.value?.setLineEnding?.(newVal)
+})
+
+// 右键菜单选择换行符样式
+const onLineEndingChange = (val: 'CRLF' | 'CR' | 'LF') => {
+  lineEnding.value = val
+}
 
 // 监听 HEX 发送模式变化
 watch(hexMode, (newVal) => {
@@ -393,6 +422,22 @@ const applyComConfig = async () => {
   }
 }
 
+// 动态更新分包超时（不重开端口）
+const updatePacketTimeout = async (): Promise<void> => {
+  try {
+    await window.connectApi.updateConnect(
+      {
+        connectionType: 'com',
+        comName: props.connection.comName,
+        sessionId: props.connection.sessionId
+      },
+      { packetTimeout: packetTimeout.value }
+    )
+  } catch (error) {
+    console.error('updatePacketTimeout error:', error)
+  }
+}
+
 // 动态更新 hex/str 接收模式
 const updateReceiveHexMode = async (isHex: boolean) => {
   try {
@@ -422,6 +467,7 @@ const loadComSettings = async () => {
       encoding.value = settings.encoding || 'utf8'
       readTimeout.value = settings.readTimeout || 0
       writeTimeout.value = settings.writeTimeout || 0
+      packetTimeout.value = typeof settings.packetTimeout === 'number' ? settings.packetTimeout : 50
       flowControl.value = settings.flowControl || 'none'
       dtr.value = settings.dtr !== undefined ? settings.dtr : false
       rts.value = settings.rts !== undefined ? settings.rts : false
@@ -429,6 +475,7 @@ const loadComSettings = async () => {
       hexDisplayMode.value = settings.hexDisplayMode || false
       terminal.showTimestamp.value = settings.showTimestamp !== undefined ? settings.showTimestamp : true
       autoNewline.value = settings.autoNewline !== undefined ? settings.autoNewline : true
+      lineEnding.value = (settings.lineEnding === 'CR' || settings.lineEnding === 'LF') ? settings.lineEnding : 'CRLF'
       hexMode.value = settings.hexMode || false
       crcEnabled.value = settings.crcEnabled !== undefined ? settings.crcEnabled : true
       crcMethod.value = settings.crcMethod || 'CRC-16/MODBUS'
@@ -439,6 +486,7 @@ const loadComSettings = async () => {
       unifiedTerminalRef.value?.setHexDisplayMode?.(hexDisplayMode.value)
       unifiedTerminalRef.value?.setShowTimestamp?.(terminal.showTimestamp.value)
       unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
+      unifiedTerminalRef.value?.setLineEnding?.(lineEnding.value)
       unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
       unifiedTerminalRef.value?.setCrcEnabled?.(crcEnabled.value)
       unifiedTerminalRef.value?.setCrcMethod?.(crcMethod.value)
@@ -464,6 +512,7 @@ const saveComSettings = async () => {
       encoding: encoding.value,
       readTimeout: readTimeout.value,
       writeTimeout: writeTimeout.value,
+      packetTimeout: packetTimeout.value,
       flowControl: flowControl.value,
       dtr: dtr.value,
       rts: rts.value,
@@ -471,6 +520,7 @@ const saveComSettings = async () => {
       hexDisplayMode: hexDisplayMode.value,
       showTimestamp: terminal.showTimestamp.value,
       autoNewline: autoNewline.value,
+      lineEnding: lineEnding.value,
       hexMode: hexMode.value,
       crcEnabled: crcEnabled.value,
       crcMethod: crcMethod.value,
@@ -595,6 +645,7 @@ const handleConnect = async () => {
     encoding: encoding.value,
     readTimeout: readTimeout.value,
     writeTimeout: writeTimeout.value,
+    packetTimeout: packetTimeout.value,
     receiveHex: hexDisplayMode.value
   }
   isConnecting.value = true
@@ -794,6 +845,7 @@ onMounted(async () => {
     unifiedTerminalRef.value?.setHexDisplayMode?.(hexDisplayMode.value)
     unifiedTerminalRef.value?.setShowTimestamp?.(terminal.showTimestamp.value)
     unifiedTerminalRef.value?.setAutoNewline?.(autoNewline.value)
+    unifiedTerminalRef.value?.setLineEnding?.(lineEnding.value)
     unifiedTerminalRef.value?.setHexMode?.(hexMode.value)
     unifiedTerminalRef.value?.setCrcEnabled?.(crcEnabled.value)
     unifiedTerminalRef.value?.setCrcMethod?.(crcMethod.value)
